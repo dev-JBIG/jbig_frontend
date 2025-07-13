@@ -1,0 +1,58 @@
+.postlist-container {
+}
+
+.postlist-header {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.postlist-header h2 {
+    margin: 0;
+    font-size: 20px;
+    padding: 10px 0 20px 0;
+    font-weight: bold;
+}
+
+.perpage-select {
+    position: absolute;
+    right: 0;
+    top: 80%;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+.postlist-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 2px solid #000; /* 상단 라인 */
+}
+
+.postlist-table th,
+.postlist-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.postlist-table th {
+    font-weight: bold;
+}
+
+.postlist-table tbody tr {
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.postlist-table tbody tr:hover {
+    background-color: #f4f8ff;
+}
+
+.postlist-table .title-cell {
+    text-align: left;
+}

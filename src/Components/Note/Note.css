@@ -1,0 +1,55 @@
+.note-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 24px;
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 10px 0 20px 0;
+    border-bottom: 1px solid #ccc;
+    height: 50px;
+    box-sizing: border-box;
+}
+
+.note-logo {
+    font-size: 20px;
+    font-weight: bold;
+    text-decoration: none;
+    color: black;
+    cursor: pointer;
+}
+
+.refresh-button {
+    background: linear-gradient(to right, #43cea2, #185a9d);
+    border: none;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-button:hover {
+    background: linear-gradient(to right, #38b2ac, #2b6cb0);
+    transform: scale(1.05);
+}
+
+.note-iframe {
+    width: 100%;
+    max-width: 1000px;
+    height: 1000px;
+    border: none;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
