@@ -1,0 +1,119 @@
+.postwrite-form {
+    width: 100%;
+    background: #fff;
+    padding: 32px 24px 24px 24px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.postwrite-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.postwrite-title-input, .postwrite-content-input {
+    font-size: 1rem;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.postwrite-content-input {
+    min-height: 180px;
+    resize: vertical;
+}
+
+.postwrite-images {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+}
+.postwrite-image-preview {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafbff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.postwrite-image-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    user-select: none;
+    pointer-events: none;
+}
+.postwrite-image-preview button {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    border: none;
+    background: rgba(0,0,0,0.22);
+    color: #fff;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.postwrite-img-hint {
+    font-size: 0.88rem;
+    color: #aaa;
+    margin-top: 3px;
+}
+.postwrite-submit {
+    margin-top: 18px;
+    width: 100%;
+    padding: 13px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    background: #243763;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+.postwrite-submit:hover {
+    background: #3563e9;
+}
+
+.postwrite-files {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+.postwrite-file-preview {
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fafbff;
+    padding: 4px 12px;
+}
+.file-name {
+    font-size: 1.03rem;
+    color: #222;
+    margin-right: 6px;
+    word-break: break-all;
+}
+.file-size {
+    color: #888;
+    font-size: 0.96rem;
+}
+
+.category-select{
+    font-size: 0.8rem;
+    height: 2rem;
+}

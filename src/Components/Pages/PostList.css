@@ -1,4 +1,5 @@
 .postlist-container {
+    position: relative;
 }
 
 .postlist-header {
@@ -56,3 +57,26 @@
 .postlist-table .title-cell {
     text-align: left;
 }
+
+.write-button-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.write-button {
+    padding: 6px 24px;
+    background: #3A75FF;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.write-button:hover {
+    background: #194fa6;
+}
+

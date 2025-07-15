@@ -73,25 +73,11 @@ function PostList() {
                 </tbody>
             </table>
             {activeCategory !== "전체글보기" && (
-                <button
-                    className="write-button"
-                    onClick={handleWrite}
-                    style={{
-                        position: "absolute",
-                        right: 24,
-                        bottom: 24,
-                        padding: "12px 24px",
-                        background: "#3A75FF",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 8,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.13)",
-                        fontSize: 16,
-                        cursor: "pointer"
-                    }}
-                >
-                    글쓰기
-                </button>
+                <div className="write-button-row">
+                    <button className="write-button" onClick={handleWrite}>
+                        글쓰기
+                    </button>
+                </div>
             )}
 
         </div>

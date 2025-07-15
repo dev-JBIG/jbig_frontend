@@ -9,5 +9,6 @@ html, body, #root {
 .app-root {
     width: 100vw;
     height: 100vh;
+    max-width: 100%;
     position: relative;
 }

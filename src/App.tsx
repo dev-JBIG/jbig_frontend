@@ -6,6 +6,7 @@ import Note from "./Components/Note/Note";
 import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
+import PostWrite from "./Components/Pages/PostWrite";
 
 const BASE_WIDTH = 1000;
 const BASE_HEIGHT = BASE_WIDTH * 9 / 16;
@@ -66,9 +67,9 @@ function App() {
                     }}
                 >
                     <Routes>
-                        <Route path="/*" element={<Home />} />
                         <Route path="/note" element={<Note />} />
                         <Route path="/admin" element={<Admin />} />
+                        <Route path="/*" element={<Home />} />
                     </Routes>
                 </div>
             )}
