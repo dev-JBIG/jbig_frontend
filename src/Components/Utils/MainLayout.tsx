@@ -1,13 +1,9 @@
 import React from "react";
-import Sidebar, { SidebarProps } from "./Sidebar";
+import Sidebar from "./Sidebar";
 import "../Home/Home.css"
+import { MainLayoutProps } from "../../types/interfaces";
 
 // 메인 컨텐츠 보여주는 페이지
-
-interface MainLayoutProps {
-    children: React.ReactNode;
-    sidebarProps: SidebarProps;
-}
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children, sidebarProps }) => (
     <>

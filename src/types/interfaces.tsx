@@ -1,0 +1,46 @@
+import React from "react";
+
+export interface Attachment {
+    id: number;
+    fileName: string;
+    fileUrl: string;
+    fileType?: string;
+    fileSize?: number;
+}
+
+export interface Comment {
+    id: number;
+    author: string;
+    content: string;
+    date: string;
+}
+
+export interface PostDetailData {
+    id: number;
+    board: string;
+    title: string;
+    content: string;
+    author: string;
+    date: string;
+    updatedAt: string;
+    views: number;
+    likes: number;
+    attachments?: Attachment[];
+    comments?: Comment[];
+    isLiked?: boolean;
+}
+
+export interface SidebarProps {
+    boardData: { category: string; boards: string[] }[];
+    isAdmin: boolean;
+    isLoggedIn: boolean;
+    quizURL?: string;
+    totalCount: number;
+    homeBanner?: string;
+    navigate: (path: string) => void;
+}
+
+export interface MainLayoutProps {
+    children: React.ReactNode;
+    sidebarProps: SidebarProps;
+}

@@ -1,0 +1,203 @@
+.postdetail-container {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(36, 55, 99, 0.08);
+    padding: 20px 30px;
+    max-width: 820px;
+    min-height: 550px;
+    border: 1px solid #f0f1f4;
+}
+
+.postdetail-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.postdetail-category {
+    font-size: 1.01rem;
+    color: #323a4d;
+    background: #f7f7f8;
+    border-radius: 5px;
+    padding: 3px 10px;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.postdetail-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #181c26;
+    margin: 0 0 6px 0;
+}
+
+.postdetail-info-row {
+    font-size: 1.03rem;
+    color: #868686;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.postdetail-dot {
+    margin: 0 2px;
+}
+
+.postdetail-author {
+    font-weight: 500;
+    color: #222;
+}
+
+.postdetail-divider {
+    border-top: 1.5px solid #eee;
+    margin: 16px 0 18px 0;
+}
+
+.postdetail-content {
+    font-size: 1.13rem;
+    color: #262932;
+    min-height: 120px;
+    line-height: 1.72;
+    margin-bottom: 18px;
+    word-break: break-all;
+}
+
+.postdetail-attachments {
+    margin: 18px 0 0 0;
+    padding: 10px 0 0 0;
+    border-top: 1px solid #ececec;
+}
+.postdetail-attachments-title {
+    font-size: 1.06rem;
+    font-weight: 500;
+    color: #353942;
+    margin-bottom: 4px;
+}
+.postdetail-attachments ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.postdetail-attachments li {
+    margin-bottom: 4px;
+    font-size: 1.03rem;
+}
+.postdetail-attachments a {
+    color: #222;
+    text-decoration: underline dotted #aaa 1.5px;
+}
+.file-type {
+    color: #888;
+    font-size: 0.98em;
+}
+
+.postdetail-btn-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.postdetail-btn {
+    padding: 6px 28px;
+    background: #f1f3f8;
+    color: #262932;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.04rem;
+    font-weight: 500;
+    box-shadow: 0 1px 4px rgba(30,45,110,0.07);
+    cursor: pointer;
+    transition: background 0.14s;
+}
+.postdetail-btn:hover {
+    background: #e7e9ee;
+}
+
+/* 댓글 영역 */
+.postdetail-comment-section {
+    margin-top: 38px;
+    padding-top: 22px;
+    border-top: 1.5px solid #eee;
+    background: #fff;
+}
+.postdetail-comment-header {
+    font-size: 1.07rem;
+    font-weight: 600;
+    margin-bottom: 13px;
+    color: #243763;
+}
+.postdetail-comment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px 0;
+}
+.postdetail-comment-item {
+    padding: 12px 0 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.comment-delete {
+    margin-left: auto;
+    margin-right: 0;
+    color: #b3b3b3;
+    font-size: 0.97rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.13s;
+    padding-left: 16px;
+}
+.comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 0.97rem;
+    color: #979797;
+    margin-bottom: 2px;
+}
+.comment-delete:hover {
+    color: #f44336;
+    text-decoration: underline;
+}
+
+.comment-author {
+    font-weight: 500;
+}
+.comment-content {
+    font-size: 1.09rem;
+    color: #262932;
+    white-space: pre-line;
+}
+.postdetail-comment-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.postdetail-comment-input {
+    flex: 1;
+    border: 1px solid #dadada;
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 1.06rem;
+    min-height: 44px;
+    resize: vertical;
+    background: #f9fafd;
+}
+.postdetail-comment-btn {
+    background: #3a75ff;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 0 22px;
+    font-size: 1.07rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.postdetail-comment-btn:disabled {
+    background: #b8c3d0;
+    cursor: not-allowed;
+}

@@ -1,17 +1,8 @@
 import React, {useState} from "react";
 import "../Home/Home.css"
+import { SidebarProps } from "../../types/interfaces";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
-
-export interface SidebarProps {
-    boardData: { category: string; boards: string[] }[];
-    isAdmin: boolean;
-    isLoggedIn: boolean;
-    quizURL?: string;
-    totalCount: number;
-    homeBanner?: string;
-    navigate: (path: string) => void;
-}
 
 const Sidebar: React.FC<SidebarProps> = ({
                                              boardData,
@@ -28,7 +19,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
         <aside className="sidebar">
             <div className="sidebar-top-divider"/>
-            {/* 관리자 페이지 버튼 등... */}
             <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
                 관리자 페이지 열기
             </button>
