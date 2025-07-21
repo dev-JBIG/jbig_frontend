@@ -176,11 +176,6 @@
     background-color: #2980b9;
 }
 
-.sidebar-category{
-    padding-left: 10px;
-    font-weight: 500;
-}
-
 .main-banner {
     width: 100%;
     display: flex;
@@ -193,4 +188,20 @@
     height: auto;
     object-fit: cover;
     border-radius: 6px;
+}
+
+.board-icon {
+    display: inline-block;
+    vertical-align: middle;
+    padding-bottom: 0.16rem;
+    margin-right: 5px;  /* 텍스트와의 간격 */
+}
+
+.user-id {
+    cursor: pointer;
+    color: black;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
 }

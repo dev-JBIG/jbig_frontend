@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData, Comment, Attachment } from "../../types/interfaces";
+import { PostDetailData, Comment, Attachment, Reply } from "../../types/interfaces";
 import "./PostDetail.css";
 
 // 임시 데이터 (실제 API 대체)
@@ -9,8 +9,21 @@ const MOCK_ATTACHMENTS: Attachment[] = [
     { id: 2, fileName: "첨부이미지.png", fileUrl: "#", fileType: "image/png" }
 ];
 const MOCK_COMMENTS: Comment[] = [
-    { id: 1, author: "user1", content: "좋은 글 감사합니다!", date: "2024-07-17 15:04" },
-    { id: 2, author: "dev", content: "테스트 댓글입니다.", date: "2024-07-17 15:05" },
+    {
+        id: 1,
+        author: "user1",
+        content: "좋은 글 감사합니다!",
+        date: "2024-07-17 15:04",
+        replies: [
+            { id: 1, author: "dev", content: "감사합니다!", date: "2024-07-17 15:10" }
+        ]
+    },
+    {
+        id: 2,
+        author: "dev",
+        content: "테스트 댓글입니다.",
+        date: "2024-07-17 15:05"
+    }
 ];
 const MOCK_POST: PostDetailData = {
     id: 1234,
@@ -35,6 +48,10 @@ const PostDetail: React.FC = () => {
     const [userName, setUserName] = useState("dev");
     const [post, setPost] = useState<PostDetailData | null>(null);
     const [commentInput, setCommentInput] = useState("");
+    // 답글 입력 대상 댓글 id (하나만)
+    const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
+    // 답글 입력값 (하나만)
+    const [replyInput, setReplyInput] = useState("");
 
     useEffect(() => {
         // 실제론 id/board fetch
@@ -45,14 +62,15 @@ const PostDetail: React.FC = () => {
         });
     }, [board, id]);
 
-    // todo : 댓글 등록 구현
+    // 댓글 등록
     const handleAddComment = () => {
         if (!commentInput.trim() || !post) return;
         const newComment: Comment = {
             id: (post.comments?.length || 0) + 1,
             author: userName,
             content: commentInput,
-            date: new Date().toLocaleString().slice(0, 16)
+            date: new Date().toLocaleString().slice(0, 16),
+            replies: []
         };
         setPost({
             ...post,
@@ -67,6 +85,63 @@ const PostDetail: React.FC = () => {
         setPost({
             ...post,
             comments: post.comments?.filter((c) => c.id !== commentId) || []
+        });
+    };
+
+    // 답글쓰기 버튼 클릭
+    const handleReplyWriteClick = (id: number) => {
+        // 이미 다른 답글창이 열려 있고, 입력값이 있다면 confirm
+        if (replyTargetId !== null && replyTargetId !== id && replyInput.trim().length > 0) {
+            if (window.confirm("작성 중인 답글을 취소 하시겠습니까?")) {
+                setReplyTargetId(id);
+                setReplyInput("");
+            }
+            // 취소시 아무 것도 하지 않음 (기존 답글창/입력값 유지)
+        } else {
+            setReplyTargetId(replyTargetId === id ? null : id);
+            setReplyInput("");
+        }
+    };
+
+    // 답글 등록 todo: api 연동
+    const handleAddReply = (commentId: number) => {
+        if (!replyInput.trim() || !post) return;
+        setPost({
+            ...post,
+            comments: (post.comments || []).map(c =>
+                c.id === commentId
+                    ? {
+                        ...c,
+                        replies: [
+                            ...(c.replies || []),
+                            {
+                                id: (c.replies?.length || 0) + 1,
+                                author: userName,
+                                content: replyInput,
+                                date: new Date().toLocaleString().slice(0, 16)
+                            }
+                        ]
+                    }
+                    : c
+            )
+        });
+        setReplyInput("");
+        setReplyTargetId(null);
+    };
+
+    // 답글 삭제 todo: api 연동
+    const handleDeleteReply = (commentId: number, replyId: number) => {
+        if (!post) return;
+        setPost({
+            ...post,
+            comments: (post.comments || []).map(c =>
+                c.id === commentId
+                    ? {
+                        ...c,
+                        replies: (c.replies || []).filter(r => r.id !== replyId)
+                    }
+                    : c
+            )
         });
     };
 
@@ -143,6 +218,12 @@ const PostDetail: React.FC = () => {
                                     )}
                                 </span>
                                 <span className="comment-date">{c.date}</span>
+                                <span
+                                    className="reply-write-btn"
+                                    onClick={() => handleReplyWriteClick(c.id)}
+                                >
+                                    답글쓰기
+                                </span>
                                 {c.author === userName && (
                                     <span
                                         className="comment-delete"
@@ -153,6 +234,68 @@ const PostDetail: React.FC = () => {
                                 )}
                             </div>
                             <div className="comment-content">{c.content}</div>
+                            {/* 답글 리스트 */}
+                            <ul className="reply-list">
+                                {(c.replies || []).map(r => (
+                                    <li className="reply-item" key={r.id}>
+                                        <div className="reply-meta">
+                                            <span className="reply-author">
+                                                {r.author}
+                                                {r.author === userName && (
+                                                    <span style={{ color: "#2196F3", fontWeight: 500, marginLeft: 3 }}>
+                                                        (나)
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <span className="reply-date">{r.date}</span>
+                                            {r.author === userName && (
+                                                <span
+                                                    className="reply-delete"
+                                                    onClick={() => handleDeleteReply(c.id, r.id)}
+                                                >
+                                                    삭제
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="reply-content">{r.content}</div>
+                                    </li>
+                                ))}
+                            </ul>
+                            {/* 답글 입력창: replyTargetId와 id가 같을 때만 노출 */}
+                            {replyTargetId === c.id && (
+                                <div className="reply-input-box">
+                                    <textarea
+                                        className="reply-input"
+                                        rows={1}
+                                        placeholder="답글을 입력하세요"
+                                        value={replyInput}
+                                        onChange={e => setReplyInput(e.target.value)}
+                                        style={{ resize: "none" }}
+                                    />
+                                    <div className="reply-action-row">
+                                        <span
+                                            className="reply-cancel-text"
+                                            onClick={() => {
+                                                setReplyInput("");
+                                                setReplyTargetId(null);
+                                            }}
+                                        >
+                                            취소
+                                        </span>
+                                        <span
+                                            className={
+                                                "reply-register-text" +
+                                                (replyInput.trim() ? " active" : "")
+                                            }
+                                            onClick={() => {
+                                                if (replyInput.trim()) handleAddReply(c.id);
+                                            }}
+                                        >
+                                            등록
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </li>
                     ))}
                 </ul>
@@ -160,10 +303,11 @@ const PostDetail: React.FC = () => {
                 <div className="postdetail-comment-input-row">
                     <textarea
                         className="postdetail-comment-input"
-                        rows={3}
+                        rows={1}
                         placeholder="댓글을 입력하세요"
                         value={commentInput}
                         onChange={e => setCommentInput(e.target.value)}
+                        style={{ resize: "none" }}
                     />
                     <button
                         className="postdetail-comment-btn"

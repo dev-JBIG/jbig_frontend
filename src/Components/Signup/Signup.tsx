@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {Link, useNavigate} from "react-router-dom";
+import {sendAuthEmail, signupUser, verifyAuthEmail} from "../../API/req"
 import "./Signup.css";
 
 const Signup: React.FC = () => {
@@ -13,28 +14,54 @@ const Signup: React.FC = () => {
     const navigate = useNavigate();
 
     // 1. 이메일 인증코드 요청
-    const handleSendCode = (e: React.FormEvent) => {
+    const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: 이메일 유효성 검사 및 코드 발송 로직 구현
-        setStep(2);
+        try {
+            const result = await sendAuthEmail(email);
+            if (result.duplicateMail) {
+                alert("이미 가입된 이메일입니다.");
+            } else {
+                alert("인증 메일을 보냈습니다!");
+                setStep(2);
+            }
+        } catch (e) {
+            alert("요청에 실패했습니다.");
+        }
     };
 
     // 2. 이메일 코드 인증
-    const handleVerifyCode = (e: React.FormEvent) => {
+    const handleVerifyCode = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: 입력한 코드가 맞는지 검증하는 로직 구현
-        // 인증 성공 시 아래 두 줄 실행
-        setIsEmailVerified(true);
-        setStep(3);
+        try {
+            const result = await verifyAuthEmail(email, emailCode);
+            if (result.success || result.verified) { // 응답 필드명에 따라 수정!
+                setIsEmailVerified(true);
+                setStep(3);
+            } else {
+                alert("인증 코드가 올바르지 않습니다.");
+            }
+        } catch (error) {
+            alert("인증 요청에 실패했습니다.");
+        }
     };
 
     // 3. 최종 회원가입
-    const handleSignup = (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: 회원가입 처리 로직 (이메일, 아이디, 비밀번호)
-        // 회원가입 성공 시 /signin 으로 이동
-        navigate("/signin");
+        try {
+            const result = await signupUser(email, userId, password); // email, userId, password는 입력받은 값
+
+            if (result.success || result.ok || result.code === 201) {
+                alert("회원가입이 완료되었습니다! 로그인해주세요.");
+                navigate("/signin");
+            } else {
+                alert(result.message || "회원가입에 실패했습니다.");
+            }
+        } catch (error) {
+            alert("회원가입 요청에 실패했습니다.");
+        }
     };
+
 
     return (
         <div className="signup-wrapper">

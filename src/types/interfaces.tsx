@@ -13,6 +13,14 @@ export interface Comment {
     author: string;
     content: string;
     date: string;
+    replies?: Reply[];
+}
+
+export interface Reply {
+    id: number;
+    author: string;
+    content: string;
+    date: string;
 }
 
 export interface PostDetailData {

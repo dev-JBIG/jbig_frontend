@@ -1,9 +1,9 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import "../Home/Home.css"
 import { SidebarProps } from "../../types/interfaces";
+import {FileText, SquareCheckBig } from "lucide-react";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
-
 const Sidebar: React.FC<SidebarProps> = ({
                                              boardData,
                                              isAdmin,
@@ -18,7 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     return (
         <aside className="sidebar">
-            <div className="sidebar-top-divider"/>
+            <div className="sidebar-top-divider" />
             <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
                 관리자 페이지 열기
             </button>
@@ -53,28 +53,37 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </button>
             </div>
             <ul className="menu">
-                <li className="menu-item-viewall" onClick={() => window.open(quizURL, '_blank', 'noopener,noreferrer')}>
-                    이번 주 퀴즈
-                </li>
                 <li className="menu-item-viewall" onClick={() => navigate("/board/전체글보기")}>
-                    전체글보기
+                    <span style={{display: "flex", alignItems: "center"}}>
+                        <FileText size={18} className="board-icon"/>
+                        전체글보기
+                    </span>
                     <span className="viewall-count">{totalCount.toLocaleString()}</span>
                 </li>
+                <li className="menu-item-viewall" onClick={() => window.open(quizURL, '_blank', 'noopener,noreferrer')}>
+                    <span style={{display: "flex", alignItems: "center"}}>
+                        <SquareCheckBig size={18} className="board-icon"/>
+                        이번 주 퀴즈
+                    </span>
+                </li>
             </ul>
-            {boardData.map((section) => (
-                <div key={section.category}>
-                    <div className="sidebar-top-divider"/>
-                    <div className="sidebar-category">{section.category}</div>
-                    <div className="sidebar-middle-divider"/>
+            <div className="sidebar-top-divider"/>
+
+            {boardData.map((section, idx) => (
+                <React.Fragment key={section.category}>
                     <ul className="menu">
                         {section.boards.map((boardName) => (
                             <li key={boardName} onClick={() => navigate(`/board/${boardName}`)}>
+                                <FileText className="board-icon" size={18}/>
                                 {boardName}
                             </li>
                         ))}
                     </ul>
-                </div>
+                    {/* 카테고리별 구분선, 마지막엔 생략 */}
+                    {idx !== boardData.length - 1 && <div className="sidebar-middle-divider"/>}
+                </React.Fragment>
             ))}
+
             <div className="sidebar-top-divider"/>
         </aside>
     );
