@@ -1,14 +1,29 @@
 import React, { useState } from "react";
 import "./Signin.css";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
+import {signin} from "../../API/req";
 
 const Signin: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: 로그인 로직 구현
+        try {
+            const result = await signin(userId, password);
+            if (result.access && result.username) {
+                localStorage.setItem("jbig-accessToken", result.access);
+                localStorage.setItem("jbig-username", result.username);
+
+                navigate("/"); // 원하는 페이지로 이동
+            } else {
+                alert(result.message || "로그인에 실패했습니다.");
+            }
+        } catch (error) {
+            alert("로그인 요청 중 오류가 발생했습니다.");
+        }
     };
 
     return (
@@ -20,7 +35,7 @@ const Signin: React.FC = () => {
                 </div>
                 <form className="signin-form" onSubmit={handleSubmit}>
                     <label className="signin-label" htmlFor="userid">
-                        아이디
+                        아이디 (이메일)
                     </label>
                     <input
                         className="signin-input"

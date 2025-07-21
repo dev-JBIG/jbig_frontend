@@ -7,6 +7,7 @@ import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
 import PostWrite from "./Components/Pages/PostWrite";
+import Footer from "./Components/Footer/Footer";
 
 const BASE_WIDTH = 1000;
 const BASE_HEIGHT = BASE_WIDTH * 9 / 16;
@@ -58,19 +59,25 @@ function App() {
                     ref={wrapperRef}
                     className="scale-wrapper"
                     style={{
-                        transform: `scale(${scale})`,
-                        transformOrigin: "top left",
+                        position: "absolute",
+                        top: 0,
                         width: `${BASE_WIDTH}px`,
                         height: `${BASE_HEIGHT}px`,
-                        position: "absolute",
-                        top: 0
+                        display: "flex",
+                        flexDirection: "column",
+                        transform: `scale(${scale})`,
+                        transformOrigin: "top left",
                     }}
                 >
-                    <Routes>
-                        <Route path="/note" element={<Note />} />
-                        <Route path="/admin" element={<Admin />} />
-                        <Route path="/*" element={<Home />} />
-                    </Routes>
+                    <div style={{flex: 1}}>
+                        <Routes>
+                            <Route path="/note" element={<Note/>}/>
+                            <Route path="/admin" element={<Admin/>}/>
+                            <Route path="/write" element={<PostWrite/>}/>
+                            <Route path="/*" element={<Home/>}/>
+                        </Routes>
+                    </div>
+                    <Footer/>
                 </div>
             )}
         </div>
