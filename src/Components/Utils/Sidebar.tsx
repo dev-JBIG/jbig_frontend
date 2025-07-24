@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../Home/Home.css"
-import { SidebarProps } from "../../types/interfaces";
+import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지

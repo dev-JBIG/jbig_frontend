@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData, Comment, Attachment, Reply } from "../../types/interfaces";
+import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
 import "./PostDetail.css";
 
 // 임시 데이터 (실제 API 대체)
@@ -45,7 +45,7 @@ const PostDetail: React.FC = () => {
     const navigate = useNavigate();
 
     // 현재 로그인된 사용자 이름 (임시, 실제로는 로그인 시 받아온 값)
-    const [userName, setUserName] = useState("dev");
+    const [userName, setUserName] = useState("");
     const [post, setPost] = useState<PostDetailData | null>(null);
     const [commentInput, setCommentInput] = useState("");
     // 답글 입력 대상 댓글 id (하나만)
@@ -54,7 +54,8 @@ const PostDetail: React.FC = () => {
     const [replyInput, setReplyInput] = useState("");
 
     useEffect(() => {
-        // 실제론 id/board fetch
+        // todo
+        // 실제론 id/board axios
         setPost({
             ...MOCK_POST,
             board: board ?? MOCK_POST.board,

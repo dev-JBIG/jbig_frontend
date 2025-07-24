@@ -1,0 +1,188 @@
+.user-profile-container {
+    width: 100%;
+    background: #fff;
+    padding: 10px 28px 38px 28px;
+    border-radius: 10px;
+}
+
+.user-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 12px;
+}
+
+.user-profile-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e5e7eb;
+}
+
+.user-profile-placeholder {
+    display: inline-block;
+    background: #f4f4f4;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.user-profile-username {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+.user-profile-role{
+
+}
+.user-profile-role-email {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.user-profile-role {
+    font-size: 0.95rem;
+    color: #3577e9;
+    padding: 2px 0;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.user-profile-email, .user-profile-joindate {
+    color: #666666;
+}
+
+.user-profile-info {
+    font-size: 1.04rem;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.user-profile-totalposts {
+    font-size: 0.9rem;
+    margin-top: 3px;
+}
+
+.user-profile-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 13px;
+}
+
+.user-profile-tabs button {
+    flex: 1;
+    border: none;
+    border-radius: 7px 7px 0 0;
+    padding: 10px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+    background-color: #fff;
+}
+.user-profile-tabs button.active {
+    background: #fff;
+    color: #3577e9;
+    border-bottom: 2px solid #3577e9;
+}
+
+.user-profile-postlist ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.user-profile-postitem {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 13px 0 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 1rem;
+}
+.user-profile-post-board {
+    font-size: 0.99rem;
+    color: #7892b2;
+    min-width: 85px;
+    font-weight: 500;
+}
+.user-profile-post-title {
+    flex: 1;
+    color: #222;
+}
+.user-profile-post-date {
+    color: #b7b7b7;
+    font-size: 0.95rem;
+}
+.user-profile-noposts {
+    text-align: center;
+    color: #888;
+    font-size: 1.04rem;
+    padding: 20px 0 18px 0;
+}
+
+.user-profile-loading,
+.user-profile-empty {
+    text-align: center;
+    padding: 48px 0;
+    color: #999;
+}
+
+
+/* 비밀번호 변경 컴포넌트 */
+.pwchange-form{
+    width: 100%;
+}
+
+.pwchange-label {
+    font-size: 0.97rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+    color: #243763;
+}
+.pwchange-input {
+    width: 100%;
+    font-size: 1rem;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 2px;
+    outline: none;
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+.pwchange-input:focus {
+    border-color: #3577e9;
+}
+.pwchange-error {
+    color: #b82c1f;
+    font-size: 0.99rem;
+    margin-top: 10px;
+    margin-bottom: 0;
+    text-align: center;
+}
+.pwchange-success {
+    color: #3577e9;
+    font-size: 0.99rem;
+    margin-top: 10px;
+    margin-bottom: 0;
+    text-align: center;
+}
+.pwchange-btn {
+    background: #3577e9;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.08rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.14s;
+}
+.pwchange-btn:disabled {
+    background: #adb6c2;
+    cursor: not-allowed;
+}

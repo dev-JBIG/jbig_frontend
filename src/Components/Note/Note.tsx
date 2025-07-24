@@ -8,6 +8,8 @@ const Note: React.FC = () => {
         window.location.reload();
     };
 
+    // todo: 로그인 된 사용자만 접근 가능토록
+
     useEffect(() => {
         const iframe = iframeRef.current;
         if (!iframe) return;
