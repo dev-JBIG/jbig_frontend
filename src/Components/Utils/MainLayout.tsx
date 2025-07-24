@@ -1,7 +1,7 @@
 import React from "react";
 import Sidebar from "./Sidebar";
 import "../Home/Home.css"
-import { MainLayoutProps } from "../../types/interfaces";
+import { MainLayoutProps } from "./interfaces";
 
 // 메인 컨텐츠 보여주는 페이지
 

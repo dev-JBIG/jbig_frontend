@@ -1,5 +1,14 @@
 import React from "react";
 
+export interface PostItem {
+    id: number;
+    title: string;
+    author: string;
+    date: string;
+    views: number;
+    likes: number;
+}
+
 export interface Attachment {
     id: number;
     fileName: string;
@@ -52,3 +61,19 @@ export interface MainLayoutProps {
     children: React.ReactNode;
     sidebarProps: SidebarProps;
 }
+
+export interface UserProfile {
+    username: string;
+    email: string;
+    joinDate: string;
+    profileImageUrl?: string;
+    role: string;
+    totalPosts?: number;
+}
+
+// interface SimplePost {
+//     id: number;
+//     title: string;
+//     date: string;
+//     board: string;
+// }

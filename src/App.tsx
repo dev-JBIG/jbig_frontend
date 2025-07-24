@@ -6,7 +6,7 @@ import Note from "./Components/Note/Note";
 import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
-import PostWrite from "./Components/Pages/PostWrite";
+import PostWrite from "./Components/Posts/PostWrite";
 import Footer from "./Components/Footer/Footer";
 
 const BASE_WIDTH = 1000;

@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import "./Home.css"
 import MainLayout from "../Utils/MainLayout";
-import PostList from "../Pages/PostList";
-import PostDetail from "../Pages/PostDetail";
-import PostWrite from "../Pages/PostWrite";
-import Search from "../Pages/Search";
+import PostList from "../Posts/PostList";
+import PostDetail from "../Posts/PostDetail";
+import PostWrite from "../Posts/PostWrite";
+import Search from "../Posts/Search";
 import { getBoardData } from "../../API/req";
 import {isTokenExpired} from "../Utils/Functions";
 import { CircleUserRound  } from "lucide-react";
+import User from "../User/User";
 
 // 임시 더미 데이터
 const boardData = [
@@ -135,6 +136,11 @@ const Home: React.FC = () => {
                             </MainLayout>
                         }
                     />
+                    <Route path="user/:username" element={
+                        <MainLayout sidebarProps={sidebarProps}>
+                            <User />
+                        </MainLayout>
+                    } />
                 </Routes>
             </div>
         </div>
