@@ -1,52 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
+import { fetchPostDetail } from "../../API/req"; // 추가
 import "./PostDetail.css";
 
-// 임시 데이터 (실제 API 대체)
-const MOCK_ATTACHMENTS: Attachment[] = [
-    { id: 1, fileName: "예시파일.pdf", fileUrl: "#", fileType: "pdf" },
-    { id: 2, fileName: "첨부이미지.png", fileUrl: "#", fileType: "image/png" }
-];
-const MOCK_COMMENTS: Comment[] = [
-    {
-        id: 1,
-        author: "user1",
-        content: "좋은 글 감사합니다!",
-        date: "2024-07-17 15:04",
-        replies: [
-            { id: 1, author: "dev", content: "감사합니다!", date: "2024-07-17 15:10" }
-        ]
-    },
-    {
-        id: 2,
-        author: "dev",
-        content: "테스트 댓글입니다.",
-        date: "2024-07-17 15:05"
-    }
-];
-const MOCK_POST: PostDetailData = {
-    id: 1234,
-    board: "공지사항",
-    title: "게시글 상세 샘플",
-    content: "여기에 게시글 내용이 들어갑니다.\n여러 줄로 작성 가능합니다.",
-    author: "관리자",
-    date: "2024-07-16 17:04",
-    updatedAt: "2024-07-17 19:12",
-    views: 21,
-    likes: 2,
-    attachments: MOCK_ATTACHMENTS,
-    comments: MOCK_COMMENTS,
-    isLiked: true
-};
-
 const PostDetail: React.FC = () => {
-    const { board, id } = useParams();
+    const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
 
-    // 현재 로그인된 사용자 이름 (임시, 실제로는 로그인 시 받아온 값)
+    // todo : 토큰을 통해 접근 권한 체크
+
+    // 현재 로그인된 사용자 이름
     const [userName, setUserName] = useState("");
-    const [post, setPost] = useState<PostDetailData | null>(null);
+    const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
     // 답글 입력 대상 댓글 id (하나만)
     const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
@@ -54,18 +20,57 @@ const PostDetail: React.FC = () => {
     const [replyInput, setReplyInput] = useState("");
 
     useEffect(() => {
-        // todo
-        // 실제론 id/board axios
-        setPost({
-            ...MOCK_POST,
-            board: board ?? MOCK_POST.board,
-            id: Number(id) || MOCK_POST.id,
-        });
-    }, [board, id]);
+        const loadPost = async () => {
+            if (!postId) return;
+            try {
+                const raw = await fetchPostDetail(Number(postId));
+
+                console.log(raw);
+
+                if (raw.notFound) {
+                    setPost("not-found");
+                    return;
+                }
+
+                const mapped: PostDetailData = {
+                    id: raw.id,
+                    board: raw.board.name,
+                    title: raw.title,
+                    content: raw.content,
+                    author: raw.author,
+                    date: raw.created_at.slice(0, 16).replace("T", " "),
+                    updatedAt: raw.updated_at.slice(0, 16).replace("T", " "),
+                    views: raw.views,
+                    likes: raw.likes_count,
+                    isLiked: raw.is_liked,
+                    attachments: raw.attachments || [],
+                    comments: (raw.comments || []).map((c: any) => ({
+                        id: c.id,
+                        author: c.author,
+                        content: c.content,
+                        date: c.created_at.slice(0, 16).replace("T", " "),
+                        replies: (c.children || []).map((r: any) => ({
+                            id: r.id,
+                            author: r.author,
+                            content: r.content,
+                            date: r.created_at.slice(0, 16).replace("T", " "),
+                        }))
+                    }))
+                };
+
+                setPost(mapped);
+            } catch (err) {
+                console.error(err);
+                setPost("not-found");
+            }
+        };
+        loadPost();
+    }, [postId]);
 
     // 댓글 등록
     const handleAddComment = () => {
-        if (!commentInput.trim() || !post) return;
+        if (!commentInput.trim() || !post || typeof post === "string") return;
+
         const newComment: Comment = {
             id: (post.comments?.length || 0) + 1,
             author: userName,
@@ -82,7 +87,8 @@ const PostDetail: React.FC = () => {
 
     //todo: 삭제 api 구현 및 연결
     const deleteHandler = (commentId: number) => {
-        if (!post) return;
+        if (!post || typeof post === "string") return;
+
         setPost({
             ...post,
             comments: post.comments?.filter((c) => c.id !== commentId) || []
@@ -106,7 +112,7 @@ const PostDetail: React.FC = () => {
 
     // 답글 등록 todo: api 연동
     const handleAddReply = (commentId: number) => {
-        if (!replyInput.trim() || !post) return;
+        if (!replyInput.trim() || !post || typeof post === "string") return;
         setPost({
             ...post,
             comments: (post.comments || []).map(c =>
@@ -132,7 +138,7 @@ const PostDetail: React.FC = () => {
 
     // 답글 삭제 todo: api 연동
     const handleDeleteReply = (commentId: number, replyId: number) => {
-        if (!post) return;
+        if (!post || typeof post === "string") return;
         setPost({
             ...post,
             comments: (post.comments || []).map(c =>
@@ -146,12 +152,30 @@ const PostDetail: React.FC = () => {
         });
     };
 
+    if (post === "not-found") {
+        return (
+            <div className="postdetail-container post-not-found">
+                <h2>해당 게시글을 찾을 수 없습니다.</h2>
+                <p>게시글이 삭제되었거나, 주소가 잘못되었습니다.</p>
+                <button className="post-not-found-btn" onClick={() => navigate(-1)}>
+                    이전 페이지로
+                </button>
+            </div>
+        );
+    }
+
     if (!post) return <div className="postdetail-container">로딩 중...</div>;
 
     return (
         <div className="postdetail-container">
             <div className="postdetail-header">
-                <div className="postdetail-category">{post.board}</div>
+                <div
+                    className="postdetail-category"
+                    style={{cursor: "pointer", color: "#3563e9", fontWeight: 500}}
+                    onClick={() => navigate(`/board/${boardId}`)}
+                >
+                    {post.board}
+                </div>
                 <h2 className="postdetail-title">{post.title}</h2>
             </div>
             <div className="postdetail-info-row">

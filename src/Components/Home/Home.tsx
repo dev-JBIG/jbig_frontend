@@ -142,7 +142,7 @@ const Home: React.FC = () => {
                             <PostList boards={boards}/>
                         </MainLayout>
                     }/>
-                    <Route path="board/:category/:id" element={
+                    <Route path="board/:boardId/:id" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <PostDetail />
                         </MainLayout>

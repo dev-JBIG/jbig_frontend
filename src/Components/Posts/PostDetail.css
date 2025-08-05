@@ -1,7 +1,6 @@
 .postdetail-container {
     background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(36, 55, 99, 0.08);
     padding: 20px 30px;
     max-width: 820px;
     min-height: 550px;
@@ -18,10 +17,9 @@
 
 .postdetail-category {
     font-size: 1.01rem;
-    color: #323a4d;
-    background: #f7f7f8;
+    color: #2a4dcc;
     border-radius: 5px;
-    padding: 3px 10px;
+    padding: 3px 0;
     font-weight: 500;
     margin-bottom: 2px;
 }
@@ -309,3 +307,18 @@
     transition: color 0.14s;
 }
 
+/* 게시글 없을 때 */
+.post-not-found {
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.post-not-found-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #3563e9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}

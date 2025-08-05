@@ -110,7 +110,7 @@ function PostList({ boards }: { boards?: Section[] })  {
                 </tbody>
             </table>
 
-            {/* Pagination 추가 */}
+            {/* Pagination */}
             {totalPages > 1 && (
                 <div className="pagination-row">
                     <button

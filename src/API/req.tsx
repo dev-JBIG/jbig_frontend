@@ -14,25 +14,19 @@ function getCookie(name: string) {
 
 // 이메일 인증코드 요청
 export const sendAuthEmail = async (email: string) => {
-    const csrfToken = getCookie("csrftoken"); // 쿠키에서 csrftoken 읽기
-    try {
-        const response = await axios.post(
-            `${BASE_URL}/api/auth/email/send`,
-            { email },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json",
-                    "X-CSRFTOKEN": csrfToken // 동적으로 쿠키에서 읽은 값 사용!
-                },
-                withCredentials: true // 크로스도메인 쿠키 포함!
-            }
-        );
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
+    const response = await fetch("/api/auth/email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+        throw new Error("이메일 인증 요청 실패");
     }
+
+    return response.json();
 };
 
 // 이메일 인증코드 인증
@@ -150,6 +144,27 @@ export const fetchBoardPosts = async (
         })),
         totalPages: Math.ceil(res.data.count / pageSize),
     };
+};
+
+// 게시물 세부 정보 조회
+export const fetchPostDetail = async (postId: number) => {
+    const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    // 게시물 조회 안된 경우 front 처리
+    if (response.status === 404) {
+        return { notFound: true };
+    }
+
+    if (!response.ok) {
+        throw new Error("게시글 불러오기에 실패했습니다.");
+    }
+
+    return response.json();
 };
 
 
