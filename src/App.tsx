@@ -47,6 +47,15 @@ function App() {
         return () => window.removeEventListener("resize", resize);
     }, [isNoScale]);
 
+    useEffect(() => {
+        const token = localStorage.getItem("jbig-accessToken");
+
+        if (token != null) {
+            // 기존 토큰이 존재할 경우
+            // todo
+        }
+    }, []);
+
     return (
         <div className="app-root">
             {isNoScale ? (

@@ -5,7 +5,7 @@ import {FileText, SquareCheckBig } from "lucide-react";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
 const Sidebar: React.FC<SidebarProps> = ({
-                                             boardData,
+                                             boards,
                                              isAdmin,
                                              isLoggedIn,
                                              quizURL,
@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </button>
             </div>
             <ul className="menu">
-                <li className="menu-item-viewall" onClick={() => navigate("/board/전체글보기")}>
+                <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <span style={{display: "flex", alignItems: "center"}}>
                         <FileText size={18} className="board-icon"/>
                         전체글보기
@@ -69,20 +69,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             </ul>
             <div className="sidebar-top-divider"/>
 
-            {boardData.map((section, idx) => (
+            {boards.map((section, idx) => (
                 <React.Fragment key={section.category}>
                     <ul className="menu">
-                        {section.boards.map((boardName) => (
-                            <li key={boardName} onClick={() => navigate(`/board/${boardName}`)}>
-                                <FileText className="board-icon" size={18}/>
-                                {boardName}
+                        {section.boards.map((board) => (
+                            <li
+                                key={board.id}
+                                onClick={() => navigate(`/board/${board.id}`)}
+                            >
+                                <FileText className="board-icon" size={18} />
+                                {board.name}
                             </li>
                         ))}
                     </ul>
                     {/* 카테고리별 구분선, 마지막엔 생략 */}
-                    {idx !== boardData.length - 1 && <div className="sidebar-middle-divider"/>}
+                    {idx !== boards.length - 1 && <div className="sidebar-middle-divider" />}
                 </React.Fragment>
             ))}
+
 
             <div className="sidebar-top-divider"/>
         </aside>

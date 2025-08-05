@@ -44,6 +44,28 @@
     font-weight: bold;
 }
 
+/* 리스트 정렬 */
+.th-id {
+    width: 60px;
+}
+.th-title {
+    width: 40%;
+    text-align: left;
+}
+.th-author {
+    width: 150px;
+}
+.th-date {
+    width: 100px;
+}
+.th-views {
+    width: 80px;
+}
+.th-likes {
+    width: 80px;
+}
+
+
 .postlist-table tbody tr {
     background-color: #fafafa;
     cursor: pointer;
@@ -90,4 +112,46 @@
 .author-cell:focus {
     text-decoration: underline;
     outline: none;
+}
+
+/* 페이지네이션 */
+.pagination-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 6px 10px;
+    min-width: 32px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f0f0f0;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    font-weight: bold;
+    background-color: #3563e9;
+    color: white;
+    border-color: #3563e9;
+}
+
+.pagination-btn.active:hover {
+    background-color: #2a4dcc;
+    border-color: #2a4dcc;
 }

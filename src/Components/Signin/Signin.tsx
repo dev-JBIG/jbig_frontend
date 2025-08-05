@@ -13,9 +13,11 @@ const Signin: React.FC = () => {
         e.preventDefault();
         try {
             const result = await signin(userId, password);
-            if (result.access && result.username) {
+            if (result.access && result.username && result.semeseter) {
                 localStorage.setItem("jbig-accessToken", result.access);
                 localStorage.setItem("jbig-username", result.username);
+                localStorage.setItem("jbig-semester", result.semeseter);
+                localStorage.setItem("jbig-email", userId);
 
                 navigate("/"); // 원하는 페이지로 이동
             } else {

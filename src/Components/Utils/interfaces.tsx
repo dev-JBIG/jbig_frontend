@@ -47,8 +47,19 @@ export interface PostDetailData {
     isLiked?: boolean;
 }
 
+export interface Board {
+    id: number;
+    name: string;
+}
+
+export interface Section {
+    category: string;
+    categoryId: number;
+    boards: Board[];
+}
+
 export interface SidebarProps {
-    boardData: { category: string; boards: string[] }[];
+    boards: Section[];
     isAdmin: boolean;
     isLoggedIn: boolean;
     quizURL?: string;

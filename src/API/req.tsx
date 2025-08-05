@@ -1,4 +1,5 @@
 import axios from "axios";
+import { PostItem } from "../Components/Utils/interfaces";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -80,10 +81,10 @@ export const signupUser = async (email: string, username: string, password: stri
     }
 };
 
-// sidebar 게시판 목록 조회 함수 todo: 수정 필요
-export const getBoardData = async () => {
+// sidebar 게시판 목록 조회 함수
+export const getBoards = async () => {
     try {
-        const response = await axios.get(`${BASE_URL}/api/board/`);
+        const response = await axios.get(`${BASE_URL}/api/categories/`);
         return response.data;
     } catch (error) {
         console.error(error);
@@ -95,18 +96,84 @@ export const getBoardData = async () => {
 export const signin = async (email: string, password: string) => {
     try {
         const response = await axios.post(
-            `${BASE_URL}/api/auth/signin`,
+            `${BASE_URL}/api/users/signin/`,
             { email, password },
             {
                 headers: {
                     "Accept": "*/*",
                     "Content-Type": "application/json"
-                }
+                },
+                withCredentials: true
             }
         );
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        throw error;
+
+        if (error.response && error.response.data) {
+            return {
+                message: error.response.data.detail || "로그인 실패"
+            };
+        }
+
+        return {
+            message: "네트워크 오류 또는 서버 응답 없음"
+        };
     }
+};
+
+// 게시판 게시글 리스트 반환 api todo: 임시
+export const fetchBoardPosts = async (
+    boardId: string | undefined,
+    pageSize: number,
+    page: number
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const url = boardId
+        ? `${BASE_URL}/api/boards/${boardId}/posts/`
+        : `${BASE_URL}/api/posts/all`;
+
+    const params = {
+        page,
+        page_size: pageSize,
+    };
+
+    const res = await axios.get(url, { params });
+
+    return {
+        posts: res.data.results.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            date: item.created_at.slice(2, 10).replace(/-/g, "-"),
+            views: item.views,
+            likes: item.likes_count,
+        })),
+        totalPages: Math.ceil(res.data.count / pageSize),
+    };
+};
+
+
+// 사용자의 내 게시글 목록 api todo: 임시
+export const fetchUserPosts = async (
+    username: string,
+    pageSize: number,
+    page: number
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const query = `?page=${page}&page_size=${pageSize}`;
+    const url = `/api/user/${username}/posts${query}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return {
+        posts: data.results.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            date: item.created_at.slice(2, 10).replace(/-/g, "-"),
+            views: item.views,
+            likes: item.likes_count,
+        })),
+        totalPages: Math.ceil(data.count / pageSize),
+    };
 };

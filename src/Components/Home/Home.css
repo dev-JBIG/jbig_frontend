@@ -20,11 +20,6 @@
     cursor: pointer;
 }
 
-.user-info {
-    font-size: 14px;
-    font-weight: normal;
-}
-
 .home-banner {
     width: 100%;
     display: flex;
@@ -202,6 +197,59 @@
     color: black;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
     font-weight: 500;
 }
+
+.user-id:hover{
+    text-decoration: underline;
+}
+
+
+/* 사용자 정보 드롭다운 추가 */
+.user-info-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.user-info-clickable {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.user-info-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: #000;
+}
+
+.user-info-name:hover {
+    text-decoration: underline;
+}
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    min-width: 120px;
+    padding: 4px 0;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    color: #2c3e50;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s;
+}
+
+.dropdown-item:hover {
+    background-color: #f4f4f4;
+}
+
