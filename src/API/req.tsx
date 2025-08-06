@@ -85,9 +85,11 @@ export const getBoardData = async () => {
     try {
         const response = await axios.get(`${BASE_URL}/api/board/`);
         return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
+    } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+            console.error('API 오류:', error.response?.data || error. message);
+        } else {
+        console.error('알 수 없는 오류:', error);
     }
 };
 
@@ -95,18 +97,28 @@ export const getBoardData = async () => {
 export const signin = async (email: string, password: string) => {
     try {
         const response = await axios.post(
-            `${BASE_URL}/api/auth/signin`,
+            `${BASE_URL}/api/users/signin/`,
             { email, password },
             {
                 headers: {
                     "Accept": "*/*",
                     "Content-Type": "application/json"
-                }
+                },
+                withCredentials: true
             }
         );
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        throw error;
+
+        if (error.response && error.response.data) {
+            return {
+                message: error.response.data.detail || "로그인 실패"
+            };
+        }
+
+        return {
+            message: "네트워크 오류 또는 서버 응답 없음"
+        };
     }
 };
