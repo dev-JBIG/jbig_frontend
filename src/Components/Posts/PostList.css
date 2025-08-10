@@ -155,3 +155,18 @@
     background-color: #2a4dcc;
     border-color: #2a4dcc;
 }
+
+.more-link {
+    position: absolute;
+    right: 0;
+    top: 80%;
+    transform: translateY(-50%);
+    color: #3563e9;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    user-select: none;
+}
+.more-link:hover {
+    text-decoration: underline;
+}

@@ -27,6 +27,14 @@
     resize: vertical;
 }
 
+.board-select {
+    height: 36px;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
 .postwrite-images {
     display: flex;
     gap: 12px;
@@ -116,4 +124,81 @@
 .category-select{
     font-size: 0.8rem;
     height: 2rem;
+}
+
+.attachments-top{
+    padding-top: 25px;
+}
+
+/* html 본문 */
+.ql-toolbar.ql-snow button:hover {
+    background-color: #f0f0f0 !important;
+}
+
+.ql-toolbar.ql-snow button.ql-active {
+    background-color: #d0e8ff !important;
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
+    content: '14px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
+    content: '16px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
+    content: '18px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+    content: '24px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
+    content: '32px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before {
+    content: '48px';
+}
+
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before {
+    content: "14px";
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before {
+    content: '16px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before {
+    content: '18px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before {
+    content: '24px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before {
+    content: '32px';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before {
+    content: '48px';
+}
+
+/* size,font 드롭다운: 선택 항목 강조 제거 */
+.ql-snow .ql-picker.ql-size .ql-picker-label.ql-active,
+.ql-snow .ql-picker.ql-font .ql-picker-label.ql-active{
+    color: inherit !important;
+    background: none !important;
+    font-weight: normal !important;
+}
+
+.ql-snow .ql-picker-label svg polygon.ql-stroke {
+    stroke: currentColor !important;
+    fill: currentColor !important;
+}
+
+
+.ql-editor img { display: inline-block; }
+
+.postwrite-row .ql-container {
+    height: auto !important;
+    overflow: visible;        /* 컨테이너 스크롤 막기 */
+}
+.postwrite-row .ql-editor {
+    min-height: 300px;        /* 시작 높이 */
+    overflow-y: hidden;       /* 에디터 스크롤 막기 */
+    white-space: pre-wrap;
 }

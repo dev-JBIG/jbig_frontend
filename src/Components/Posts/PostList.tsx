@@ -1,29 +1,27 @@
+// PostList.tsx (수정 버전)
 import React, {useEffect, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
 import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchUserPosts} from "../../API/req";
 
-// todo: board id 유효성에 따른 처리
-
-function PostList({ boards }: { boards?: Section[] })  {
+function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean })  {
     const [posts, setPosts] = useState<PostItem[] | null>(null);
-    const [totalPages, setTotalPages] = useState(1); // 총 페이지 수
+    const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
     const { boardId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const activeBoardID = boardId ? Number(boardId) : 0; // 기본: 전체글보기
+    const isUserPage = location.pathname.startsWith("/user");
+    const [perPage, setPerPage] = useState(isUserPage ? 30 : (isHome ? 10 : 15));
+
+    const activeBoardID = boardId ? Number(boardId) : 0;
     const activeBoard = activeBoardID === 0
         ? null
         : boards
             ?.flatMap(section => section.boards)
             .find(board => board.id === Number(activeBoardID));
-
-    // /user로 시작하는 경로면 글쓰기 버튼 숨김
-    const isUserPage = location.pathname.startsWith("/user");
-    const [perPage, setPerPage] = useState(isUserPage ? 30 : 15);
 
     useEffect(() => {
         const getPosts = async () => {
@@ -34,7 +32,12 @@ function PostList({ boards }: { boards?: Section[] })  {
                     const username = location.pathname.split("/").pop() || "";
                     response = await fetchUserPosts(username, perPage, page);
                 } else {
-                    response = await fetchBoardPosts(activeBoardID !== 0 ? String(activeBoardID) : undefined, perPage, page);
+                    response = await fetchBoardPosts(
+                        isHome ? undefined : (activeBoardID !== 0 ? String(activeBoardID) : undefined),
+                        isHome ? 10 : perPage,
+                        isHome ? 1 : page,
+                        !!isHome
+                    );
                 }
 
                 setPosts(response.posts);
@@ -44,8 +47,7 @@ function PostList({ boards }: { boards?: Section[] })  {
             }
         };
         getPosts();
-    }, [boardId, perPage, page, location.pathname]);
-
+    }, [boardId, perPage, page, location.pathname, isHome, isUserPage, activeBoardID]);
 
     const displayPosts = posts ?? [];
 
@@ -58,21 +60,30 @@ function PostList({ boards }: { boards?: Section[] })  {
             <div className="postlist-header">
                 {!isUserPage && (
                     <>
-                        <h2>{activeBoard ? activeBoard.name : "전체글보기"}</h2>
-                        <select
-                            className="perpage-select"
-                            value={perPage}
-                            onChange={(e) => {
-                                setPage(1); // 페이지 초기화
-                                setPerPage(Number(e.target.value));
-                            }}
-                        >
-                            {[5, 10, 15, 20, 30].map((n) => (
-                                <option key={n} value={n}>
-                                    {n}개씩
-                                </option>
-                            ))}
-                        </select>
+                        <h2>{activeBoard ? activeBoard.name : (isHome ? "전체글보기" : "전체글보기")}</h2>
+                        {!isHome ? (
+                            <select
+                                className="perpage-select"
+                                value={perPage}
+                                onChange={(e) => {
+                                    setPage(1);
+                                    setPerPage(Number(e.target.value));
+                                }}
+                            >
+                                {[5, 10, 15, 20, 30].map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}개씩
+                                    </option>
+                                ))}
+                            </select>
+                        )  : (
+                            <span
+                                className="more-link"
+                                onClick={() => navigate("/board/0")}
+                            >
+                                더보기 &gt;
+                            </span>
+                        )}
                     </>
                 )}
             </div>
@@ -90,17 +101,18 @@ function PostList({ boards }: { boards?: Section[] })  {
                 </thead>
                 <tbody>
                 {displayPosts.map((p) => (
-                    <tr key={p.id} onClick={() => navigate(`/board/${boardId}/${p.id}`)}>
+                    <tr key={p.id} onClick={() => navigate(`/board/${boardId ?? 0}/${p.id}`)}>
                         <td className="th-id">{p.id}</td>
                         <td className="title-cell th-title">{p.title}</td>
-                        <td className="author-cell th-author"
+                        <td
+                            className="author-cell th-author"
                             onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/user/${encodeURIComponent(p.author)}`);
-                        }}
+                                e.stopPropagation();
+                                navigate(`/user/${encodeURIComponent(p.author)}`);
+                            }}
                             style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                         >
-                            {p.author}
+                            {p.author_semester}기 {p.author}
                         </td>
                         <td className="th-date">{p.date}</td>
                         <td className="th-views">{p.views.toLocaleString()}</td>
@@ -110,38 +122,76 @@ function PostList({ boards }: { boards?: Section[] })  {
                 </tbody>
             </table>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
+            {/* Pagination (5개 단위 그룹: 다음은 다음 구간 첫 페이지, 이전은 이전 구간 마지막 페이지) */}
+            {!isHome && totalPages > 1 && (
                 <div className="pagination-row">
-                    <button
-                        className="pagination-btn"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                    >
-                        이전
-                    </button>
+                    {(() => {
+                        const GROUP_SIZE = 5;
+                        const currentGroup = Math.floor((page - 1) / GROUP_SIZE);
+                        const start = currentGroup * GROUP_SIZE + 1;
+                        const end = Math.min(start + GROUP_SIZE - 1, totalPages);
+                        const hasPrevGroup = start > 1;
+                        const hasNextGroup = end < totalPages;
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                        <button
-                            key={pageNum}
-                            className={`pagination-btn ${pageNum === page ? "active" : ""}`}
-                            onClick={() => setPage(pageNum)}
-                        >
-                            {pageNum}
-                        </button>
-                    ))}
+                        return (
+                            <>
+                                {/* 처음으로 */}
+                                {totalPages > GROUP_SIZE && (
+                                    <button
+                                        className="pagination-btn"
+                                        onClick={() => setPage(1)}
+                                        disabled={page === 1}
+                                    >
+                                        처음으로
+                                    </button>
+                                )}
 
-                    <button
-                        className="pagination-btn"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                    >
-                        다음
-                    </button>
+                                {/* 이전 그룹 -> 이전 구간의 '마지막 페이지'로 이동 */}
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => setPage(hasPrevGroup ? start - 1 : 1)}
+                                    disabled={!hasPrevGroup}
+                                >
+                                    이전
+                                </button>
+
+                                {/* 현재 그룹 페이지들 */}
+                                {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
+                                    <button
+                                        key={n}
+                                        className={`pagination-btn ${n === page ? "active" : ""}`}
+                                        onClick={() => setPage(n)}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+
+                                {/* 다음 그룹 -> 다음 구간의 '첫 페이지'로 이동 */}
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => setPage(hasNextGroup ? end + 1 : totalPages)}
+                                    disabled={!hasNextGroup}
+                                >
+                                    다음
+                                </button>
+
+                                {/* 끝으로 */}
+                                {totalPages > GROUP_SIZE && (
+                                    <button
+                                        className="pagination-btn"
+                                        onClick={() => setPage(totalPages)}
+                                        disabled={page === totalPages}
+                                    >
+                                        끝으로
+                                    </button>
+                                )}
+                            </>
+                        );
+                    })()}
                 </div>
             )}
 
-            {!isUserPage && activeBoardID !== 0 && (
+            {!isUserPage && !isHome && activeBoardID !== 0 && (
                 <div className="write-button-row">
                     <button className="write-button" onClick={handleWrite}>
                         글쓰기

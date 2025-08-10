@@ -13,10 +13,11 @@ const Signin: React.FC = () => {
         e.preventDefault();
         try {
             const result = await signin(userId, password);
-            if (result.access && result.username && result.semeseter) {
+            if (result.access && result.username && result.semester) {
                 localStorage.setItem("jbig-accessToken", result.access);
                 localStorage.setItem("jbig-username", result.username);
-                localStorage.setItem("jbig-semester", result.semeseter);
+                localStorage.setItem("jbig-semester", result.semester);
+                localStorage.setItem("jbig-refresh", result.refresh);
                 localStorage.setItem("jbig-email", userId);
 
                 navigate("/"); // 원하는 페이지로 이동
@@ -64,6 +65,7 @@ const Signin: React.FC = () => {
                 <a href="/signup" className="signin-link">가입하기</a>
                 {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                 <a href="#" className="signin-link">비밀번호를 잊어버리셨나요?</a>
+                    {/*  todo: 비밀번호 찾기  */}
                 </div>
             </div>
         </div>

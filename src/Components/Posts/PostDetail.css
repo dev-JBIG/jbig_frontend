@@ -3,7 +3,6 @@
     border-radius: 10px;
     padding: 20px 30px;
     max-width: 820px;
-    min-height: 550px;
     border: 1px solid #f0f1f4;
 }
 
@@ -321,4 +320,8 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
+}
+
+.postdetail-content.ql-editor{
+    padding: 0;
 }

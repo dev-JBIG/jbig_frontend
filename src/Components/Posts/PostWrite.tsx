@@ -1,70 +1,119 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState, useLayoutEffect, useMemo} from "react";
 import "./PostWrite.css";
-import {useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
+import Quill from "quill";
+import "react-quill/dist/quill.snow.css";
+import ReactQuill from "react-quill";
+import { uploadAttachment } from "../../API/req"
+import {Board, Section, UploadFile} from "../Utils/interfaces";
 
-const BOARD_LIST = [
-    "공지사항", "이벤트 안내", "자유게시판", "질문게시판", "정보공유", "유머게시판", "이미지 자료", "문서 자료", "코드 스니펫"
-];
+import { ImageFormats } from '@xeger/quill-image-formats';
+import { ImageResize } from 'quill-image-resize-module-ts';
 
-const BOARD_PLACEHOLDER = "게시판을 선택하세요";
+Quill.register('modules/imageResize', ImageResize);
+Quill.register('modules/imageFormats', ImageFormats);
+Quill.register(ImageFormats, true);
 
-const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"]; // 첨부 제한 파일 확장자
+const SizeStyle = Quill.import('attributors/style/size');
+SizeStyle.whitelist = ['14px', '16px', '18px', '24px', '32px', '48px'];
+Quill.register(SizeStyle, true);
 
-interface UploadFile {
-    file: File;
-    url?: string; // 이미지면 미리보기용
-}
+// 업로드 제한 파일 확장자, 필요 시 추가
+const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 
+// 파일 개수, 용량 제한
 const MAX_FILES = 3;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const PostWrite: React.FC = () => {
+
+interface PostWriteProps {
+    boards?: Section[];
+}
+
+const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [files, setFiles] = useState<UploadFile[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { category } = useParams();
+    const { category } = useParams(); // :category => boardId
+    const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
 
-    // 카테고리 유효성 검사
-    const safeCategory = category || "";
-    const isValidCategory = BOARD_LIST.includes(safeCategory);
-    const [selectedBoard, setSelectedBoard] = useState(isValidCategory ? safeCategory : BOARD_PLACEHOLDER);
+    const BOARD_LIST = useMemo<Board[]>(
+        () => boards.flatMap((sec) => sec.boards),
+        [boards]
+    );
 
     useEffect(() => {
-        if (category && BOARD_LIST.includes(category)) {
-            setSelectedBoard(category);
-        } else {
-            setSelectedBoard(BOARD_PLACEHOLDER);
-        }
-    }, [category]);
+        if (!category) return;
+        const id = Number(category);
+        const found = BOARD_LIST.find((b) => b.id === id) || null;
+        setSelectedBoard(found);
+    }, [category, BOARD_LIST]);
 
-    // 파일 업로드
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    useEffect(() => {
+        const quill = document.querySelector('.ql-editor');
+        if (quill && quill.innerHTML === '<p><br></p>') {
+            quill.innerHTML = '<p><span style="font-size:14px;"><br></span></p>';
+        }
+    }, []);
+
+    // 링크 작성, 오픈 시 툴팁 화면 나가는 것 방지
+    useLayoutEffect(() => {
+        const observer = new MutationObserver(() => {
+            const tooltip = document.querySelector('.ql-tooltip') as HTMLElement;
+            if (tooltip) {
+                const rawLeft = parseInt(tooltip.style.left, 10);
+                if (!isNaN(rawLeft)) {
+                    const clampedLeft = Math.min(Math.max(rawLeft, 0), 644); // 여기서 조정
+                    tooltip.style.left = `${clampedLeft}px`;
+                }
+            }
+        });
+
+        observer.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ['style', 'class'],
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files;
         if (!selected) return;
 
-        let filesArray: UploadFile[] = [];
         let overSize = false;
         let blockedFile = false;
 
-        Array.from(selected).forEach((file) => {
+        for (const file of Array.from(selected)) {
             const ext = file.name.split('.').pop()?.toLowerCase() || '';
             if (BLOCKED_EXTENSIONS.includes(ext)) {
                 blockedFile = true;
-                return;
+                continue;
             }
             if (file.size > MAX_FILE_SIZE) {
                 overSize = true;
-                return;
+                continue;
             }
-            // 미리보기(이미지인 경우만)
-            const isImage = file.type.startsWith("image/");
-            filesArray.push({
-                file,
-                url: isImage ? URL.createObjectURL(file) : undefined
-            });
-        });
+
+            try {
+                const res = await uploadAttachment(file); // 서버 업로드
+                // debug
+                console.log(res);
+                setFiles(prev => [
+                    ...prev,
+                    {
+                        file,
+                        url: res.url || (file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined)
+                    }
+                ].slice(0, MAX_FILES));
+            } catch {
+                alert(`"${file.name}" 업로드 실패`);
+            }
+        }
 
         if (blockedFile) {
             alert("jsp, php, asp, cgi 확장자 파일은 첨부할 수 없습니다.");
@@ -73,31 +122,110 @@ const PostWrite: React.FC = () => {
             alert(`${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 파일은 첨부할 수 없습니다.`);
         }
 
-        setFiles((prev) => [...prev, ...filesArray].slice(0, MAX_FILES));
-
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
-    // 파일 삭제
     const handleRemoveFile = (idx: number) => {
         setFiles((prev) => prev.filter((_, i) => i !== idx));
     };
 
-    // 제출
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // TODO: 게시글 등록(파일 포함) 로직 구현
-        alert("게시글 등록 완료");
+    const handleSubmit = async () => {
+        if (!selectedBoard) {
+            alert("게시판을 선택하세요.");
+            return;
+        }
+        const payload = {
+            boardId: selectedBoard.id,
+            // todo: title, content 등 나머지 필드
+        };
+        // todo: 실제 업로드 await createPost(payload);
+    };
+
+    // 링크 상대경로 제거 후 절대경로 지원
+    const normalizeLinks = (html: string): string => {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+
+        const anchors = div.querySelectorAll('a');
+        anchors.forEach(anchor => {
+            const href = anchor.getAttribute('href') || '';
+
+            // 절대 경로로 보정
+            if (!href.startsWith('http') && !href.startsWith('mailto:')) {
+                anchor.setAttribute('href', 'https://' + href.replace(/^\/+/, ''));
+            }
+        });
+
+        return div.innerHTML;
+    };
+
+    const formats = useMemo(
+        () => [
+            "font",
+            "size",
+            "header",
+            "bold",
+            "italic",
+            "underline",
+            "color",
+            "background",
+            "align",
+            "code-block",
+            "link",
+            "image",
+            "float"
+        ],
+        []
+    );
+
+    const modules = useMemo(
+        () => ({
+            toolbar: [
+                [
+                    { font: [] },
+                    { size: ["14px", "16px", "18px", "24px", "32px", "48px"] },
+                ],
+                ["bold", "italic", "underline"],
+                [{ color: [] }, { background: [] }],
+                [{ align: [] }],
+                ["code-block"],
+                ["link", "image"],
+                ["clean"],
+            ],
+            imageFormats: {},
+            imageResize: {
+                modules: ['Resize', 'DisplaySize'],
+            },
+            clipboard: { matchVisual: false },
+        }),
+        []
+    );
+
+    const handleChange = (html: string) => {
+        const fixedHtml = normalizeLinks(html);
+        setContent(fixedHtml);
     };
 
     return (
-        <form className="postwrite-form" onSubmit={handleSubmit}>
+        <form className="postwrite-form" onSubmit={handleSubmit} style={{ overflow: "hidden" }}>
             <div className="postwrite-row">
                 <label>게시판</label>
-                <select className="category-select" value={selectedBoard} onChange={e => setSelectedBoard(e.target.value)} required>
-                    <option value={BOARD_PLACEHOLDER} disabled hidden>{BOARD_PLACEHOLDER}</option>
-                    {BOARD_LIST.map(b => (
-                        <option key={b} value={b}>{b}</option>
+                <select
+                    className="board-select"
+                    value={selectedBoard?.id ?? ""}
+                    onChange={(e) => {
+                        const v = Number(e.target.value);
+                        const found = BOARD_LIST.find((b) => b.id === v) || null;
+                        setSelectedBoard(found);
+                    }}
+                >
+                    <option value="" hidden>
+                        게시판 선택
+                    </option>
+                    {BOARD_LIST.map((b) => (
+                        <option key={b.id} value={b.id}>
+                            {b.name}
+                        </option>
                     ))}
                 </select>
             </div>
@@ -113,19 +241,20 @@ const PostWrite: React.FC = () => {
                     placeholder="제목을 입력하세요"
                 />
             </div>
+            {/* 본문 */}
             <div className="postwrite-row">
                 <label>본문</label>
-                <textarea
-                    className="postwrite-content-input"
+                <ReactQuill
                     value={content}
-                    onChange={e => setContent(e.target.value)}
-                    rows={12}
-                    required
-                    placeholder="본문을 입력하세요"
+                    onChange={handleChange}
+                    theme="snow"
+                    modules={modules}
+                    formats={formats}
+                    style={{ marginBottom: "16px" }}
                 />
             </div>
             <div className="postwrite-row">
-                <label>첨부 파일</label>
+                <label className="attachments-top">첨부 파일</label>
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -137,7 +266,6 @@ const PostWrite: React.FC = () => {
                 <div className="postwrite-files">
                     {files.map((item, idx) => (
                         <div className="postwrite-file-preview" key={idx}>
-                            {/* 이미지면 썸네일 */}
                             {item.url ? (
                                 <img src={item.url} alt="미리보기" style={{ width: 48, height: 48, objectFit: "cover", marginRight: 8 }} />
                             ) : (
@@ -157,7 +285,7 @@ const PostWrite: React.FC = () => {
                     (최대 {MAX_FILES}개, 파일당 20MB 제한)
                 </div>
             </div>
-            <button className="postwrite-submit" type="submit">
+            <button className="postwrite-submit" type="submit" onClick={handleSubmit}>
                 등록하기
             </button>
         </form>

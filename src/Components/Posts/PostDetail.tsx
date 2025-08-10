@@ -3,12 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
 import { fetchPostDetail } from "../../API/req"; // 추가
 import "./PostDetail.css";
+import {FitHTML} from "../Utils/FitHTML";
 
-const PostDetail: React.FC = () => {
+const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
+const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
+const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
+
+interface Props {
+    username: string;
+}
+
+const PostDetail: React.FC<Props> = ({ username }) => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
-
-    // todo : 토큰을 통해 접근 권한 체크
 
     // 현재 로그인된 사용자 이름
     const [userName, setUserName] = useState("");
@@ -18,44 +25,59 @@ const PostDetail: React.FC = () => {
     const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
+    // 본문
+    const [htmlContent, setHtmlContent] = useState("");
+
+    // 타입 가드
+    const contentUrl =
+        post && post !== "not-found" ? post.content_html_url : "";
 
     useEffect(() => {
         const loadPost = async () => {
             if (!postId) return;
             try {
                 const raw = await fetchPostDetail(Number(postId));
-
-                console.log(raw);
+                const src = raw.post_data ?? raw;
 
                 if (raw.notFound) {
                     setPost("not-found");
                     return;
                 }
 
+                if(!raw.isTokenValid){
+                    alert("로그인 후 이용 가능합니다.")
+                    navigate("/signin");
+                    return;
+                }
+
+                setUserName(username);
+
+                const toDate = (s?: string) => (s ? s.slice(0, 16).replace("T", " ") : "");
+
                 const mapped: PostDetailData = {
-                    id: raw.id,
-                    board: raw.board.name,
-                    title: raw.title,
-                    content: raw.content,
-                    author: raw.author,
-                    date: raw.created_at.slice(0, 16).replace("T", " "),
-                    updatedAt: raw.updated_at.slice(0, 16).replace("T", " "),
-                    views: raw.views,
-                    likes: raw.likes_count,
-                    isLiked: raw.is_liked,
-                    attachments: raw.attachments || [],
-                    comments: (raw.comments || []).map((c: any) => ({
+                    id: src.id,
+                    board: src.board?.name || "",
+                    title: src.title || "",
+                    content_html_url: src.content_html_url || "",
+                    author: src.author || "",
+                    date: toDate(src.created_at),
+                    updatedAt: toDate(src.updated_at),
+                    views: src.views ?? 0,
+                    likes: src.likes_count ?? 0,
+                    isLiked: src.is_liked ?? false,
+                    attachments: src.attachments || [],
+                    comments: (src.comments || []).map((c: any) => ({
                         id: c.id,
                         author: c.author,
                         content: c.content,
-                        date: c.created_at.slice(0, 16).replace("T", " "),
+                        date: toDate(c.created_at),
                         replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             author: r.author,
                             content: r.content,
-                            date: r.created_at.slice(0, 16).replace("T", " "),
-                        }))
-                    }))
+                            date: toDate(r.created_at),
+                        })),
+                    })),
                 };
 
                 setPost(mapped);
@@ -66,6 +88,17 @@ const PostDetail: React.FC = () => {
         };
         loadPost();
     }, [postId]);
+
+    useEffect(() => {
+        if (!post || post === "not-found") return;
+
+        const absoluteUrl = `${BASE_URL}${post.content_html_url}`;
+
+        fetch(absoluteUrl)
+            .then(res => res.text())
+            .then(html => setHtmlContent(html))
+            .catch(err => console.error("본문 로드 실패", err));
+    }, [post]);
 
     // 댓글 등록
     const handleAddComment = () => {
@@ -184,7 +217,7 @@ const PostDetail: React.FC = () => {
                 <span className="postdetail-date">
                     {post.date}
                     {post.updatedAt && post.updatedAt !== post.date && (
-                        <span style={{ color: "#bbb", marginLeft: 8 }}>
+                        <span style={{color: "#bbb", marginLeft: 8}}>
                             수정: {post.updatedAt}
                         </span>
                     )}
@@ -194,16 +227,17 @@ const PostDetail: React.FC = () => {
                 <span className="postdetail-dot">·</span>
                 <span>좋아요 {post.likes}</span>
             </div>
-            <div className="postdetail-divider" />
-            <div className="postdetail-content">
-                {post.content.split("\n").map((line, idx) => (
-                    <div key={idx}>{line}</div>
-                ))}
+            <div className="postdetail-divider"/>
+
+            {/* 본문 */}
+            <div style={{width: "100%"}}>
+                <FitHTML html={htmlContent} className="postdetail-content ql-editor"/>
             </div>
+
             {/* 첨부파일 */}
             {post.attachments && post.attachments.length > 0 && (
                 <div className="postdetail-attachments">
-                    <div className="postdetail-attachments-title">첨부파일</div>
+                <div className="postdetail-attachments-title">첨부파일</div>
                     <ul>
                         {post.attachments.map(att => (
                             <li key={att.id}>
@@ -237,7 +271,7 @@ const PostDetail: React.FC = () => {
                                 <span className="comment-author">
                                     {c.author}
                                     {c.author === userName && (
-                                        <span style={{ color: "#2196F3", fontWeight: 500, marginLeft: 3 }}>
+                                        <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                             (나)
                                         </span>
                                     )}
@@ -267,7 +301,7 @@ const PostDetail: React.FC = () => {
                                             <span className="reply-author">
                                                 {r.author}
                                                 {r.author === userName && (
-                                                    <span style={{ color: "#2196F3", fontWeight: 500, marginLeft: 3 }}>
+                                                    <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                         (나)
                                                     </span>
                                                 )}
@@ -295,7 +329,7 @@ const PostDetail: React.FC = () => {
                                         placeholder="답글을 입력하세요"
                                         value={replyInput}
                                         onChange={e => setReplyInput(e.target.value)}
-                                        style={{ resize: "none" }}
+                                        style={{resize: "none"}}
                                     />
                                     <div className="reply-action-row">
                                         <span
@@ -332,7 +366,7 @@ const PostDetail: React.FC = () => {
                         placeholder="댓글을 입력하세요"
                         value={commentInput}
                         onChange={e => setCommentInput(e.target.value)}
-                        style={{ resize: "none" }}
+                        style={{resize: "none"}}
                     />
                     <button
                         className="postdetail-comment-btn"

@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Home from "./Components/Home/Home";
 import "./App.css";
 import Note from "./Components/Note/Note";
 import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
-import PostWrite from "./Components/Posts/PostWrite";
+import { StaffAuthContext } from "./Components/Utils/StaffAuthContext";
 import Footer from "./Components/Footer/Footer";
+import {refreshToken} from "./API/req";
+import {signoutFunction} from "./Components/Utils/Functions";
 
 const BASE_WIDTH = 1000;
 const BASE_HEIGHT = BASE_WIDTH * 9 / 16;
@@ -15,8 +17,10 @@ const MIN_WIDTH = 300;
 
 function App() {
     const [scale, setScale] = useState(1);
+    const [staffAuth, setStaffAuth] = useState<boolean>(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
+    const navigate = useNavigate();
 
     // 스케일 조정 사용하지 않을 경로들
     const noScaleRoutes = ["/signin", "/signup"];
@@ -48,48 +52,67 @@ function App() {
     }, [isNoScale]);
 
     useEffect(() => {
-        const token = localStorage.getItem("jbig-accessToken");
+        const token = localStorage.getItem("jbig-refresh");
 
-        if (token != null) {
-            // 기존 토큰이 존재할 경우
-            // todo
+        if (token) {
+            (async () => {
+                const data = await refreshToken(token);
+
+                if (data.isSuccess) {
+                    // 토큰 저장
+                    localStorage.setItem("jbig-access", data.access);
+                    localStorage.setItem("jbig-refresh", data.refresh);
+                    localStorage.setItem("jbig-username", data.username);
+                    localStorage.setItem("jbig-semester", data.semester);
+                    localStorage.setItem("jbig-email", data.email);
+                    setStaffAuth(!!data.isStaff);
+                } else {
+                    console.error("토큰 갱신 실패:", data.error);
+
+                    // 로그아웃
+                    await signoutFunction();
+                    navigate("/");
+                    window.location.reload();
+                }
+            })();
         }
     }, []);
 
     return (
-        <div className="app-root">
-            {isNoScale ? (
-                <Routes>
-                    <Route path="/signin" element={<Signin />} />
-                    <Route path="/signup" element={<Signup />} />
-                </Routes>
-            ) : (
-                <div
-                    ref={wrapperRef}
-                    className="scale-wrapper"
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        width: `${BASE_WIDTH}px`,
-                        height: `${BASE_HEIGHT}px`,
-                        display: "flex",
-                        flexDirection: "column",
-                        transform: `scale(${scale})`,
-                        transformOrigin: "top left",
-                    }}
-                >
-                    <div style={{flex: 1}}>
-                        <Routes>
-                            <Route path="/note" element={<Note/>}/>
-                            <Route path="/admin" element={<Admin/>}/>
-                            <Route path="/write" element={<PostWrite/>}/>
-                            <Route path="/*" element={<Home/>}/>
-                        </Routes>
+        <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>
+            <div className="app-root">
+                {isNoScale ? (
+                    <Routes>
+                        <Route path="/signin" element={<Signin />} />
+                        <Route path="/signup" element={<Signup />} />
+                    </Routes>
+                ) : (
+                    <div
+                        ref={wrapperRef}
+                        className="scale-wrapper"
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            width: `${BASE_WIDTH}px`,
+                            height: `${BASE_HEIGHT}px`,
+                            display: "flex",
+                            flexDirection: "column",
+                            transform: `scale(${scale})`,
+                            transformOrigin: "top left",
+                        }}
+                    >
+                        <div style={{flex: 1}}>
+                            <Routes>
+                                <Route path="/note" element={<Note/>}/>
+                                <Route path="/admin" element={<Admin/>}/>
+                                <Route path="/*" element={<Home/>}/>
+                            </Routes>
+                        </div>
+                        <Footer/>
                     </div>
-                    <Footer/>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        </StaffAuthContext.Provider>
     );
 }
 

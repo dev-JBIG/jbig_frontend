@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import "../Home/Home.css"
 import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
+import {useStaffAuth} from "./StaffAuthContext";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
 const Sidebar: React.FC<SidebarProps> = ({
                                              boards,
-                                             isAdmin,
-                                             isLoggedIn,
+                                             isLogin,
                                              quizURL,
                                              totalCount,
                                              homeBanner,
@@ -16,13 +16,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const [sidebarQuery, setSidebarQuery] = useState("");
 
+    const { staffAuth, setStaffAuth } = useStaffAuth();
+
     return (
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
-            <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
-                관리자 페이지 열기
-            </button>
-            {!isLoggedIn && (
+            {staffAuth ?
+                <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
+                    관리자 페이지 열기
+                </button> : <div/>
+            }
+            {!isLogin && (
                 <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
             )}
             <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
