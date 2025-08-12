@@ -4,6 +4,8 @@ export interface PostItem {
     id: number;
     title: string;
     author: string;
+    author_id: number;
+    author_semester: number;
     date: string;
     views: number;
     likes: number;
@@ -36,7 +38,7 @@ export interface PostDetailData {
     id: number;
     board: string;
     title: string;
-    content: string;
+    content_html_url: string;
     author: string;
     date: string;
     updatedAt: string;
@@ -47,10 +49,19 @@ export interface PostDetailData {
     isLiked?: boolean;
 }
 
+export interface Board {
+    id: number;
+    name: string;
+}
+
+export interface Section {
+    category: string;
+    boards: Board[];
+}
+
 export interface SidebarProps {
-    boardData: { category: string; boards: string[] }[];
-    isAdmin: boolean;
-    isLoggedIn: boolean;
+    boards: Section[];
+    isLogin: boolean;
     quizURL?: string;
     totalCount: number;
     homeBanner?: string;
@@ -71,9 +82,7 @@ export interface UserProfile {
     totalPosts?: number;
 }
 
-// interface SimplePost {
-//     id: number;
-//     title: string;
-//     date: string;
-//     board: string;
-// }
+export interface UploadFile {
+    file: File;
+    url: string;
+}

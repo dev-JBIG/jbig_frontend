@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import "../Home/Home.css"
 import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
+import {useStaffAuth} from "./StaffAuthContext";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
 const Sidebar: React.FC<SidebarProps> = ({
-                                             boardData,
-                                             isAdmin,
-                                             isLoggedIn,
+                                             boards,
+                                             isLogin,
                                              quizURL,
                                              totalCount,
                                              homeBanner,
@@ -16,18 +16,24 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const [sidebarQuery, setSidebarQuery] = useState("");
 
+    const { staffAuth } = useStaffAuth();
+
     return (
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
-            <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
-                관리자 페이지 열기
-            </button>
-            {!isLoggedIn && (
+            {staffAuth ?
+                <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
+                    관리자 페이지 열기
+                </button> : <div/>
+            }
+            {!isLogin && (
                 <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
             )}
-            <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
-                교안 탭 열기
-            </button>
+            {isLogin && (
+                <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
+                    교안 탭 열기
+                </button>
+            )}
             <div className="sidebar-search-group">
                 <input
                     type="text"
@@ -53,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </button>
             </div>
             <ul className="menu">
-                <li className="menu-item-viewall" onClick={() => navigate("/board/전체글보기")}>
+                <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <span style={{display: "flex", alignItems: "center"}}>
                         <FileText size={18} className="board-icon"/>
                         전체글보기
@@ -69,20 +75,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             </ul>
             <div className="sidebar-top-divider"/>
 
-            {boardData.map((section, idx) => (
+            {boards.map((section, idx) => (
                 <React.Fragment key={section.category}>
                     <ul className="menu">
-                        {section.boards.map((boardName) => (
-                            <li key={boardName} onClick={() => navigate(`/board/${boardName}`)}>
-                                <FileText className="board-icon" size={18}/>
-                                {boardName}
+                        {section.boards.map((board) => (
+                            <li
+                                key={board.id}
+                                onClick={() => navigate(`/board/${board.id}`)}
+                            >
+                                <FileText className="board-icon" size={18} />
+                                {board.name}
                             </li>
                         ))}
                     </ul>
                     {/* 카테고리별 구분선, 마지막엔 생략 */}
-                    {idx !== boardData.length - 1 && <div className="sidebar-middle-divider"/>}
+                    {idx !== boards.length - 1 && <div className="sidebar-middle-divider" />}
                 </React.Fragment>
             ))}
+
 
             <div className="sidebar-top-divider"/>
         </aside>

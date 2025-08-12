@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./User.css";
 import PostList from "../Posts/PostList";
-import { UserProfile } from "../Utils/interfaces"
+import {PostItem, UserProfile} from "../Utils/interfaces"
+import {fetchUserPosts} from "../../API/req";
 
 
 const User: React.FC = () => {
@@ -15,18 +16,21 @@ const User: React.FC = () => {
     const isMe = username === localStorage.getItem("jbig-username");
 
     useEffect(() => {
-        // TODO: 실제 API 연동
-        setTimeout(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            // 유저 정보 가져오기 (임시) todo: api 연동
             setUser({
                 username: username || "",
                 email: "honggildong@example.com",
                 joinDate: "2024-07-01",
-                profileImageUrl: "", // 사용자 이미지 추가 검토 필요 todo
-                role: "member", // 예시
+                profileImageUrl: "",
+                role: "member",
                 totalPosts: 13,
             });
+
             setLoading(false);
-        }, 400);
+        };
+        fetchData();
     }, [username]);
 
     if (loading) return <div className="user-profile-loading">Loading...</div>;

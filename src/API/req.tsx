@@ -1,89 +1,85 @@
 import axios from "axios";
+import { PostItem } from "../Components/Utils/interfaces";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
 const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
-function getCookie(name: string) {
-    const value = "; " + document.cookie;
-    const parts = value.split("; " + name + "=");
-    if (parts.length === 2) return parts.pop()?.split(";").shift();
-    return "";
-}
-
-// 이메일 인증코드 요청
-export const sendAuthEmail = async (email: string) => {
-    const csrfToken = getCookie("csrftoken"); // 쿠키에서 csrftoken 읽기
+// 이메일 인증코드 인증
+export const verifyAuthEmail = async (email: string, code: string) => {
     try {
-        const response = await axios.post(
-            `${BASE_URL}/api/auth/email/send`,
-            { email },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json",
-                    "X-CSRFTOKEN": csrfToken // 동적으로 쿠키에서 읽은 값 사용!
-                },
-                withCredentials: true // 크로스도메인 쿠키 포함!
-            }
-        );
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
+        const res = await axios.post(`${BASE_URL}/api/users/verify/`, {
+            email,
+            verifyCode: code,
+        });
+        return {
+            success: true,
+            status: res.status,
+            data: res.data,
+        };
+    } catch (error: any) {
+        return {
+            success: false,
+            status: error?.response?.status,
+            message: error?.response?.data?.detail || "인증 실패",
+        };
     }
 };
 
-// 이메일 인증코드 인증
-export const verifyAuthEmail = async (email: string, verifyCode: string) => {
-    const csrfToken = getCookie("csrftoken");
+// 이메일 인증코드 재전송
+export const resendVerifyEmail = async (email: string) => {
     try {
-        const response = await axios.post(
-            `${BASE_URL}/api/auth/email/verify`,
-            { email, verifyCode },
+        const res = await axios.post(
+            `${BASE_URL}/api/users/resend-verify-email/`,
+            { email },
             {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json",
-                    "X-CSRFTOKEN": csrfToken
-                },
-                withCredentials: true
+                headers: { Accept: "*/*", "Content-Type": "application/json" },
+                withCredentials: false,
             }
         );
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
+        return { success: true, status: res.status, data: res.data };
+    } catch (error: any) {
+        return {
+            success: false,
+            status: error?.response?.status,
+            message: error?.response?.data?.detail || "인증 메일 재전송 실패",
+        };
     }
 };
 
 // 회원가입
-export const signupUser = async (email: string, username: string, password: string) => {
-    const csrfToken = getCookie("csrftoken");
+export const signupUser = async (
+    email: string,
+    username: string,
+    semester: number,
+    password: string
+) => {
     try {
-        const response = await axios.post(
-            `${BASE_URL}/api/auth/signup`,
-            { email, username, password },
+        const res = await axios.post(
+            `${BASE_URL}/api/users/signup/`,
+            { email, username, semester, password },
             {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json",
-                    "X-CSRFTOKEN": csrfToken
-                },
-                withCredentials: true
+                headers: { Accept: "*/*", "Content-Type": "application/json" },
+                withCredentials: false,
             }
         );
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
+
+        return {
+            success: true,
+            status: res.status,
+            data: res.data
+        };
+    } catch (error: any) {
+        const status = error?.response?.status;
+        const message = error?.response?.data?.detail || "회원가입 실패";
+        return { success: false, status, message };
     }
 };
 
-// sidebar 게시판 목록 조회 함수 todo: 수정 필요
-export const getBoardData = async () => {
+// sidebar 게시판 목록 조회 함수
+export const getBoards = async () => {
     try {
-        const response = await axios.get(`${BASE_URL}/api/board/`);
+        const response = await axios.get(`${BASE_URL}/api/categories/`);
         return response.data;
     } catch (error) {
         console.error(error);
@@ -95,18 +91,274 @@ export const getBoardData = async () => {
 export const signin = async (email: string, password: string) => {
     try {
         const response = await axios.post(
-            `${BASE_URL}/api/auth/signin`,
+            `${BASE_URL}/api/users/signin/`,
             { email, password },
             {
                 headers: {
                     "Accept": "*/*",
                     "Content-Type": "application/json"
-                }
+                },
+                withCredentials: true
             }
         );
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        throw error;
+        return error.data;
     }
+};
+
+// 로그아웃
+export const signout = async () => {
+    try {
+        await axios.post(
+            `${BASE_URL}/api/token/logout/`,
+            {},
+            {
+                headers: {
+                    Accept: "*/*",
+                    "Content-Type": "application/json",
+                },
+                withCredentials: true,
+            }
+        );
+        return { success: true };
+    } catch (error: any) {
+        console.error("로그아웃 요청 실패:", error);
+        return { success: false, error };
+    }
+};
+
+// 게시판 게시글 리스트 반환 api
+export const fetchBoardPosts = async (
+    boardId: string | undefined,
+    pageSize: number,
+    page: number,
+    isHome: boolean = false
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const url = isHome
+        ? `${BASE_URL}/api/posts/all`
+        : boardId
+            ? `${BASE_URL}/api/boards/${boardId}/posts/`
+            : `${BASE_URL}/api/posts/all`;
+
+    const config = isHome
+        ? {} // 홈은 페이징 미지원: 파라미터 없이 호출
+        : { params: { page, page_size: pageSize } };
+
+    const res = await axios.get(url, config);
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const posts = rawResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        author_id: item.author_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        views: item.views,
+        likes: item.likes_count,
+    }));
+
+    const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
+
+    return {
+        posts,
+        totalPages: isHome ? 1 : Math.ceil(count / pageSize),
+    };
+};
+
+// 게시물 세부 정보 조회
+export const fetchPostDetail = async (postId: number, token?: string | null) => {
+    const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (response.status === 401 || response.status === 403) {
+        return { unauthorized: true };
+    }
+
+    if (response.status === 404) {
+        return { notFound: true };
+    }
+
+    if (!response.ok) {
+        let message = "게시글 불러오기에 실패했습니다.";
+        try {
+            const err = await response.json();
+            if (err?.message) message = err.message;
+        } catch {}
+        throw new Error(message);
+    }
+
+    return response.json();
+};
+
+
+
+// 사용자의 내 게시글 목록 api todo: 임시
+export const fetchUserPosts = async (
+    username: string,
+    pageSize: number,
+    page: number
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const query = `?page=${page}&page_size=${pageSize}`;
+    const url = `/api/user/${username}/posts${query}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return {
+        posts: data.results.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            author: item.author,
+            date: item.created_at.slice(2, 10).replace(/-/g, "-"),
+            views: item.views,
+            likes: item.likes_count,
+        })),
+        totalPages: Math.ceil(data.count / pageSize),
+    };
+};
+
+// 첨부파일 업로드
+export const uploadAttachment = async (file: File, token: String) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/attachment/`,
+            formData,
+            {
+                headers: {
+                    Accept: "*/*",
+                    "Content-Type": "multipart/form-data",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                withCredentials: true,
+            }
+        );
+
+        return response.data; // 서버에서 반환하는 데이터 (업로드된 파일 경로 및 첨부파일 ID 등)
+    } catch (error: any) {
+        console.error(error);
+
+        if (error.response && error.response.data) {
+            return {
+                message: error.response.data.detail || "파일 업로드 실패",
+            };
+        }
+
+        return {
+            message: "네트워크 오류 또는 서버 응답 없음",
+        };
+    }
+};
+
+export const refreshTokenAPI = async (refresh: string) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/users/token/refresh/`,
+            { refresh },
+            {
+                headers: {
+                    Accept: "*/*",
+                    "Content-Type": "application/json",
+                },
+                withCredentials: false,
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error(error);
+
+        if (error.response && error.response.data) {
+            return {
+                message: error.response.data.detail || "토큰 갱신 실패",
+            };
+        }
+
+        return {
+            message: "네트워크 오류 또는 서버 응답 없음",
+        };
+    }
+};
+
+// 게시글 생성 api
+export const createPost = async (
+    boardId: number,
+    postData: {
+        title: string;
+        content_html: string;
+        attachment_ids: number[];
+    },
+    token: string
+) => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/boards/${boardId}/posts/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(postData),
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            return { unauthorized: true };
+        }
+
+        if (!response.ok) {
+            let message = "게시글 생성에 실패했습니다.";
+            try {
+                const err = await response.json();
+                if (err?.message) message = err.message;
+            } catch {}
+            throw new Error(message);
+        }
+
+        return response.json();
+    } catch (error: any) {
+        console.error(error);
+        return {
+            message: error.message || "네트워크 오류 또는 서버 응답 없음",
+        };
+    }
+};
+
+// 개별 댓글 삭제
+export const deleteComment = async (
+    commentId: number,
+    accessToken?: string
+): Promise<
+    | { ok: true }
+    | { ok: false; unauthorized?: true; forbidden?: true; notFound?: true; error?: string }
+> => {
+    const res = await fetch(`${BASE_URL}/api/comments/${commentId}/`, {
+        method: "DELETE",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (res.status === 204) return { ok: true };
+    if (res.status === 401) return { ok: false, unauthorized: true };
+    if (res.status === 403) return { ok: false, forbidden: true };
+    if (res.status === 404) return { ok: false, notFound: true };
+
+    let msg = "";
+    try {
+        msg = await res.text();
+    } catch {}
+    return { ok: false, error: msg || "댓글 삭제에 실패했습니다." };
 };

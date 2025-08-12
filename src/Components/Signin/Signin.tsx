@@ -2,22 +2,34 @@ import React, { useState } from "react";
 import "./Signin.css";
 import {Link, useNavigate} from "react-router-dom";
 import {signin} from "../../API/req";
+import {useUser} from "../Utils/UserContext";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 const Signin: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
 
     const navigate = useNavigate();
+    const { setAuth } = useUser();
+    const { setStaffAuth } = useStaffAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const result = await signin(userId, password);
-            if (result.access && result.username) {
-                localStorage.setItem("jbig-accessToken", result.access);
-                localStorage.setItem("jbig-username", result.username);
+            if (result.access && result.username && result.semester) {
+                setAuth(
+                    {
+                        username: result.username,
+                        semester: result.semester,
+                        email: userId,
+                    },
+                    result.access,
+                    result.refresh
+                );
+                setStaffAuth(!!result.is_staff);
 
-                navigate("/"); // 원하는 페이지로 이동
+                navigate("/");
             } else {
                 alert(result.message || "로그인에 실패했습니다.");
             }
@@ -62,6 +74,7 @@ const Signin: React.FC = () => {
                 <a href="/signup" className="signin-link">가입하기</a>
                 {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                 <a href="#" className="signin-link">비밀번호를 잊어버리셨나요?</a>
+                    {/*  todo: 비밀번호 찾기  */}
                 </div>
             </div>
         </div>
