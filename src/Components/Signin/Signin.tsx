@@ -2,25 +2,34 @@ import React, { useState } from "react";
 import "./Signin.css";
 import {Link, useNavigate} from "react-router-dom";
 import {signin} from "../../API/req";
+import {useUser} from "../Utils/UserContext";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 const Signin: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
 
     const navigate = useNavigate();
+    const { setAuth } = useUser();
+    const { setStaffAuth } = useStaffAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const result = await signin(userId, password);
             if (result.access && result.username && result.semester) {
-                localStorage.setItem("jbig-accessToken", result.access);
-                localStorage.setItem("jbig-username", result.username);
-                localStorage.setItem("jbig-semester", result.semester);
-                localStorage.setItem("jbig-refresh", result.refresh);
-                localStorage.setItem("jbig-email", userId);
+                setAuth(
+                    {
+                        username: result.username,
+                        semester: result.semester,
+                        email: userId,
+                    },
+                    result.access,
+                    result.refresh
+                );
+                setStaffAuth(!!result.is_staff);
 
-                navigate("/"); // 원하는 페이지로 이동
+                navigate("/");
             } else {
                 alert(result.message || "로그인에 실패했습니다.");
             }

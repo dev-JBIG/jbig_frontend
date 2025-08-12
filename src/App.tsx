@@ -8,8 +8,8 @@ import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
 import { StaffAuthContext } from "./Components/Utils/StaffAuthContext";
 import Footer from "./Components/Footer/Footer";
-import {refreshToken} from "./API/req";
-import {signoutFunction} from "./Components/Utils/Functions";
+import {refreshTokenAPI} from "./API/req";
+import {useUser} from "./Components/Utils/UserContext";
 
 const BASE_WIDTH = 1000;
 const BASE_HEIGHT = BASE_WIDTH * 9 / 16;
@@ -21,6 +21,8 @@ function App() {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
     const navigate = useNavigate();
+
+    const { setAuth, signOutLocal, refreshToken } = useUser();
 
     // 스케일 조정 사용하지 않을 경로들
     const noScaleRoutes = ["/signin", "/signup"];
@@ -52,31 +54,36 @@ function App() {
     }, [isNoScale]);
 
     useEffect(() => {
-        const token = localStorage.getItem("jbig-refresh");
+        if (!refreshToken) return;
 
-        if (token) {
-            (async () => {
-                const data = await refreshToken(token);
+        (async () => {
+            try {
+                const data = await refreshTokenAPI(refreshToken); // API 호출
 
                 if (data.isSuccess) {
-                    // 토큰 저장
-                    localStorage.setItem("jbig-access", data.access);
-                    localStorage.setItem("jbig-refresh", data.refresh);
-                    localStorage.setItem("jbig-username", data.username);
-                    localStorage.setItem("jbig-semester", data.semester);
-                    localStorage.setItem("jbig-email", data.email);
-                    setStaffAuth(!!data.isStaff);
+                    setAuth(
+                        {
+                            username: data.username,
+                            semester: data.semester,
+                            email: data.email,
+                        },
+                        data.access,
+                        data.refresh
+                    );
                 } else {
-                    console.error("토큰 갱신 실패:", data.error);
-
-                    // 로그아웃
-                    await signoutFunction();
-                    navigate("/");
+                    console.error("토큰 갱신 실패:", data?.error);
+                    signOutLocal();
+                    navigate("/signin");
                     window.location.reload();
                 }
-            })();
-        }
-    }, []);
+            } catch (e) {
+                console.error("토큰 갱신 중 오류:", e);
+                signOutLocal();
+                navigate("/signin");
+                window.location.reload();
+            }
+        })();
+    }, [navigate]);
 
     return (
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>

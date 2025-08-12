@@ -16,7 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const [sidebarQuery, setSidebarQuery] = useState("");
 
-    const { staffAuth, setStaffAuth } = useStaffAuth();
+    const { staffAuth } = useStaffAuth();
 
     return (
         <aside className="sidebar">
@@ -29,9 +29,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             {!isLogin && (
                 <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
             )}
-            <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
-                교안 탭 열기
-            </button>
+            {isLogin && (
+                <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
+                    교안 탭 열기
+                </button>
+            )}
             <div className="sidebar-search-group">
                 <input
                     type="text"

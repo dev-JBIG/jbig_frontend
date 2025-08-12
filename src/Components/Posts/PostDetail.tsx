@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
-import { fetchPostDetail } from "../../API/req"; // 추가
+import {deleteComment, fetchPostDetail} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
+import {useUser} from "../Utils/UserContext";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -28,15 +29,27 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 본문
     const [htmlContent, setHtmlContent] = useState("");
 
-    // 타입 가드
-    const contentUrl =
-        post && post !== "not-found" ? post.content_html_url : "";
+    const { accessToken, authReady } = useUser();
 
     useEffect(() => {
+        if (!authReady || !postId) return;
+
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
         const loadPost = async () => {
             if (!postId) return;
             try {
-                const raw = await fetchPostDetail(Number(postId));
+                const raw = await fetchPostDetail(Number(postId), accessToken);
+
+                if (raw.unauthorized) {
+                    alert("로그인이 필요합니다.");
+                    navigate("/signin");
+                    return;
+                }
                 const src = raw.post_data ?? raw;
 
                 if (raw.notFound) {
@@ -53,6 +66,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 setUserName(username);
 
                 const toDate = (s?: string) => (s ? s.slice(0, 16).replace("T", " ") : "");
+                const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -65,7 +79,12 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     views: src.views ?? 0,
                     likes: src.likes_count ?? 0,
                     isLiked: src.is_liked ?? false,
-                    attachments: src.attachments || [],
+                    attachments: (src.attachments || []).map((a: any) => ({
+                        id: a.id,
+                        fileUrl: a.file,        // file => fileUrl
+                        fileName: a.filename,
+                        fileType: ext(a.filename),
+                    })),
                     comments: (src.comments || []).map((c: any) => ({
                         id: c.id,
                         author: c.author,
@@ -87,7 +106,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             }
         };
         loadPost();
-    }, [postId]);
+    }, [authReady, accessToken, postId]);
 
     useEffect(() => {
         if (!post || post === "not-found") return;
@@ -169,20 +188,64 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         setReplyTargetId(null);
     };
 
-    // 답글 삭제 todo: api 연동
-    const handleDeleteReply = (commentId: number, replyId: number) => {
+    // 댓글 삭제
+    const handleDeleteReply = async (commentId: number, replyId: number) => {
         if (!post || typeof post === "string") return;
-        setPost({
-            ...post,
-            comments: (post.comments || []).map(c =>
-                c.id === commentId
-                    ? {
-                        ...c,
-                        replies: (c.replies || []).filter(r => r.id !== replyId)
-                    }
-                    : c
-            )
-        });
+
+        // 안전장치: 정말 삭제할지 확인
+        if (!window.confirm("이 답글을 삭제하시겠습니까?")) return;
+
+        if(!accessToken){
+            alert("토큰을 찾을 수 없습니다.")
+            navigate("/signin");
+            return;
+        }
+
+        const res = await deleteComment(replyId, accessToken);
+
+        if (res.ok) {
+            // 서버에서 삭제 성공했으니 로컬 상태도 반영
+            setPost({
+                ...post,
+                comments: (post.comments || []).map((c) =>
+                    c.id === commentId
+                        ? {
+                            ...c,
+                            replies: (c.replies || []).filter((r) => r.id !== replyId),
+                        }
+                        : c
+                ),
+            });
+            return;
+        }
+
+        // 실패 케이스 처리
+        if (res.unauthorized) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+        if (res.forbidden) {
+            alert("삭제 권한이 없습니다.");
+            return;
+        }
+        if (res.notFound) {
+            alert("이미 삭제되었거나 존재하지 않는 답글입니다.");
+            setPost({
+                ...post,
+                comments: (post.comments || []).map((c) =>
+                    c.id === commentId
+                        ? {
+                            ...c,
+                            replies: (c.replies || []).filter((r) => r.id !== replyId),
+                        }
+                        : c
+                ),
+            });
+            return;
+        }
+
+        alert(res.error || "답글 삭제 중 오류가 발생했습니다.");
     };
 
     if (post === "not-found") {
@@ -230,14 +293,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             <div className="postdetail-divider"/>
 
             {/* 본문 */}
-            <div style={{width: "100%"}}>
+            <div className="content-body ql-editor">
                 <FitHTML html={htmlContent} className="postdetail-content ql-editor"/>
             </div>
 
             {/* 첨부파일 */}
             {post.attachments && post.attachments.length > 0 && (
                 <div className="postdetail-attachments">
-                <div className="postdetail-attachments-title">첨부파일</div>
+                    <div className="postdetail-attachments-title">첨부파일</div>
                     <ul>
                         {post.attachments.map(att => (
                             <li key={att.id}>
@@ -268,28 +331,28 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     {(post.comments || []).map(c => (
                         <li className="postdetail-comment-item" key={c.id}>
                             <div className="comment-meta">
-                                <span className="comment-author">
-                                    {c.author}
-                                    {c.author === userName && (
-                                        <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
-                                            (나)
-                                        </span>
-                                    )}
+                        <span className="comment-author">
+                            {c.author}
+                            {c.author === userName && (
+                                <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                    (나)
                                 </span>
+                            )}
+                        </span>
                                 <span className="comment-date">{c.date}</span>
                                 <span
                                     className="reply-write-btn"
                                     onClick={() => handleReplyWriteClick(c.id)}
                                 >
-                                    답글쓰기
-                                </span>
+                            답글쓰기
+                        </span>
                                 {c.author === userName && (
                                     <span
                                         className="comment-delete"
                                         onClick={() => deleteHandler(c.id)}
                                     >
-                                        삭제
-                                    </span>
+                                삭제
+                            </span>
                                 )}
                             </div>
                             <div className="comment-content">{c.content}</div>
@@ -298,22 +361,24 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                 {(c.replies || []).map(r => (
                                     <li className="reply-item" key={r.id}>
                                         <div className="reply-meta">
-                                            <span className="reply-author">
-                                                {r.author}
-                                                {r.author === userName && (
-                                                    <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
-                                                        (나)
-                                                    </span>
-                                                )}
+                                    <span className="reply-author">
+                                        {r.author}
+
+                                        {/* todo: 본인 확인 여부를 게시글 조회시 주도록 */}
+                                        {r.author === userName && (
+                                            <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                                (나)
                                             </span>
+                                        )}
+                                    </span>
                                             <span className="reply-date">{r.date}</span>
                                             {r.author === userName && (
                                                 <span
                                                     className="reply-delete"
                                                     onClick={() => handleDeleteReply(c.id, r.id)}
                                                 >
-                                                    삭제
-                                                </span>
+                                            삭제
+                                        </span>
                                             )}
                                         </div>
                                         <div className="reply-content">{r.content}</div>
@@ -323,24 +388,24 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             {/* 답글 입력창: replyTargetId와 id가 같을 때만 노출 */}
                             {replyTargetId === c.id && (
                                 <div className="reply-input-box">
-                                    <textarea
-                                        className="reply-input"
-                                        rows={1}
-                                        placeholder="답글을 입력하세요"
-                                        value={replyInput}
-                                        onChange={e => setReplyInput(e.target.value)}
-                                        style={{resize: "none"}}
-                                    />
+                            <textarea
+                                className="reply-input"
+                                rows={1}
+                                placeholder="답글을 입력하세요"
+                                value={replyInput}
+                                onChange={e => setReplyInput(e.target.value)}
+                                style={{resize: "none"}}
+                            />
                                     <div className="reply-action-row">
-                                        <span
-                                            className="reply-cancel-text"
-                                            onClick={() => {
-                                                setReplyInput("");
-                                                setReplyTargetId(null);
-                                            }}
-                                        >
-                                            취소
-                                        </span>
+                                <span
+                                    className="reply-cancel-text"
+                                    onClick={() => {
+                                        setReplyInput("");
+                                        setReplyTargetId(null);
+                                    }}
+                                >
+                                    취소
+                                </span>
                                         <span
                                             className={
                                                 "reply-register-text" +
@@ -350,8 +415,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                                 if (replyInput.trim()) handleAddReply(c.id);
                                             }}
                                         >
-                                            등록
-                                        </span>
+                                    등록
+                                </span>
                                     </div>
                                 </div>
                             )}
@@ -368,17 +433,17 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         onChange={e => setCommentInput(e.target.value)}
                         style={{resize: "none"}}
                     />
-                    <button
-                        className="postdetail-comment-btn"
-                        onClick={handleAddComment}
-                        disabled={!commentInput.trim()}
-                    >
-                        등록
-                    </button>
+                            <button
+                                className="postdetail-comment-btn"
+                                onClick={handleAddComment}
+                                disabled={!commentInput.trim()}
+                            >
+                                등록
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+            );
+            };
 
-export default PostDetail;
+            export default PostDetail;

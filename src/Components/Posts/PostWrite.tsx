@@ -1,14 +1,15 @@
 import React, {useEffect, useRef, useState, useLayoutEffect, useMemo} from "react";
 import "./PostWrite.css";
-import { useParams } from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import Quill from "quill";
 import "react-quill/dist/quill.snow.css";
 import ReactQuill from "react-quill";
-import { uploadAttachment } from "../../API/req"
+import {createPost, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 
 import { ImageFormats } from '@xeger/quill-image-formats';
 import { ImageResize } from 'quill-image-resize-module-ts';
+import {useUser} from "../Utils/UserContext";
 
 Quill.register('modules/imageResize', ImageResize);
 Quill.register('modules/imageFormats', ImageFormats);
@@ -34,10 +35,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [files, setFiles] = useState<UploadFile[]>([]);
+    const [attachmentIds, setAttachmentIds] = useState<number[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { category } = useParams(); // :category => boardId
+    const { category } = useParams(); // :category => boardId, 이게 board id 입니다
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
+
+    const { signOutLocal, accessToken } = useUser();
+
+    const navigate = useNavigate();
 
     const BOARD_LIST = useMemo<Board[]>(
         () => boards.flatMap((sec) => sec.boards),
@@ -53,6 +59,12 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
 
     useEffect(() => {
+        if(!accessToken){
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
         const quill = document.querySelector('.ql-editor');
         if (quill && quill.innerHTML === '<p><br></p>') {
             quill.innerHTML = '<p><span style="font-size:14px;"><br></span></p>';
@@ -100,15 +112,20 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             }
 
             try {
-                const res = await uploadAttachment(file); // 서버 업로드
-                // debug
-                console.log(res);
+                if(!accessToken){
+                    alert("로그인이 필요합니다.");
+                    navigate("/signin");
+                    return;
+                }
+
+                const res = await uploadAttachment(file, accessToken);
+
+                if (res?.id) {
+                    setAttachmentIds(prev => [...prev, res.id].slice(0, MAX_FILES));
+                }
                 setFiles(prev => [
                     ...prev,
-                    {
-                        file,
-                        url: res.url || (file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined)
-                    }
+                    { file, url: res.url || (file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined) }
                 ].slice(0, MAX_FILES));
             } catch {
                 alert(`"${file.name}" 업로드 실패`);
@@ -129,17 +146,48 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         setFiles((prev) => prev.filter((_, i) => i !== idx));
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
         if (!selectedBoard) {
             alert("게시판을 선택하세요.");
             return;
         }
-        const payload = {
-            boardId: selectedBoard.id,
-            // todo: title, content 등 나머지 필드
-        };
-        // todo: 실제 업로드 await createPost(payload);
+        if (!title.trim()) {
+            alert("제목을 입력하세요.");
+            return;
+        }
+        try {
+            const res = await createPost(
+                selectedBoard.id,
+                { title, content_html: content, attachment_ids: attachmentIds },
+                accessToken
+            );
+
+            if (res?.unauthorized) {
+                alert("인증에 문제가 있습니다. 다시 로그인해주세요.");
+                signOutLocal?.();
+                navigate("/signin");
+                return;
+            }
+
+            navigate(`/board/${selectedBoard.id}`);
+        }catch (err) {
+            const msg =
+                err instanceof Error
+                    ? err.message
+                    : (typeof err === "string" ? err : "게시글 생성 중 오류가 발생했습니다.");
+            alert(msg);
+            navigate("/");
+            return;
+        }
     };
+
 
     // 링크 상대경로 제거 후 절대경로 지원
     const normalizeLinks = (html: string): string => {
@@ -244,14 +292,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             {/* 본문 */}
             <div className="postwrite-row">
                 <label>본문</label>
-                <ReactQuill
-                    value={content}
-                    onChange={handleChange}
-                    theme="snow"
-                    modules={modules}
-                    formats={formats}
-                    style={{ marginBottom: "16px" }}
-                />
+                <div className="content-body">
+                    <ReactQuill
+                        value={content}
+                        onChange={handleChange}
+                        theme="snow"
+                        modules={modules}
+                        formats={formats}
+                        style={{ marginBottom: "16px" }}
+                    />
+                </div>
             </div>
             <div className="postwrite-row">
                 <label className="attachments-top">첨부 파일</label>
@@ -285,7 +335,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     (최대 {MAX_FILES}개, 파일당 20MB 제한)
                 </div>
             </div>
-            <button className="postwrite-submit" type="submit" onClick={handleSubmit}>
+            <button className="postwrite-submit" type="submit">
                 등록하기
             </button>
         </form>

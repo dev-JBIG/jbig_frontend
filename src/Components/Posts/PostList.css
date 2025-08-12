@@ -51,6 +51,9 @@
 .th-title {
     width: 40%;
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .th-author {
     width: 150px;

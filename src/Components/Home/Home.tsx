@@ -6,13 +6,11 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import { getBoards } from "../../API/req";
+import {getBoards, signout} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
 import {Section} from "../Utils/interfaces";
-import {signoutFunction} from "../Utils/Functions";
-import {useStaffAuth} from "../Utils/StaffAuthContext";
-
+import { useUser } from "../Utils/UserContext";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
@@ -25,28 +23,33 @@ const Home: React.FC = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
 
-    // 전 페이지 관리자 여부 공유
-    const { staffAuth, setStaffAuth } = useStaffAuth();
+    // 전 페이지 사용자 정보 공유
+    const { user, signOutLocal, authReady } = useUser();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-
 
     useEffect(() => {
         // todo : 실제 파일 반영 연결 필요
         setBannerImage("https://crocuscoaching.co.uk/wp/wp-content/uploads/2013/03/maldivian_sunset-wallpaper-1000x300.jpg");
         setQuizURL("https://docs.google.com/forms/d/1ikJfMCDzAHNABX5wcRWV9Rv7jDYmmH8vYXbAsAKfOsM/viewform?edit_requested=true");
+    }, []);
 
-        (async () => {
-            const userName = localStorage.getItem("jbig-username") || "";
-            const sem = Number(localStorage.getItem("jbig-semester")) || -1;
-            if (!userName || !sem) {
+    useEffect(() => {
+        if (!authReady) return;
+
+        const run = async () => {
+            const userName = user?.username ?? "";
+            // semester가 문자열이라면 안전하게 파싱
+            const semRaw = user?.semester;
+            const sem = semRaw !== undefined && semRaw !== null ? Number(semRaw) : NaN;
+
+            if (!userName || !Number.isFinite(sem) || sem <= 0) {
+                // 여기서는 단순히 비로그인 UI로 두고, signOutLocal은 '명시적 로그아웃'이나 401 응답 시에만 수행
                 setUserName("");
                 setUserSemester(null);
-
-                await signoutFunction()
-
-            } else{
+                setLogin(false);
+            } else {
                 setUserName(userName);
                 setUserSemester(sem);
                 setLogin(true);
@@ -56,11 +59,13 @@ const Home: React.FC = () => {
                 const res = await getBoards();
                 setBoards(Array.isArray(res?.categories) ? res.categories : []);
                 setTotalCount(typeof res?.total_post_count === "number" ? res.total_post_count : 0);
-            } catch (e) {
+            } catch {
                 setBoards([]);
             }
-        })();
-    }, []);
+        };
+
+        run();
+    }, [authReady, user]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
@@ -74,8 +79,8 @@ const Home: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
-        await signoutFunction();
-
+        await signout();
+        signOutLocal(); // 로컬 데이터만 삭제
         navigate("/");
         window.location.reload();
     };
@@ -124,7 +129,9 @@ const Home: React.FC = () => {
             <div className="home-content">
                 <Routes>
                     {/* home-content 전체 차지하는 경로 */}
-                    <Route path="board/:category/write" element={<PostWrite boards={boards}/>}/>
+                    <Route path="board/:category/write" element={
+                        <PostWrite boards={boards}/>
+                    }/>
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>

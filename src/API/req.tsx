@@ -104,16 +104,7 @@ export const signin = async (email: string, password: string) => {
         return response.data;
     } catch (error: any) {
         console.error(error);
-
-        if (error.response && error.response.data) {
-            return {
-                message: error.response.data.detail || "로그인 실패"
-            };
-        }
-
-        return {
-            message: "네트워크 오류 또는 서버 응답 없음"
-        };
+        return error.data;
     }
 };
 
@@ -183,9 +174,7 @@ export const fetchBoardPosts = async (
 };
 
 // 게시물 세부 정보 조회
-export const fetchPostDetail = async (postId: number) => {
-    const token = localStorage.getItem("jbig-access"); // 또는 sessionStorage.getItem("token")
-
+export const fetchPostDetail = async (postId: number, token?: string | null) => {
     const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
         method: "GET",
         headers: {
@@ -194,16 +183,26 @@ export const fetchPostDetail = async (postId: number) => {
         },
     });
 
+    if (response.status === 401 || response.status === 403) {
+        return { unauthorized: true };
+    }
+
     if (response.status === 404) {
         return { notFound: true };
     }
 
     if (!response.ok) {
-        throw new Error("게시글 불러오기에 실패했습니다.");
+        let message = "게시글 불러오기에 실패했습니다.";
+        try {
+            const err = await response.json();
+            if (err?.message) message = err.message;
+        } catch {}
+        throw new Error(message);
     }
 
     return response.json();
 };
+
 
 
 // 사용자의 내 게시글 목록 api todo: 임시
@@ -232,7 +231,7 @@ export const fetchUserPosts = async (
 };
 
 // 첨부파일 업로드
-export const uploadAttachment = async (file: File) => {
+export const uploadAttachment = async (file: File, token: String) => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -244,6 +243,7 @@ export const uploadAttachment = async (file: File) => {
                 headers: {
                     Accept: "*/*",
                     "Content-Type": "multipart/form-data",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
                 withCredentials: true,
             }
@@ -265,7 +265,7 @@ export const uploadAttachment = async (file: File) => {
     }
 };
 
-export const refreshToken = async (refresh: string) => {
+export const refreshTokenAPI = async (refresh: string) => {
     try {
         const response = await axios.post(
             `${BASE_URL}/api/users/token/refresh/`,
@@ -275,7 +275,7 @@ export const refreshToken = async (refresh: string) => {
                     Accept: "*/*",
                     "Content-Type": "application/json",
                 },
-                withCredentials: false, // 쿠키 사용시 필요
+                withCredentials: false,
             }
         );
         return response.data;
@@ -292,4 +292,73 @@ export const refreshToken = async (refresh: string) => {
             message: "네트워크 오류 또는 서버 응답 없음",
         };
     }
+};
+
+// 게시글 생성 api
+export const createPost = async (
+    boardId: number,
+    postData: {
+        title: string;
+        content_html: string;
+        attachment_ids: number[];
+    },
+    token: string
+) => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/boards/${boardId}/posts/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(postData),
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            return { unauthorized: true };
+        }
+
+        if (!response.ok) {
+            let message = "게시글 생성에 실패했습니다.";
+            try {
+                const err = await response.json();
+                if (err?.message) message = err.message;
+            } catch {}
+            throw new Error(message);
+        }
+
+        return response.json();
+    } catch (error: any) {
+        console.error(error);
+        return {
+            message: error.message || "네트워크 오류 또는 서버 응답 없음",
+        };
+    }
+};
+
+// 개별 댓글 삭제
+export const deleteComment = async (
+    commentId: number,
+    accessToken?: string
+): Promise<
+    | { ok: true }
+    | { ok: false; unauthorized?: true; forbidden?: true; notFound?: true; error?: string }
+> => {
+    const res = await fetch(`${BASE_URL}/api/comments/${commentId}/`, {
+        method: "DELETE",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (res.status === 204) return { ok: true };
+    if (res.status === 401) return { ok: false, unauthorized: true };
+    if (res.status === 403) return { ok: false, forbidden: true };
+    if (res.status === 404) return { ok: false, notFound: true };
+
+    let msg = "";
+    try {
+        msg = await res.text();
+    } catch {}
+    return { ok: false, error: msg || "댓글 삭제에 실패했습니다." };
 };

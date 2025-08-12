@@ -54,7 +54,6 @@
 }
 
 .postdetail-content {
-    font-size: 1.13rem;
     color: #262932;
     min-height: 120px;
     line-height: 1.72;
@@ -64,8 +63,9 @@
 
 .postdetail-attachments {
     margin: 18px 0 0 0;
-    padding: 10px 0 0 0;
+    padding: 10px 0 10px 0;
     border-top: 1px solid #ececec;
+    border-bottom: 1px solid #ececec;
 }
 .postdetail-attachments-title {
     font-size: 1.06rem;
@@ -80,7 +80,7 @@
 }
 .postdetail-attachments li {
     margin-bottom: 4px;
-    font-size: 1.03rem;
+    font-size: 0.9rem;
 }
 .postdetail-attachments a {
     color: #222;
@@ -116,15 +116,14 @@
 
 /* 댓글 영역 */
 .postdetail-comment-section {
-    margin-top: 38px;
     padding-top: 22px;
-    border-top: 1.5px solid #eee;
     background: #fff;
 }
 .postdetail-comment-header {
     font-size: 1.07rem;
     font-weight: 600;
-    margin-bottom: 13px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid #eee;
     color: #243763;
 }
 .postdetail-comment-list {
@@ -323,5 +322,18 @@
 }
 
 .postdetail-content.ql-editor{
+    padding: 0;
+}
+
+.postdetail-content * {
+    font-size: unset !important;
+}
+
+/* 글쓰기, 보여주기 공통 본문 래퍼: 폭/패딩/타이포 일치 */
+.content-body{
+    width: 100%;
+}
+
+.content-body.ql-editor {
     padding: 0;
 }

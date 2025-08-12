@@ -14,7 +14,7 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
     const location = useLocation();
 
     const isUserPage = location.pathname.startsWith("/user");
-    const [perPage, setPerPage] = useState(isUserPage ? 30 : (isHome ? 10 : 15));
+    const [perPage, setPerPage] = useState(isUserPage ? 30 : (10));
 
     const activeBoardID = boardId ? Number(boardId) : 0;
     const activeBoard = activeBoardID === 0
