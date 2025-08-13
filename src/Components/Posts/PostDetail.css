@@ -48,6 +48,22 @@
     color: #222;
 }
 
+.postdetail-like-btn {
+    margin-left: auto;         /* 우측 끝 고정 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.postdetail-like-btn:hover {
+    background: rgba(0,0,0,0.05);
+}
+
 .postdetail-divider {
     border-top: 1.5px solid #eee;
     margin: 16px 0 18px 0;
@@ -323,10 +339,6 @@
 
 .postdetail-content.ql-editor{
     padding: 0;
-}
-
-.postdetail-content * {
-    font-size: unset !important;
 }
 
 /* 글쓰기, 보여주기 공통 본문 래퍼: 폭/패딩/타이포 일치 */

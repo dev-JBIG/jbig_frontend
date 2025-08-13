@@ -95,6 +95,19 @@ const Note: React.FC = () => {
                     } catch {}
                 };
 
+                const style = doc.createElement("style");
+                style.textContent = `
+                  .page-cover-image {
+                    max-height: 200px !important;
+                    height: auto !important;
+                    width: 100% !important;
+                    object-fit: cover !important;
+                    object-position: center !important;
+                    display: block !important;
+                  }
+                `;
+                doc.head.appendChild(style);
+
                 // iFrame이 다시 로드될 때(경로 바뀌거나 새로 로드) cleanup 필요
                 iframe.addEventListener("beforeunload", cleanup);
                 // on unmount

@@ -153,10 +153,18 @@ const Home: React.FC = () => {
                         </MainLayout>
                     }/>
                     <Route
+                        path="search/:boardId"
+                        element={
+                            <MainLayout sidebarProps={sidebarProps}>
+                                <Search boards={boards}/>
+                            </MainLayout>
+                        }
+                    />
+                    <Route
                         path="search"
                         element={
                             <MainLayout sidebarProps={sidebarProps}>
-                                <Search />
+                                <Search boards={boards}/>
                             </MainLayout>
                         }
                     />

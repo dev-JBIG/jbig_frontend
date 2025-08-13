@@ -173,6 +173,84 @@ export const fetchBoardPosts = async (
     };
 };
 
+// 전체 게시판 검색 (전체 카테고리)
+export const fetchSearchPosts = async (
+    query: string,
+    pageSize: number,
+    page: number
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const url = `${BASE_URL}/api/posts/all/search/`;
+
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize, q: query },
+    });
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const posts: PostItem[] = rawResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        author_id: item.author_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        views: item.views,
+        likes: item.likes_count,
+    }));
+
+    const count =
+        typeof res.data?.count === "number" ? res.data.count : posts.length;
+
+    return {
+        posts,
+        totalPages: Math.max(1, Math.ceil(count / pageSize)),
+    };
+};
+
+// 특정 게시판 검색
+export const fetchBoardSearchPosts = async (
+    boardId: number,
+    query: string,
+    pageSize: number,
+    page: number
+): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    const url = `${BASE_URL}/api/boards/${boardId}/search/`;
+
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize, q: query },
+    });
+
+    // DRF pagination 대응 (+ 배열 직접 반환 대응)
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const posts: PostItem[] = rawResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        author_id: item.author_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        views: item.views,
+        likes: item.likes_count,
+    }));
+
+    const count =
+        typeof res.data?.count === "number" ? res.data.count : posts.length;
+
+    return {
+        posts,
+        totalPages: Math.max(1, Math.ceil(count / pageSize)),
+    };
+};
+
 // 게시물 세부 정보 조회
 export const fetchPostDetail = async (postId: number, token?: string | null) => {
     const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
@@ -202,8 +280,6 @@ export const fetchPostDetail = async (postId: number, token?: string | null) => 
 
     return response.json();
 };
-
-
 
 // 사용자의 내 게시글 목록 api todo: 임시
 export const fetchUserPosts = async (

@@ -22,7 +22,8 @@ function App() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const { setAuth, signOutLocal, refreshToken } = useUser();
+    const { setAuth, signOutLocal, refreshToken, authReady } = useUser();
+    const didRefreshOnReloadRef = useRef(false);
 
     // 스케일 조정 사용하지 않을 경로들
     const noScaleRoutes = ["/signin", "/signup"];
@@ -54,36 +55,48 @@ function App() {
     }, [isNoScale]);
 
     useEffect(() => {
+        if (!authReady) return;
         if (!refreshToken) return;
+        if (didRefreshOnReloadRef.current) return;
+
+        // 브라우저 리로드 여부 판별
+        let isReload = false;
+        const navEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+        if (navEntries && navEntries.length > 0) {
+            isReload = navEntries[0].type === "reload";
+        } else {
+            // 구형 브라우저 대비(Deprecated API)
+            // @ts-ignore
+            isReload = performance.navigation?.type === performance.navigation?.TYPE_RELOAD;
+        }
+
+        if (!isReload) return;
+
+        didRefreshOnReloadRef.current = true;
 
         (async () => {
             try {
-                const data = await refreshTokenAPI(refreshToken); // API 호출
-
-                if (data.isSuccess) {
+                const data = await refreshTokenAPI(refreshToken);
+                if (data?.isSuccess) {
                     setAuth(
-                        {
-                            username: data.username,
-                            semester: data.semester,
-                            email: data.email,
-                        },
+                        { username: data.username, semester: data.semester, email: data.email },
                         data.access,
                         data.refresh
                     );
+                    // 성공 시 여기서 끝. navigate/reload 금지
                 } else {
-                    console.error("토큰 갱신 실패:", data?.error);
                     signOutLocal();
-                    navigate("/signin");
-                    window.location.reload();
+                    // 실패 시에도 전체 리로드는 금지; 라우팅만 로그인으로
+                    alert("토큰 갱신 실패, 다시 로그인해주세요.");
+                    navigate("/signin", { replace: true });
                 }
-            } catch (e) {
-                console.error("토큰 갱신 중 오류:", e);
+            } catch {
                 signOutLocal();
-                navigate("/signin");
-                window.location.reload();
+                alert("토큰 갱신 실패, 다시 로그인해주세요.");
+                navigate("/signin", { replace: true });
             }
         })();
-    }, [navigate]);
+    }, [authReady, refreshToken, setAuth, signOutLocal]);
 
     return (
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>

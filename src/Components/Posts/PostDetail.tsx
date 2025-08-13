@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
 import {deleteComment, fetchPostDetail} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
+import { Heart } from "lucide-react";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -31,6 +32,9 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
     const { accessToken, authReady } = useUser();
 
+    // 동일 키로 중복 조회 안되도록
+    const fetchedKeyRef = useRef<string | null>(null);
+
     useEffect(() => {
         if (!authReady || !postId) return;
 
@@ -40,26 +44,21 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             return;
         }
 
+        const key = `${postId}:${accessToken}`;
+        if (fetchedKeyRef.current === key) return;
+        fetchedKeyRef.current = key;
+
         const loadPost = async () => {
-            if (!postId) return;
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized) {
+                if (raw.unauthorized || !raw.isTokenValid) {
                     alert("로그인이 필요합니다.");
                     navigate("/signin");
                     return;
                 }
-                const src = raw.post_data ?? raw;
-
                 if (raw.notFound) {
                     setPost("not-found");
-                    return;
-                }
-
-                if(!raw.isTokenValid){
-                    alert("로그인 후 이용 가능합니다.")
-                    navigate("/signin");
                     return;
                 }
 
@@ -67,6 +66,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const toDate = (s?: string) => (s ? s.slice(0, 16).replace("T", " ") : "");
                 const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
+
+                const src = raw.post_data ?? raw;
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -81,7 +82,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     isLiked: src.is_liked ?? false,
                     attachments: (src.attachments || []).map((a: any) => ({
                         id: a.id,
-                        fileUrl: a.file,        // file => fileUrl
+                        fileUrl: a.file,
                         fileName: a.filename,
                         fileType: ext(a.filename),
                     })),
@@ -105,8 +106,9 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 setPost("not-found");
             }
         };
+
         loadPost();
-    }, [authReady, accessToken, postId]);
+    }, [authReady, accessToken, postId, navigate, username]);
 
     useEffect(() => {
         if (!post || post === "not-found") return;
@@ -118,6 +120,30 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             .then(html => setHtmlContent(html))
             .catch(err => console.error("본문 로드 실패", err));
     }, [post]);
+
+    // 좋아요 버튼 핸들러
+    const handleToggleLike = async () => {
+        if (!post || typeof post === "string") return;
+
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
+        const nextLiked = !post.isLiked;
+        const nextLikes = post.likes + (nextLiked ? 1 : -1);
+        setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
+
+        try {
+            // TODO: 좋아요 토글 API 연동
+            // 예: await togglePostLike(post.id, accessToken);
+        } catch (e) {
+            // 실패 시 롤백
+            setPost(post);
+            alert("좋아요 처리 중 오류가 발생했습니다.");
+        }
+    };
 
     // 댓글 등록
     const handleAddComment = () => {
@@ -289,6 +315,23 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <span>조회수 {post.views}</span>
                 <span className="postdetail-dot">·</span>
                 <span>좋아요 {post.likes}</span>
+
+                <button
+                    type="button"
+                    className="postdetail-like-btn"
+                    onClick={handleToggleLike}
+                    aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
+                    title={post.isLiked ? "좋아요 취소" : "좋아요"}
+                >
+                    <Heart
+                        size={18}
+                        style={{
+                            fill: post.isLiked ? "#e0245e" : "transparent",
+                            stroke: post.isLiked ? "#e0245e" : "#999",
+                            transition: "all .15s ease",
+                        }}
+                    />
+                </button>
             </div>
             <div className="postdetail-divider"/>
 

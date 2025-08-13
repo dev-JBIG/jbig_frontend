@@ -1,135 +1,118 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+// Search.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import PostList from "../Posts/PostList";
+import { Section } from "../Utils/interfaces";
 import "./Search.css";
-import "./PostList.css";
 
-const CATEGORY_LIST = [
-    "전체",
-    "공지사항",
-    "이벤트 안내",
-    "자유게시판",
-    "질문게시판",
-    "정보공유",
-    "유머게시판",
-    "이미지 자료",
-    "문서 자료",
-    "코드 스니펫"
-];
-
-// 실제론 api 요청하는 자리
-function fakeApiSearch(q: string, category: string) {
-    // 아래는 예시: 실제 api에서는 서버가 조건에 맞게 필터링해줌
-    return new Promise<any[]>((resolve) => {
-        setTimeout(() => {
-            // category, q에 따라 리턴값이 달라진다고 가정
-            resolve([
-                { id: 101, title: `[${category}] ${q}로 검색된 예시`, author: "관리자", date: "2024-07-12", views: 11, likes: 3, category },
-                // 필요하면 더미 추가
-            ]);
-        }, 600);
-    });
-}
-
-const Search: React.FC = () => {
+const Search: React.FC<{ boards?: Section[] }> = ({ boards }) => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const params = new URLSearchParams(location.search);
+    const { boardId } = useParams<{ boardId?: string }>();
+    const [sp, setSp] = useSearchParams();
+    const qFromUrl = sp.get("q") ?? "";
+    const sizeFromUrl = Number(sp.get("page_size") || 10);
 
-    const [query, setQuery] = useState(params.get("q") || "");
-    const [category, setCategory] = useState(params.get("category") || "전체");
-    const [results, setResults] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [query, setQuery] = useState(qFromUrl);
+    const [perPage, setPerPage] = useState<number>(sizeFromUrl);
 
-    // url 변경(뒤로가기 등) 대응
+    // 드롭다운 기본값은 "all"
+    const [selectedBoardId, setSelectedBoardId] = useState<string>("all");
+
+    // url, 페이지 동기화 처리
+    useEffect(() => setQuery(qFromUrl), [qFromUrl]);
+    useEffect(() => setPerPage(sizeFromUrl), [sizeFromUrl]);
+
+    // 첫 진입 또는 URL 보정: :boardId가 없으면 /search/all 로 교정
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        setQuery(params.get("q") || "");
-        setCategory(params.get("category") || "전체");
-    }, [location.search]);
-
-    // api 요청 (url의 q/category가 바뀔 때마다)
-    useEffect(() => {
-        // 아무 값도 없으면 초기화
-        if (!query.trim() && (!category || category === "전체")) {
-            setResults([]);
-            setLoading(false);
+        if (!boardId) {
+            const qs = qFromUrl.trim() ? `?q=${encodeURIComponent(qFromUrl.trim())}` : "";
+            navigate(`/search/all${qs}`, { replace: true });
             return;
         }
-        setLoading(true);
-        fakeApiSearch(query, category).then(res => {
-            setResults(res);
-            setLoading(false);
-        });
-    }, [query, category]);
+        // URL에 :boardId가 있으면 그걸 상태로 반영(유효성은 PostList에서 처리)
+        setSelectedBoardId(boardId);
+    }, [boardId, qFromUrl, navigate]);
 
-    // 폼 제출: url 갱신 → useEffect가 api 요청 실행
-    const handleSearch = (e: React.FormEvent) => {
+    // URL q 변경 시 입력창 동기화
+    useEffect(() => {
+        setQuery(qFromUrl);
+    }, [qFromUrl]);
+
+    // boards 옵션
+    const boardOptions = useMemo(
+        () =>
+            (boards?.flatMap((section) =>
+                section.boards.map((b) => ({
+                    id: String(b.id),
+                    label: `${b.name}`,
+                }))
+            ) ?? []),
+        [boards]
+    );
+
+    // 게시판 선택(로컬 상태만 변경, URL은 "검색" 버튼 클릭 시 갱신)
+    const handleBoardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedBoardId(e.target.value);
+    };
+
+    // 검색 제출 시 URL을 /search/:boardId?q= 로 업데이트
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const queryString = `?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`;
-        navigate(`/search${queryString}`);
+        const qs = new URLSearchParams();
+        if (query.trim()) qs.set("q", query.trim());
+        qs.set("page_size", String(perPage));
+        navigate(`/search/${selectedBoardId}?${qs.toString()}`, { replace: false });
     };
 
     return (
         <div className="search-container">
-            <form className="search-form" onSubmit={handleSearch}>
+            <form onSubmit={handleSubmit} className="search-form">
                 <select
-                    className="search-category-select"
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    style={{ minWidth: 120 }}
+                    className="search-board-select"
+                    value={selectedBoardId}
+                    onChange={handleBoardChange}
                 >
-                    {CATEGORY_LIST.map(c => (
-                        <option key={c} value={c}>{c}</option>
+                    <option value="all">전체 게시판</option>
+                    {boardOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                        </option>
                     ))}
                 </select>
+
                 <input
-                    className="search-input"
                     type="text"
-                    placeholder="검색어를 입력하세요"
                     value={query}
-                    onChange={e => setQuery(e.target.value)}
+                    placeholder="검색어를 입력하세요"
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="search-input"
                 />
-                <button className="search-btn" type="submit" disabled={loading}>
-                    검색
+
+                <select
+                    className="search-perpage-select"
+                    value={perPage}
+                    onChange={(e) => {
+                        const nextSize = Number(e.target.value);
+                        setPerPage(nextSize);
+                        const next = new URLSearchParams(sp);
+                        next.set("page_size", String(nextSize));
+                        setSp(next, {replace: false});
+                    }}
+                >
+                    {[5, 10, 15, 20, 30].map((n) => (
+                        <option key={n} value={n}>{n}개씩</option>
+                    ))}
+                </select>
+
+                <button type="submit" className="search-button">
+                    <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </button>
             </form>
 
-            <div className="search-result">
-                {loading && <div className="search-loading">검색 중...</div>}
-                {!loading && results.length === 0 && (
-                    <div className="search-empty">검색 결과가 없습니다.</div>
-                )}
-                {!loading && results.length > 0 && (
-                    <table className="postlist-table">
-                        <thead>
-                        <tr>
-                            <th>카테고리</th>
-                            <th>제목</th>
-                            <th>작성자</th>
-                            <th>작성일</th>
-                            <th>조회수</th>
-                            <th>좋아요</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {results.map(item => (
-                            <tr
-                                key={item.id}
-                                onClick={() => navigate(`/board/${item.category}/${item.id}`)}
-                                style={{ cursor: "pointer" }}
-                            >
-                                <td>{item.category}</td>
-                                <td className="title-cell">{item.title}</td>
-                                <td>{item.author}</td>
-                                <td>{item.date}</td>
-                                <td>{item.views}</td>
-                                <td>{item.likes}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+            {/* 목록/페이징/표시는 전부 PostList가 처리 (boards만 전달) */}
+            <PostList boards={boards}/>
         </div>
     );
 };

@@ -1,66 +1,141 @@
-// PostList.tsx (수정 버전)
-import React, {useEffect, useState} from "react";
+// PostList.tsx (수정 버전 전체)
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
 import { PostItem, Section } from "../Utils/interfaces"
-import {fetchBoardPosts, fetchUserPosts} from "../../API/req";
+import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 
 function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean })  {
     const [posts, setPosts] = useState<PostItem[] | null>(null);
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
-    const { boardId } = useParams();
+
+    const { boardId: boardIdRaw } = useParams(); // "all" 또는 "123"
     const navigate = useNavigate();
     const location = useLocation();
 
     const isUserPage = location.pathname.startsWith("/user");
-    const [perPage, setPerPage] = useState(isUserPage ? 30 : (10));
+    const isSearchPage = location.pathname.startsWith("/search");
 
-    const activeBoardID = boardId ? Number(boardId) : 0;
+    // 검색어 & perPage(URL 동기화)
+    const sp = useMemo(() => new URLSearchParams(location.search), [location.search]);
+    const q = sp.get("q") ?? "";
+
+    // 검색 페이지 전용, perpage
+    const perPageFromUrl = useMemo(() => {
+        const v = Number(new URLSearchParams(location.search).get("page_size") || 10);
+        return Number.isFinite(v) ? v : 10;
+    }, [location.search]);
+
+    // 기본 perPage는: 유저페이지=30, 그 외 10. (검색페이지는 URL 우선)
+    const [perPage, setPerPage] = useState(isUserPage ? 30 : 10);
+
+    // 검색 페이지와의 공통 per page 관리
+    const effectivePerPage = isSearchPage ? perPageFromUrl : perPage;
+
+    const prevPerPageUrlRef = useRef(perPageFromUrl);
+    useEffect(() => {
+        if (isSearchPage && prevPerPageUrlRef.current !== perPageFromUrl) {
+            prevPerPageUrlRef.current = perPageFromUrl;
+            setPage(1);
+        }
+    }, [isSearchPage, perPageFromUrl]);
+
+
+    // boards 전개해서 id→존재 여부 판단
+    const allBoardIds = useMemo(
+        () => new Set((boards ?? []).flatMap(s => s.boards.map(b => b.id))),
+        [boards]
+    );
+
+    const activeBoardID = !isSearchPage
+        ? (boardIdRaw ? Number(boardIdRaw) : 0)
+        : 0; // 일반 게시판 페이지에서만 사용
+
     const activeBoard = activeBoardID === 0
         ? null
         : boards
             ?.flatMap(section => section.boards)
             .find(board => board.id === Number(activeBoardID));
 
+    const reqSeqRef = useRef(0);
+
     useEffect(() => {
+        const seq = ++reqSeqRef.current;
+
         const getPosts = async () => {
             try {
                 let response: { posts: PostItem[]; totalPages: number };
 
-                if (isUserPage) {
+                if (isSearchPage) {
+                    if (!q.trim()) {
+                        if (seq !== reqSeqRef.current) return;
+                        setPosts([]); setTotalPages(1);
+                        return;
+                    }
+
+                    const scope = boardIdRaw ?? "all";
+                    if (scope === "all") {
+                        response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
+                    } else {
+                        const scopeId = Number(scope);
+                        if (Number.isFinite(scopeId) && allBoardIds.has(scopeId)) {
+                            response = await fetchBoardSearchPosts(scopeId, q.trim(), effectivePerPage, page);
+                        } else {
+                            response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
+                        }
+                    }
+                } else if (isUserPage) {
                     const username = location.pathname.split("/").pop() || "";
-                    response = await fetchUserPosts(username, perPage, page);
+                    response = await fetchUserPosts(username, effectivePerPage, page);
                 } else {
                     response = await fetchBoardPosts(
                         isHome ? undefined : (activeBoardID !== 0 ? String(activeBoardID) : undefined),
-                        isHome ? 10 : perPage,
+                        isHome ? 10 : effectivePerPage,
                         isHome ? 1 : page,
                         !!isHome
                     );
                 }
 
+                // 여기서 마지막 요청만 반영
+                if (seq !== reqSeqRef.current) return;
                 setPosts(response.posts);
                 setTotalPages(response.totalPages);
-            } catch (error) {
-                console.error("게시글을 불러오는 데 실패했습니다:", error);
+            } catch (e) {
+                if (seq !== reqSeqRef.current) return;
+                console.error(e);
             }
         };
+
         getPosts();
-    }, [boardId, perPage, page, location.pathname, isHome, isUserPage, activeBoardID]);
+    }, [
+        boards,
+        boardIdRaw,
+        location.pathname,
+        location.search,
+        isHome,
+        isUserPage,
+        isSearchPage,
+        q,
+        page,
+        effectivePerPage,
+        allBoardIds
+    ]);
 
     const displayPosts = posts ?? [];
 
     const handleWrite = () => {
-        navigate(`/board/${boardId}/write`);
+        navigate(`/board/${boardIdRaw ?? 0}/write`);
     };
 
     return (
         <div className="postlist-container">
             <div className="postlist-header">
-                {!isUserPage && (
+                {!isUserPage && !isSearchPage && (
                     <>
-                        <h2>{activeBoard ? activeBoard.name : (isHome ? "전체글보기" : "전체글보기")}</h2>
+                        <h2>
+                            {activeBoard ? activeBoard.name : (isHome ? "전체글보기" : "전체글보기")}
+                        </h2>
                         {!isHome ? (
                             <select
                                 className="perpage-select"
@@ -76,53 +151,72 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     </option>
                                 ))}
                             </select>
-                        )  : (
+                        ) : (
                             <span
                                 className="more-link"
                                 onClick={() => navigate("/board/0")}
                             >
-                                더보기 &gt;
-                            </span>
+                더보기 &gt;
+              </span>
                         )}
                     </>
                 )}
             </div>
 
-            <table className="postlist-table">
-                <thead>
-                <tr>
-                    <th className="th-id">번호</th>
-                    <th className="th-title">제목</th>
-                    <th className="th-author">작성자</th>
-                    <th className="th-date">작성일</th>
-                    <th className="th-views">조회수</th>
-                    {!isUserPage && <th className="th-likes">좋아요</th>}
-                </tr>
-                </thead>
-                <tbody>
-                {displayPosts.map((p) => (
-                    <tr key={p.id} onClick={() => navigate(`/board/${boardId ?? 0}/${p.id}`)}>
-                        <td className="th-id">{p.id}</td>
-                        <td className="title-cell th-title">{p.title}</td>
-                        <td
-                            className="author-cell th-author"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/user/${encodeURIComponent(p.author)}`);
-                            }}
-                            style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
-                        >
-                            {p.author_semester}기 {p.author}
-                        </td>
-                        <td className="th-date">{p.date}</td>
-                        <td className="th-views">{p.views.toLocaleString()}</td>
-                        {!isUserPage && <td className="th-likes">{p.likes}</td>}
+            {isSearchPage && (!q.trim() || displayPosts.length === 0) ? (
+                <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+                    해당 게시물이 없습니다.
+                </div>
+            ) : (
+                <table className="postlist-table">
+                    <thead>
+                    <tr>
+                        <th className="th-id">번호</th>
+                        <th className="th-title">제목</th>
+                        <th className="th-author">작성자</th>
+                        <th className="th-date">작성일</th>
+                        <th className="th-views">조회수</th>
+                        {!isUserPage && <th className="th-likes">좋아요</th>}
                     </tr>
-                ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    {displayPosts.map((p) => (
+                        <tr
+                            key={p.id}
+                            onClick={() => {
+                                const targetBoardId = isSearchPage
+                                    ? (boardIdRaw === "all" ? 0 : boardIdRaw)
+                                    : (boardIdRaw ?? 0);
 
-            {/* Pagination (5개 단위 그룹: 다음은 다음 구간 첫 페이지, 이전은 이전 구간 마지막 페이지) */}
+                                navigate(`/board/${targetBoardId}/${p.id}`);
+                            }}
+                        >
+                            <td className="th-id">{p.id}</td>
+                            <td className="title-cell th-title">{p.title}</td>
+                            <td
+                                className="author-cell th-author"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/user/${encodeURIComponent(p.author)}`);
+                                }}
+                                style={{
+                                    color: "#3563e9",
+                                    cursor: "pointer",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                {p.author_semester}기 {p.author}
+                            </td>
+                            <td className="th-date">{p.date}</td>
+                            <td className="th-views">{p.views.toLocaleString()}</td>
+                            {!isUserPage && <td className="th-likes">{p.likes}</td>}
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            )}
+
+            {/* Pagination (5개 단위 그룹) */}
             {!isHome && totalPages > 1 && (
                 <div className="pagination-row">
                     {(() => {
@@ -135,7 +229,6 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
 
                         return (
                             <>
-                                {/* 처음으로 */}
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
@@ -146,7 +239,6 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     </button>
                                 )}
 
-                                {/* 이전 그룹 -> 이전 구간의 '마지막 페이지'로 이동 */}
                                 <button
                                     className="pagination-btn"
                                     onClick={() => setPage(hasPrevGroup ? start - 1 : 1)}
@@ -155,7 +247,6 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     이전
                                 </button>
 
-                                {/* 현재 그룹 페이지들 */}
                                 {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
                                     <button
                                         key={n}
@@ -166,7 +257,6 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     </button>
                                 ))}
 
-                                {/* 다음 그룹 -> 다음 구간의 '첫 페이지'로 이동 */}
                                 <button
                                     className="pagination-btn"
                                     onClick={() => setPage(hasNextGroup ? end + 1 : totalPages)}
@@ -175,7 +265,6 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     다음
                                 </button>
 
-                                {/* 끝으로 */}
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
@@ -191,7 +280,7 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                 </div>
             )}
 
-            {!isUserPage && !isHome && activeBoardID !== 0 && (
+            {!isSearchPage && !isUserPage && !isHome && activeBoardID !== 0 && (
                 <div className="write-button-row">
                     <button className="write-button" onClick={handleWrite}>
                         글쓰기

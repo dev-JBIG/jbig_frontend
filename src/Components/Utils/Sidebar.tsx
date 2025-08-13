@@ -43,14 +43,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onChange={e => setSidebarQuery(e.target.value)}
                     onKeyDown={e => {
                         if (e.key === 'Enter' && sidebarQuery.trim()) {
+                            setSidebarQuery("");
                             navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
                 />
                 <button
-                    className="search-button"
+                    className="side-search-button"
                     onClick={() => {
                         if (sidebarQuery.trim()) {
+                            setSidebarQuery("");
                             navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
