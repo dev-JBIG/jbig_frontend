@@ -25,6 +25,7 @@ export interface Comment {
     content: string;
     date: string;
     replies?: Reply[];
+    is_owner: boolean;
 }
 
 export interface Reply {
@@ -32,6 +33,7 @@ export interface Reply {
     author: string;
     content: string;
     date: string;
+    is_owner: boolean;
 }
 
 export interface PostDetailData {

@@ -173,6 +173,22 @@ export const fetchBoardPosts = async (
     };
 };
 
+// 퀴즈 url 반환
+export const fetchQuizUrl = async (token: string): Promise<string | null> => {
+    const url = `${BASE_URL}/api/quiz-url/`;
+    const res = await axios.get(url, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const quizUrl =
+        typeof res.data?.quiz_url === "string" ? res.data.quiz_url : null;
+
+    return quizUrl && quizUrl.trim() ? quizUrl : null;
+};
+
+
 // 전체 게시판 검색 (전체 카테고리)
 export const fetchSearchPosts = async (
     query: string,
@@ -281,6 +297,21 @@ export const fetchPostDetail = async (postId: number, token?: string | null) => 
     return response.json();
 };
 
+// 게시글 좋아요 토글
+export const togglePostLike = async (postId: number, token: string) => {
+    const url = `${BASE_URL}/api/posts/${postId}/like/`;
+    const res = await axios.post(
+        url,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return res.data;
+};
+
 // 사용자의 내 게시글 목록 api todo: 임시
 export const fetchUserPosts = async (
     username: string,
@@ -339,6 +370,34 @@ export const uploadAttachment = async (file: File, token: String) => {
             message: "네트워크 오류 또는 서버 응답 없음",
         };
     }
+};
+
+// 수상경력 html 가져오기
+export const fetchAwardsHtml = async (): Promise<string> => {
+    const url = `${BASE_URL}/api/html/awards`;
+    const res = await axios.get(url, {
+        headers: { Accept: "text/html" },
+        responseType: "text",
+    });
+
+    return res.data;
+};
+
+// 수상경력 업로드
+export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => {
+    const url = `${BASE_URL}/api/html/awards/upload/`;
+    const form = new FormData();
+    const filename = (file as File).name ?? "awards.html";
+    form.append("file", file, filename);
+
+    const res = await axios.post(url, form, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    console.log(res); // debug
+    return res.data;
 };
 
 export const refreshTokenAPI = async (refresh: string) => {

@@ -6,25 +6,27 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import {getBoards, signout} from "../../API/req";
+import {fetchQuizUrl, getBoards, signout} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
 import {Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
+import {AwardsSection} from "../Utils/Awards";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
     const [bannerImage, setBannerImage] = useState<string>();
     const [homeBanner, setHomeBanner] = useState<string>();
     const [totalCount, setTotalCount] = useState<number>(0);
-    const [quizURL, setQuizURL] = useState<string>();
+    const [quizURL, setQuizURL] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
     const [userSemester, setUserSemester] = useState<number | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
+    const [awards, setAwards] = useState<Section[]>([]);
 
     // 전 페이지 사용자 정보 공유
-    const { user, signOutLocal, authReady } = useUser();
+    const { user, signOutLocal, authReady, accessToken } = useUser();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -32,7 +34,6 @@ const Home: React.FC = () => {
     useEffect(() => {
         // todo : 실제 파일 반영 연결 필요
         setBannerImage("https://crocuscoaching.co.uk/wp/wp-content/uploads/2013/03/maldivian_sunset-wallpaper-1000x300.jpg");
-        setQuizURL("https://docs.google.com/forms/d/1ikJfMCDzAHNABX5wcRWV9Rv7jDYmmH8vYXbAsAKfOsM/viewform?edit_requested=true");
     }, []);
 
     useEffect(() => {
@@ -40,12 +41,10 @@ const Home: React.FC = () => {
 
         const run = async () => {
             const userName = user?.username ?? "";
-            // semester가 문자열이라면 안전하게 파싱
             const semRaw = user?.semester;
             const sem = semRaw !== undefined && semRaw !== null ? Number(semRaw) : NaN;
 
-            if (!userName || !Number.isFinite(sem) || sem <= 0) {
-                // 여기서는 단순히 비로그인 UI로 두고, signOutLocal은 '명시적 로그아웃'이나 401 응답 시에만 수행
+            if (!userName || !Number.isFinite(sem) || sem <= 0 || !accessToken) {
                 setUserName("");
                 setUserSemester(null);
                 setLogin(false);
@@ -53,6 +52,12 @@ const Home: React.FC = () => {
                 setUserName(userName);
                 setUserSemester(sem);
                 setLogin(true);
+                const url = await fetchQuizUrl(accessToken);
+                if (!url) {
+                    setQuizURL("");
+                } else {
+                    setQuizURL(url);
+                }
             }
 
             try {
@@ -136,8 +141,8 @@ const Home: React.FC = () => {
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <div className="main-banner">
-                                {/*<img src={homeBanner} alt="home-banner" className="main-banner-image"/>*/}
                                 {/* todo : 수상경력 */}
+                                <AwardsSection />
                             </div>
                             <PostList boards={boards} isHome={true} />
                         </MainLayout>

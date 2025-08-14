@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
-import {deleteComment, fetchPostDetail} from "../../API/req"; // 추가
+import { PostDetailData, Comment } from "../Utils/interfaces";
+import {deleteComment, fetchPostDetail, togglePostLike} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
@@ -69,6 +69,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const src = raw.post_data ?? raw;
 
+                console.log(src); // debug
+
                 const mapped: PostDetailData = {
                     id: src.id,
                     board: src.board?.name || "",
@@ -91,11 +93,13 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         author: c.author,
                         content: c.content,
                         date: toDate(c.created_at),
+                        is_owner: c.is_owner,
                         replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             author: r.author,
                             content: r.content,
                             date: toDate(r.created_at),
+                            is_owner: r.is_owner,
                         })),
                     })),
                 };
@@ -136,10 +140,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
 
         try {
-            // TODO: 좋아요 토글 API 연동
-            // 예: await togglePostLike(post.id, accessToken);
+            await togglePostLike(post.id, accessToken);
         } catch (e) {
-            // 실패 시 롤백
             setPost(post);
             alert("좋아요 처리 중 오류가 발생했습니다.");
         }
@@ -154,6 +156,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             author: userName,
             content: commentInput,
             date: new Date().toLocaleString().slice(0, 16),
+            is_owner: true,
             replies: []
         };
         setPost({
@@ -190,26 +193,27 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
     // 답글 등록 todo: api 연동
     const handleAddReply = (commentId: number) => {
-        if (!replyInput.trim() || !post || typeof post === "string") return;
-        setPost({
-            ...post,
-            comments: (post.comments || []).map(c =>
-                c.id === commentId
-                    ? {
-                        ...c,
-                        replies: [
-                            ...(c.replies || []),
-                            {
-                                id: (c.replies?.length || 0) + 1,
-                                author: userName,
-                                content: replyInput,
-                                date: new Date().toLocaleString().slice(0, 16)
-                            }
-                        ]
-                    }
-                    : c
-            )
-        });
+        // if (!replyInput.trim() || !post || typeof post === "string") return;
+        // setPost({
+        //     ...post,
+        //     comments: (post.comments || []).map(c =>
+        //         c.id === commentId
+        //             ? {
+        //                 ...c,
+        //                 replies: [
+        //                     ...(c.replies || []),
+        //                     {
+        //                         id: (c.replies?.length || 0) + 1,
+        //                         author: userName,
+        //                         content: replyInput,
+        //                         is_owner: is
+        //                         date: new Date().toLocaleString().slice(0, 16)
+        //                     }
+        //                 ]
+        //             }
+        //             : c
+        //     )
+        // });
         setReplyInput("");
         setReplyTargetId(null);
     };
@@ -389,7 +393,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                 >
                             답글쓰기
                         </span>
-                                {c.author === userName && (
+                                {c.is_owner && (
                                     <span
                                         className="comment-delete"
                                         onClick={() => deleteHandler(c.id)}
@@ -407,15 +411,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                     <span className="reply-author">
                                         {r.author}
 
-                                        {/* todo: 본인 확인 여부를 게시글 조회시 주도록 */}
-                                        {r.author === userName && (
+                                        {r.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
                                             </span>
                                         )}
                                     </span>
                                             <span className="reply-date">{r.date}</span>
-                                            {r.author === userName && (
+                                            {r.is_owner && (
                                                 <span
                                                     className="reply-delete"
                                                     onClick={() => handleDeleteReply(c.id, r.id)}

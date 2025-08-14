@@ -13,7 +13,7 @@ export const FitHTML: React.FC<FitHTMLProps> = ({ html, className }) => {
     useLayoutEffect(() => {
         if (!innerRef.current) return;
         innerRef.current.innerHTML = DOMPurify.sanitize(html || "", {
-            ADD_ATTR: ["style"], // font-size 유지
+            ADD_ATTR: ["style"],
         });
     }, [html]);
 
@@ -22,7 +22,7 @@ export const FitHTML: React.FC<FitHTMLProps> = ({ html, className }) => {
             className={className}
             style={{
                 width: "100%",
-                overflowX: "auto", // 폭 넘치면 스크롤
+                overflowX: "auto",
             }}
         >
             <div

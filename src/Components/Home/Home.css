@@ -172,17 +172,11 @@
 }
 
 .main-banner {
-    width: 100%;
+    max-width: 790px;
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
-}
-
-.main-banner-image {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: 6px;
+    margin: 0;
+    overflow: hidden;
 }
 
 .board-icon {
@@ -253,3 +247,5 @@
     background-color: #f4f4f4;
 }
 
+/* 수상경력 */
+.awards-container { width:100%; max-width:790px; margin: 0 auto;}
