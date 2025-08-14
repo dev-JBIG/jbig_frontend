@@ -372,18 +372,40 @@ export const uploadAttachment = async (file: File, token: String) => {
     }
 };
 
-// 수상경력 html 가져오기
+// 수상경력 html(링크) 불러오기 (배열로 온다고 구현된 백엔드에 맞추어 구현되었습니다.)
 export const fetchAwardsHtml = async (): Promise<string> => {
-    const url = `${BASE_URL}/api/html/awards`;
+    const listUrl = `${BASE_URL}/api/html/awards`;
+    const res = await axios.get<Array<{ id: number; title: string; file_path: string }>>(listUrl, {
+        headers: { Accept: "application/json" },
+        withCredentials: true,
+    });
+
+    const filePath = res.data?.[0]?.file_path;
+    if (!filePath) throw new Error("No awards file_path returned");
+
+    const mediaBase = `http://${SERVER_HOST}:${SERVER_PORT}/media`;
+    const normalized = filePath.replace(/^\/+/, "");
+    const url = `${mediaBase}/${normalized.split("/").map(encodeURIComponent).join("/")}`;
+
+    return url;
+};
+
+// notion 불러오기
+export const fetchNotionHtml = async (file: string, token: string): Promise<string> => {
+    const url = `${BASE_URL}/api/html/notion?file=${encodeURIComponent(file)}`;
     const res = await axios.get(url, {
-        headers: { Accept: "text/html" },
+        headers: {
+            Accept: "text/html",
+            Authorization: `Bearer ${token}`,
+        },
         responseType: "text",
+        withCredentials: true,
     });
 
     return res.data;
 };
 
-// 수상경력 업로드
+// 수상경력 업로드, 어드민 페이지에서 사용
 export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => {
     const url = `${BASE_URL}/api/html/awards/upload/`;
     const form = new FormData();
@@ -396,7 +418,6 @@ export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => 
         },
     });
 
-    console.log(res); // debug
     return res.data;
 };
 

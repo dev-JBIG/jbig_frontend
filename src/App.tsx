@@ -94,54 +94,56 @@ function App() {
         })();
     }, [authReady, refreshToken, setAuth, signOutLocal]);
 
-    const scaledWidth = BASE_WIDTH * scale;
     const scaledHeight = innerHeight * scale;
 
     return (
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>
             <div className="app-root">
-                {/* 로그인/회원가입 제외 */}
-                <Routes>
-                    <Route path="/signin" element={<Signin />} />
-                    <Route path="/signup" element={<Signup />} />
-                </Routes>
-
-                {/* 나머지 화면 */}
-                <div
-                    className="scale-outer"
-                    style={{
-                        width:  'min(100%, 1000px)',     // 시각적 폭만큼 공간 확보 (가운데 정렬)
-                        minHeight: '100vh',
-                        height: `${Math.max(scaledHeight, window.innerHeight)}px`, // 스케일된 높이 확보
-                        margin: '0 auto',
-                        position: 'relative',
-                    }}
-                >
+                {isNoScale ? (
+                    /* 로그인/회원가입 전용 */
+                    <Routes>
+                        <Route path="/signin" element={<Signin />} />
+                        <Route path="/signup" element={<Signup />} />
+                    </Routes>
+                ) : (
+                    /* 나머지 화면 (스케일 적용) */
                     <div
-                        ref={innerRef}
-                        className="scale-inner"
+                        className="scale-outer"
                         style={{
-                            width: `${BASE_WIDTH}px`,
-                            transform: `scale(${scale})`,
-                            transformOrigin: 'top left',
-                            willChange: 'transform',
-                            display: 'flex',
-                            flexDirection: 'column',
+                            width: "min(100%, 1000px)",
+                            minHeight: "100vh",
+                            height: `${Math.max(scaledHeight, window.innerHeight)}px`,
+                            margin: "0 auto",
+                            position: "relative",
                         }}
                     >
-                        <div style={{ flex: 1 }}>
-                            <Routes>
-                                <Route path="/note" element={<Note />} />
-                                <Route path="/admin" element={<Admin />} />
-                                <Route path="/*" element={<Home />} />
-                            </Routes>
+                        <div
+                            ref={innerRef}
+                            className="scale-inner"
+                            style={{
+                                width: `${BASE_WIDTH}px`,
+                                transform: `scale(${scale})`,
+                                transformOrigin: "top left",
+                                willChange: "transform",
+                                display: "flex",
+                                flexDirection: "column",
+                            }}
+                        >
+                            <div style={{ flex: 1 }}>
+                                <Routes>
+                                    <Route path="/note" element={<Note />} />
+                                    <Route path="/admin" element={<Admin />} />
+                                    <Route path="/*" element={<Home />} />
+                                </Routes>
+                            </div>
+                            <Footer />
                         </div>
-                        <Footer />
                     </div>
-                </div>
+                )}
             </div>
         </StaffAuthContext.Provider>
     );
+
 }
 
 export default App;
