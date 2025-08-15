@@ -45,7 +45,7 @@
 
 .postdetail-author {
     font-weight: 500;
-    color: #222;
+    color: #000;
 }
 
 .postdetail-like-btn {
@@ -148,19 +148,11 @@
     margin: 0 0 14px 0;
 }
 .postdetail-comment-item {
-    padding: 12px 0 10px 0;
     border-bottom: 1px solid #f5f5f5;
 }
-.comment-delete {
-    margin-left: auto;
-    margin-right: 0;
-    color: #b3b3b3;
-    font-size: 0.97rem;
-    font-weight: 500;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.13s;
-    padding-left: 16px;
+
+.comment-item{
+    padding: 10px 0 10px 0;
 }
 .comment-meta {
     display: flex;
@@ -170,17 +162,9 @@
     color: #979797;
     margin-bottom: 2px;
 }
-.comment-delete:hover {
-    color: #f44336;
-    text-decoration: underline;
-}
 
-.comment-author {
-    font-weight: 500;
-}
 .comment-content {
-    font-size: 1.09rem;
-    color: #262932;
+    font-size: 15px;
     white-space: pre-line;
 }
 .postdetail-comment-input-row {
@@ -216,41 +200,38 @@
 
 /* ----- 답글(대댓글) 추가 CSS ----- */
 .reply-list {
-    margin: 8px 0 8px 18px;
     padding-left: 0;
     list-style: none;
+    border-top: 1px solid #f5f5f5;
+}
+
+.reply-list:empty {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
 }
 
 .reply-item {
-    background: #f7fafd;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    padding: 8px 12px;
+    padding: 9px 0 10px 18px;
     font-size: 15px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.reply-item:last-child {
+    border-bottom: none;
 }
 
 .reply-meta {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 18px;
     font-size: 14px;
     margin-bottom: 2px;
     color: #636363;
 }
 
-.reply-author {
-    font-weight: 500;
-}
-
 .reply-date {
     color: #aaa;
-    font-size: 13px;
-}
-
-.reply-delete {
-    margin-left: 8px;
-    color: #f44336;
-    cursor: pointer;
     font-size: 13px;
 }
 
@@ -262,9 +243,8 @@
 .reply-write-btn {
     margin-left: 10px;
     color: #777;
-    font-size: 0.96rem;
+    font-size: 15px;
     cursor: pointer;
-    font-weight: 500;
     transition: color 0.14s;
 }
 .reply-write-btn:hover {
@@ -349,3 +329,88 @@
 .content-body.ql-editor {
     padding: 0;
 }
+
+/* 삭제 된 댓글,답글 흐리게 */
+.comment-content.deleted,
+.reply-content.deleted,
+.reply-author.deleted{
+    color: #999;
+}
+
+
+/* 폰트 사이즈 및 정렬 일치를 위한 오버라이드 */
+.comment-meta,
+.reply-meta {
+    font-size: 0.97rem; /* 동일 */
+}
+
+.comment-content,
+.reply-content,
+.reply-item {
+    font-size: 15px; /* 동일 */
+}
+
+.reply-date {
+    font-size: inherit; /* 13px → 댓글과 동일 */
+}
+
+/* 작성자도 동일 크기 유지 */
+.comment-author,
+.reply-author {
+    font-size: 15px;
+    color: #000;
+}
+
+/* === 삭제 버튼 위치/스타일 통일 (항상 우측 끝) === */
+.comment-meta,
+.reply-meta {
+    display: flex;
+    align-items: center;
+}
+
+/* 댓글/답글 모두 같은 규칙으로 정렬/스타일 */
+.comment-content,
+.reply-content {
+    line-height: 1.3;                 /* 동일 줄간격 */
+}
+
+/* 수정 버튼 추가(더보기) */
+/* 더보기 메뉴 */
+.more-wrapper {
+    margin-left: auto;
+    position: relative;
+}
+.more-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: #b3b3b3;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+}
+.more-btn:hover { background: rgba(0,0,0,0.05); }
+
+.more-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 6px;
+    background: #fff;
+    border: 1px solid #e8ebf2;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    min-width: 120px;
+    padding: 4px;
+    z-index: 10;
+}
+.more-menu-item {
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    color: #333;
+    cursor: pointer;
+    border-radius: 6px;
+}
+.more-menu-item:hover { background: #f5f7fb; }
+.more-menu-item.danger { color: #e03131; }

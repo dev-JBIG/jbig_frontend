@@ -26,6 +26,7 @@ export interface Comment {
     date: string;
     replies?: Reply[];
     is_owner: boolean;
+    is_deleted: boolean;
 }
 
 export interface Reply {
@@ -34,6 +35,7 @@ export interface Reply {
     content: string;
     date: string;
     is_owner: boolean;
+    is_deleted: boolean;
 }
 
 export interface PostDetailData {

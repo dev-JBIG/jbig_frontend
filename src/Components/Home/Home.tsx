@@ -55,7 +55,12 @@ const Home: React.FC = () => {
                 const url = await fetchQuizUrl(accessToken);
                 if (!url) {
                     setQuizURL("");
-                } else {
+                } else if(url === "401") {
+                    setQuizURL("");
+                    signOutLocal();
+                    alert("로그인이 필요합니다.");
+                    navigate("/signin");
+                } else{
                     setQuizURL(url);
                 }
             }

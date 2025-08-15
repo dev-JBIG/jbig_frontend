@@ -1,6 +1,4 @@
-// Components/Utils/Awards.tsx
 import React, { useEffect, useRef } from "react";
-import axios from "axios";
 import { fetchAwardsHtml } from "../../API/req";
 
 const MAX_WIDTH = 790;
@@ -13,53 +11,48 @@ export const AwardsSection: React.FC = () => {
 
         (async () => {
             try {
-                // 1) 서버에서 파일 "링크(URL 문자열)"을 받는다
-                const fileUrl = await fetchAwardsHtml();
+                // 1) 서버에서 HTML 문자열 그대로 받기
+                const htmlString = await fetchAwardsHtml();
                 if (stop || !hostRef.current) return;
 
-                // 2) 링크로부터 HTML 본문을 가져온다 (X-Frame-Options 회피: iframe 미사용)
-                const res = await axios.get<string>(fileUrl, {
-                    headers: { Accept: "text/html" },
-                    responseType: "text",
-                    withCredentials: false,
-                });
-                let html = res.data || "";
-
-                // 3) 상대경로(이미지/스타일/링크)를 절대경로로 변환
-                const baseHref = new URL(".", fileUrl).toString(); // 파일이 있는 디렉토리
+                // 2) HTML 파싱해서 상대 경로 → 절대 경로 변환
                 const tmpDoc = document.implementation.createHTMLDocument("awards");
-                tmpDoc.body.innerHTML = html;
+                tmpDoc.body.innerHTML = htmlString;
 
                 const absolutizeAttr = (el: Element, attr: "src" | "href") => {
                     const raw = el.getAttribute(attr);
                     if (!raw) return;
                     try {
-                        // data:, mailto:, tel: 등은 그대로 둔다
                         if (/^(data:|mailto:|tel:|javascript:)/i.test(raw)) return;
-                        const abs = new URL(raw, baseHref).toString();
+                        const abs = new URL(raw, window.location.origin).toString();
                         el.setAttribute(attr, abs);
                     } catch {
                         /* ignore */
                     }
                 };
 
-                tmpDoc.querySelectorAll<HTMLElement>("[src]").forEach((el) => absolutizeAttr(el, "src"));
-                tmpDoc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((el) => absolutizeAttr(el, "href"));
-                tmpDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]').forEach((el) =>
+                tmpDoc.querySelectorAll<HTMLElement>("[src]").forEach((el) =>
+                    absolutizeAttr(el, "src")
+                );
+                tmpDoc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((el) =>
                     absolutizeAttr(el, "href")
                 );
+                tmpDoc
+                    .querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]')
+                    .forEach((el) => absolutizeAttr(el, "href"));
 
-                // (안전) script 제거
+                // script 제거
                 tmpDoc.querySelectorAll("script").forEach((s) => s.remove());
 
-                html = tmpDoc.body.innerHTML;
+                const cleanedHtml = tmpDoc.body.innerHTML;
 
-                // 4) Shadow DOM에 격리 주입 + article 중앙정렬
+                // 3) shadow DOM에 주입
                 const shadow =
-                    hostRef.current.shadowRoot ?? hostRef.current.attachShadow({ mode: "open" });
+                    hostRef.current.shadowRoot ??
+                    hostRef.current.attachShadow({ mode: "open" });
 
                 shadow.innerHTML = `
-          ${html}
+          ${cleanedHtml}
           <style>
             :host { display:block; width:100%; }
 
@@ -95,7 +88,7 @@ export const AwardsSection: React.FC = () => {
           </style>
         `;
 
-                // 5) 링크는 새 탭에서 열리게
+                // 링크 새 탭에서 열리도록 보정
                 const upgradeLinks = (root: ParentNode) => {
                     root.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
                         const href = (a.getAttribute("href") || "").trim();

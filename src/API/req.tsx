@@ -1,5 +1,5 @@
 import axios from "axios";
-import { PostItem } from "../Components/Utils/interfaces";
+import {PostItem, Reply, Comment } from "../Components/Utils/interfaces";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -176,16 +176,24 @@ export const fetchBoardPosts = async (
 // 퀴즈 url 반환
 export const fetchQuizUrl = async (token: string): Promise<string | null> => {
     const url = `${BASE_URL}/api/quiz-url/`;
-    const res = await axios.get(url, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
 
-    const quizUrl =
-        typeof res.data?.quiz_url === "string" ? res.data.quiz_url : null;
+    try {
+        const res = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
 
-    return quizUrl && quizUrl.trim() ? quizUrl : null;
+        const quizUrl =
+            typeof res.data?.quiz_url === "string" ? res.data.quiz_url.trim() : "";
+
+        return quizUrl || null;
+    } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+            return "401";
+        }
+        throw err;
+    }
 };
 
 
@@ -372,28 +380,22 @@ export const uploadAttachment = async (file: File, token: String) => {
     }
 };
 
-// 수상경력 html(링크) 불러오기 (배열로 온다고 구현된 백엔드에 맞추어 구현되었습니다.)
+// 수상경력 html 불러오기
 export const fetchAwardsHtml = async (): Promise<string> => {
-    const listUrl = `${BASE_URL}/api/html/awards`;
-    const res = await axios.get<Array<{ id: number; title: string; file_path: string }>>(listUrl, {
-        headers: { Accept: "application/json" },
-        withCredentials: true,
+    const url = `${BASE_URL}/api/html/award/`;
+
+    const res = await axios.get<string>(url, {
+        headers: { Accept: "text/html" },
+        responseType: "text",
     });
 
-    const filePath = res.data?.[0]?.file_path;
-    if (!filePath) throw new Error("No awards file_path returned");
-
-    const mediaBase = `http://${SERVER_HOST}:${SERVER_PORT}/media`;
-    const normalized = filePath.replace(/^\/+/, "");
-    const url = `${mediaBase}/${normalized.split("/").map(encodeURIComponent).join("/")}`;
-
-    return url;
+    return res.data;
 };
 
 // notion 불러오기
-export const fetchNotionHtml = async (file: string, token: string): Promise<string> => {
-    const url = `${BASE_URL}/api/html/notion?file=${encodeURIComponent(file)}`;
-    const res = await axios.get(url, {
+export const fetchNotionHtml = async (token: string): Promise<string> => {
+    const url = `${BASE_URL}/api/html/notion`; // ?file 파라미터 제거
+    const res = await axios.get<string>(url, {
         headers: {
             Accept: "text/html",
             Authorization: `Bearer ${token}`,
@@ -401,8 +403,7 @@ export const fetchNotionHtml = async (file: string, token: string): Promise<stri
         responseType: "text",
         withCredentials: true,
     });
-
-    return res.data;
+    return res.data; // 깡 HTML 그대로 반환
 };
 
 // 수상경력 업로드, 어드민 페이지에서 사용
@@ -421,6 +422,7 @@ export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => 
     return res.data;
 };
 
+// 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
     try {
         const response = await axios.post(
@@ -492,29 +494,122 @@ export const createPost = async (
     }
 };
 
-// 개별 댓글 삭제
-export const deleteComment = async (
-    commentId: number,
-    accessToken?: string
-): Promise<
-    | { ok: true }
-    | { ok: false; unauthorized?: true; forbidden?: true; notFound?: true; error?: string }
-> => {
-    const res = await fetch(`${BASE_URL}/api/comments/${commentId}/`, {
-        method: "DELETE",
+// 댓글 삭제
+export const deleteComment = async (commentId: number, token: string): Promise<void> => {
+    const url = `${BASE_URL}/api/comments/${commentId}/`;
+    await axios.delete(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+    });
+};
+
+// 댓글 등록
+export const createComment = async (
+    postId: number,
+    payload: { content: string; parent: number | null }, // ← 루트 댓글은 null
+    token: string
+): Promise<Comment | Reply> => {
+    const url = `${BASE_URL}/api/posts/${postId}/comments/`;
+    const res = await axios.post(url, payload, {
         headers: {
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
         },
+        withCredentials: true,
+        responseType: "json",
     });
 
-    if (res.status === 204) return { ok: true };
-    if (res.status === 401) return { ok: false, unauthorized: true };
-    if (res.status === 403) return { ok: false, forbidden: true };
-    if (res.status === 404) return { ok: false, notFound: true };
+    const d = res.data as {
+        id: number;
+        author: string;
+        content: string;
+        created_at: string;
+        parent: number | null;
+        is_owner: boolean;
+        is_deleted: boolean;
+    };
 
-    let msg = "";
-    try {
-        msg = await res.text();
-    } catch {}
-    return { ok: false, error: msg || "댓글 삭제에 실패했습니다." };
+    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
+    const isReply = (payload.parent !== null && payload.parent !== 0) ||
+        (d.parent !== null && d.parent !== 0);
+
+    if (isReply) {
+        const reply: Reply = {
+            id: d.id,
+            author: d.author,
+            content: d.content,
+            date,
+            is_owner: d.is_owner,
+            is_deleted: false,
+        };
+        return reply;
+    } else {
+        const comment: Comment = {
+            id: d.id,
+            author: d.author,
+            content: d.content,
+            date,
+            is_owner: d.is_owner,
+            is_deleted: false,
+            replies: [] as Reply[],
+        };
+        return comment;
+    }
+};
+
+// 댓글 수정
+export const updateComment = async (
+    commentId: number,
+    payload: { content: string; parent: number | null },
+    token: string
+): Promise<Comment | Reply> => {
+    const url = `${BASE_URL}/api/comments/${commentId}/`;
+    const res = await axios.patch(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const d = res.data as {
+        id: number;
+        author: string;
+        content: string;
+        created_at: string;
+        parent: number | null;
+        is_owner: boolean;
+        is_deleted?: boolean;
+    };
+
+    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
+    const isReply = (payload.parent !== null && payload.parent !== 0) ||
+        (d.parent !== null && d.parent !== 0);
+    const isDeleted = !!d.is_deleted;
+
+    if (isReply) {
+        const reply: Reply = {
+            id: d.id,
+            author: d.author,
+            content: d.content,
+            date,
+            is_owner: !!d.is_owner,
+            is_deleted: isDeleted,
+        };
+        return reply;
+    } else {
+        const comment: Comment = {
+            id: d.id,
+            author: d.author,
+            content: d.content,
+            date,
+            is_owner: !!d.is_owner,
+            is_deleted: isDeleted,
+            replies: [] as Reply[],
+        };
+        return comment;
+    }
 };
