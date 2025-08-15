@@ -51,6 +51,7 @@ export interface PostDetailData {
     attachments?: Attachment[];
     comments?: Comment[];
     isLiked?: boolean;
+    is_owner: boolean;
 }
 
 export interface Board {

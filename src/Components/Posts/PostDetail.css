@@ -12,6 +12,21 @@
     align-items: flex-start;
     gap: 4px;
     margin-bottom: 8px;
+    position: relative;
+}
+
+.postdetail-delete-link {
+    position: absolute;
+    right: 0;
+    font-size: 15px;
+    padding: 3px 0;
+    color: #b3b3b3;
+    cursor: pointer;
+    user-select: none;
+}
+.postdetail-delete-link:hover {
+    color: #e03131;
+    text-decoration: underline;
 }
 
 .postdetail-category {

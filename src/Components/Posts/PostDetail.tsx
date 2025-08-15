@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, Comment } from "../Utils/interfaces";
-import {createComment, deleteComment, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
+import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
@@ -97,8 +97,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const src = raw.post_data ?? raw;
 
-                console.log(src);// debug
-
                 const mapped: PostDetailData = {
                     id: src.id,
                     board: src.board?.name || "",
@@ -110,6 +108,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     views: src.views ?? 0,
                     likes: src.likes_count ?? 0,
                     isLiked: src.is_liked ?? false,
+                    is_owner: !!src.is_owner,
                     attachments: (src.attachments || []).map((a: any) => ({
                         id: a.id,
                         fileUrl: a.file,
@@ -142,7 +141,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         };
 
         loadPost();
-    }, [authReady, accessToken, postId, navigate, username]);
+    }, [authReady, accessToken, postId]);
 
     useEffect(() => {
         if (!post || post === "not-found") return;
@@ -154,6 +153,25 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             .then(html => setHtmlContent(html))
             .catch(err => console.error("본문 로드 실패", err));
     }, [post]);
+
+    // 게시글 삭제
+    const handleDeletePost = async () => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+
+        if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
+
+        try {
+            const res = await deletePost(post.id, accessToken);
+            if (res?.status === 401) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res?.notFound) { alert("게시글을 찾을 수 없습니다."); return; }
+            // 성공
+            navigate(`/board/${boardId}`);
+        } catch (e) {
+            console.error(e);
+            alert("게시글 삭제에 실패했습니다.");
+        }
+    };
 
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
@@ -401,10 +419,20 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 >
                     {post.board}
                 </div>
+                {post.is_owner && (
+                    <span
+                        className="postdetail-delete-link"
+                        role="button"
+                        aria-label="게시글 삭제"
+                        onClick={handleDeletePost}
+                    >
+                        삭제
+                    </span>
+                )}
                 <h2 className="postdetail-title">{post.title}</h2>
             </div>
             <div className="postdetail-info-row">
-                <span className="postdetail-author">{post.author}</span>
+            <span className="postdetail-author">{post.author}</span>
                 <span className="postdetail-dot">·</span>
                 <span className="postdetail-date">
                     {post.date}

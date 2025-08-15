@@ -30,6 +30,21 @@ function App() {
     const noScaleRoutes = ["/signin", "/signup"];
     const isNoScale = noScaleRoutes.includes(location.pathname);
 
+    // 새로고침 시 중복 요청을 방지
+    const [refreshingOnReload, setRefreshingOnReload] = useState<boolean>(() => {
+        let isReload = false;
+        const nav = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+        if (nav && nav.length > 0) {
+            isReload = nav[0].type === "reload";
+        } else {
+            // @ts-ignore (deprecated fallback)
+            isReload = performance.navigation?.type === performance.navigation?.TYPE_RELOAD;
+        }
+        return isReload;
+    });
+
+    const didRunRef = useRef(false);
+
     useEffect(() => {
         const resize = () => {
             const w = window.innerWidth;
@@ -51,24 +66,14 @@ function App() {
     }, []);
 
     useEffect(() => {
+        if (!refreshingOnReload) return;
         if (!authReady) return;
-        if (!refreshToken) return;
-        if (didRefreshOnReloadRef.current) return;
-
-        // 브라우저 리로드 여부 판별
-        let isReload = false;
-        const navEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
-        if (navEntries && navEntries.length > 0) {
-            isReload = navEntries[0].type === "reload";
-        } else {
-            // 구형 브라우저 대비(Deprecated API)
-            // @ts-ignore
-            isReload = performance.navigation?.type === performance.navigation?.TYPE_RELOAD;
+        if (didRunRef.current) return;
+        didRunRef.current = true;
+        if (!refreshToken) {
+            setRefreshingOnReload(false);
+            return;
         }
-
-        if (!isReload) return;
-
-        didRefreshOnReloadRef.current = true;
 
         (async () => {
             try {
@@ -79,10 +84,8 @@ function App() {
                         data.access,
                         data.refresh
                     );
-                    // 성공 시 여기서 끝. navigate/reload 금지
                 } else {
                     signOutLocal();
-                    // 실패 시에도 전체 리로드는 금지; 라우팅만 로그인으로
                     alert("토큰 갱신 실패, 다시 로그인해주세요.");
                     navigate("/signin", { replace: true });
                 }
@@ -90,9 +93,12 @@ function App() {
                 signOutLocal();
                 alert("토큰 갱신 실패, 다시 로그인해주세요.");
                 navigate("/signin", { replace: true });
+            } finally {
+                // 리프레시 흐름 종료 → 라우트 렌더 시작
+                setRefreshingOnReload(false);
             }
         })();
-    }, [authReady, refreshToken, setAuth, signOutLocal]);
+    }, [authReady, refreshingOnReload, refreshToken, setAuth, signOutLocal, navigate]);
 
     const scaledHeight = innerHeight * scale;
 
@@ -100,13 +106,11 @@ function App() {
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>
             <div className="app-root">
                 {isNoScale ? (
-                    /* 로그인/회원가입 전용 */
                     <Routes>
                         <Route path="/signin" element={<Signin />} />
                         <Route path="/signup" element={<Signup />} />
                     </Routes>
                 ) : (
-                    /* 나머지 화면 (스케일 적용) */
                     <div
                         className="scale-outer"
                         style={{
@@ -117,33 +121,36 @@ function App() {
                             position: "relative",
                         }}
                     >
-                        <div
-                            ref={innerRef}
-                            className="scale-inner"
-                            style={{
-                                width: `${BASE_WIDTH}px`,
-                                transform: `scale(${scale})`,
-                                transformOrigin: "top left",
-                                willChange: "transform",
-                                display: "flex",
-                                flexDirection: "column",
-                            }}
-                        >
-                            <div style={{ flex: 1 }}>
-                                <Routes>
-                                    <Route path="/note" element={<Note />} />
-                                    <Route path="/admin" element={<Admin />} />
-                                    <Route path="/*" element={<Home />} />
-                                </Routes>
+                        {refreshingOnReload ? (
+                            <div/>
+                        ) : (
+                            <div
+                                ref={innerRef}
+                                className="scale-inner"
+                                style={{
+                                    width: `${BASE_WIDTH}px`,
+                                    transform: `scale(${scale})`,
+                                    transformOrigin: "top left",
+                                    willChange: "transform",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                }}
+                            >
+                                <div style={{ flex: 1 }}>
+                                    <Routes>
+                                        <Route path="/note" element={<Note />} />
+                                        <Route path="/admin" element={<Admin />} />
+                                        <Route path="/*" element={<Home />} />
+                                    </Routes>
+                                </div>
+                                <Footer />
                             </div>
-                            <Footer />
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
         </StaffAuthContext.Provider>
     );
-
 }
 
 export default App;

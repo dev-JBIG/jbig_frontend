@@ -494,6 +494,36 @@ export const createPost = async (
     }
 };
 
+// 게시글 삭제
+export const deletePost = async (
+    postId: number,
+    token: string
+): Promise<{ deleted?: boolean; status?: number; notFound?: boolean; message?: string }> => {
+    const url = `${BASE_URL}/api/posts/${postId}/`;
+    try {
+        const res = await axios.delete(url, {
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+            responseType: "json",
+        });
+
+        // 서버가 명시적으로 JSON을 주면 그대로 따르고, 없으면 성공으로 간주
+        const data = res.data as any;
+        if (data && typeof data.deleted === "boolean") {
+            return { deleted: data.deleted, status: res.status, message: data.message };
+        }
+        return { deleted: true, status: res.status };
+    } catch (err: any) {
+        const status = err?.response?.status as number | undefined;
+        if (status === 401) return { status: 401, message: "Unauthorized" };
+        if (status === 404) return { status: 404, notFound: true, message: "Not Found" };
+        return Promise.reject(err);
+    }
+};
+
 // 댓글 삭제
 export const deleteComment = async (commentId: number, token: string): Promise<void> => {
     const url = `${BASE_URL}/api/comments/${commentId}/`;
