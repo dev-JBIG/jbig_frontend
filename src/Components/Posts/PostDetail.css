@@ -15,18 +15,30 @@
     position: relative;
 }
 
-.postdetail-delete-link {
+.postdetail-actions {
     position: absolute;
+    top: 0;
     right: 0;
-    font-size: 15px;
+    display: flex;
     padding: 3px 0;
+    gap: 12px;
+    align-items: center;
+}
+
+.postdetail-edit-link,
+.postdetail-delete-link {
+    font-size: 0.95rem;
     color: #b3b3b3;
     cursor: pointer;
     user-select: none;
 }
+
+.postdetail-edit-link:hover {
+    color: #666;
+}
+
 .postdetail-delete-link:hover {
     color: #e03131;
-    text-decoration: underline;
 }
 
 .postdetail-category {

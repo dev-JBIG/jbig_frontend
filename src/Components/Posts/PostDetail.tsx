@@ -173,6 +173,12 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
+    // 게시글 수정
+    const handleEditPost = () => {
+        if (!post || typeof post === "string") return;
+        navigate(`/board/${boardId}/${post.id}/modify`);
+    };
+
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
         if (!post || typeof post === "string") return;
@@ -220,6 +226,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
+    // 댓글 삭제
     const handleDeleteComment = async (commentId: number) => {
         if (!post || typeof post === "string") return;
         if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
@@ -245,6 +252,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
+    // 답글 삭제
     const handleDeleteReply = async (commentId: number, replyId: number) => {
         if (!post || typeof post === "string") return;
         if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
@@ -420,14 +428,24 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     {post.board}
                 </div>
                 {post.is_owner && (
-                    <span
-                        className="postdetail-delete-link"
-                        role="button"
-                        aria-label="게시글 삭제"
-                        onClick={handleDeletePost}
-                    >
-                        삭제
-                    </span>
+                    <div className="postdetail-actions">
+                        <span
+                            className="postdetail-edit-link"
+                            role="button"
+                            aria-label="게시글 수정"
+                            onClick={handleEditPost}
+                        >
+                          수정
+                        </span>
+                        <span
+                            className="postdetail-delete-link"
+                            role="button"
+                            aria-label="게시글 삭제"
+                            onClick={handleDeletePost}
+                        >
+                          삭제
+                        </span>
+                    </div>
                 )}
                 <h2 className="postdetail-title">{post.title}</h2>
             </div>
@@ -491,7 +509,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             )}
 
             <div className="postdetail-btn-row">
-                <button className="postdetail-btn" onClick={() => navigate(-1)}>
+                <button
+                    className="postdetail-btn"
+                    onClick={() => navigate(`/board/${boardId ?? 0}`)}
+                >
                     목록으로
                 </button>
             </div>

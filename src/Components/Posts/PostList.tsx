@@ -5,12 +5,17 @@ import "./PostList.css";
 import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 
+/**
+ * 게시물 리스트 컴포넌트로, 일반적인 게시판의 게시물을 나열합니다
+ * 외에도 검색 시 리스트에도 활용됩니다.
+ * url에 따라 기능을 구분하였습니다.
+ * */
 function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean })  {
     const [posts, setPosts] = useState<PostItem[] | null>(null);
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
 
-    const { boardId: boardIdRaw } = useParams(); // "all" 또는 "123"
+    const { boardId: boardIdRaw } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -204,8 +209,11 @@ function PostList({ boards, isHome }: { boards?: Section[], isHome?: boolean }) 
                                     cursor: "pointer",
                                     fontWeight: 500,
                                 }}
+                                title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
                             >
-                                {p.author_semester}기 {p.author}
+                                <span className="author-text">
+                                {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
+                              </span>
                             </td>
                             <td className="th-date">{p.date}</td>
                             <td className="th-views">{p.views.toLocaleString()}</td>

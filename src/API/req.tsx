@@ -524,6 +524,34 @@ export const deletePost = async (
     }
 };
 
+// 게시글 수정
+export const modifyPost = async (
+    postId: number,
+    payload: {
+        title: string;
+        content_html: string;
+        attachment_ids: number[];
+        attachment_ids_to_delete: number[];
+        board_id?: number;
+    },
+    token: string
+) => {
+    const url = `${BASE_URL}/api/posts/${postId}/`;
+    const res = await axios.patch(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    console.log(payload); //debug
+    return res.data;
+};
+
+
 // 댓글 삭제
 export const deleteComment = async (commentId: number, token: string): Promise<void> => {
     const url = `${BASE_URL}/api/comments/${commentId}/`;

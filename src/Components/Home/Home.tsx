@@ -142,6 +142,9 @@ const Home: React.FC = () => {
                     <Route path="board/:category/write" element={
                         <PostWrite boards={boards}/>
                     }/>
+                    <Route path="/board/:category/:id/modify" element={<
+                        PostWrite boards={boards}/>
+                    }/>
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>

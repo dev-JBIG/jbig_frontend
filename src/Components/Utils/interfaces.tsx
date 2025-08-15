@@ -90,4 +90,5 @@ export interface UserProfile {
 export interface UploadFile {
     file: File;
     url: string;
+    id?: number;
 }
