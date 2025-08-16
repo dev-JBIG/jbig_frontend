@@ -43,14 +43,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onChange={e => setSidebarQuery(e.target.value)}
                     onKeyDown={e => {
                         if (e.key === 'Enter' && sidebarQuery.trim()) {
+                            setSidebarQuery("");
                             navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
                 />
                 <button
-                    className="search-button"
+                    className="side-search-button"
                     onClick={() => {
                         if (sidebarQuery.trim()) {
+                            setSidebarQuery("");
                             navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
@@ -66,12 +68,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                     <span className="viewall-count">{totalCount.toLocaleString()}</span>
                 </li>
-                <li className="menu-item-viewall" onClick={() => window.open(quizURL, '_blank', 'noopener,noreferrer')}>
-                    <span style={{display: "flex", alignItems: "center"}}>
-                        <SquareCheckBig size={18} className="board-icon"/>
-                        이번 주 퀴즈
-                    </span>
-                </li>
+                {quizURL && quizURL.trim() !== "" && (
+                    <li
+                        className="menu-item-viewall"
+                        onClick={() => window.open(quizURL, "_blank", "noopener,noreferrer")}
+                    >
+                        <span style={{ display: "flex", alignItems: "center" }}>
+                            <SquareCheckBig size={18} className="board-icon" />
+                            이번 주 퀴즈
+                        </span>
+                    </li>
+                )}
             </ul>
             <div className="sidebar-top-divider"/>
 

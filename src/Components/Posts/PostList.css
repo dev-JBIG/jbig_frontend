@@ -117,6 +117,16 @@
     outline: none;
 }
 
+
+.author-cell .author-text {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
 /* 페이지네이션 */
 .pagination-row {
     display: flex;

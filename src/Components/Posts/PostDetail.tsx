@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData, Comment, Attachment, Reply } from "../Utils/interfaces";
-import {deleteComment, fetchPostDetail} from "../../API/req"; // 추가
+import { PostDetailData, Comment } from "../Utils/interfaces";
+import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
+import { Heart } from "lucide-react";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -31,6 +32,37 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
     const { accessToken, authReady } = useUser();
 
+    type OpenMenu =
+        | { type: "comment"; id: number }
+        | { type: "reply"; cId: number; rId: number }
+        | null;
+
+    const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+    const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
+    const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
+    const [editText, setEditText] = useState("");
+
+    const toggleCommentMenu = (id: number) =>
+        setOpenMenu(m => (m && m.type === "comment" && m.id === id ? null : { type: "comment", id }));
+
+    const toggleReplyMenu = (cId: number, rId: number) =>
+        setOpenMenu(m =>
+            m && m.type === "reply" && m.cId === cId && m.rId === rId ? null : { type: "reply", cId, rId }
+        );
+
+
+    // 동일 키로 중복 조회 안되도록
+    const fetchedKeyRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        const onPointerDown = (ev: PointerEvent) => {
+            const el = ev.target as Element | null;
+            if (!el || !el.closest(".more-wrapper")) setOpenMenu(null);
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, []);
+
     useEffect(() => {
         if (!authReady || !postId) return;
 
@@ -40,26 +72,21 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             return;
         }
 
+        const key = `${postId}:${accessToken}`;
+        if (fetchedKeyRef.current === key) return;
+        fetchedKeyRef.current = key;
+
         const loadPost = async () => {
-            if (!postId) return;
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized) {
+                if (raw.unauthorized || !raw.isTokenValid) {
                     alert("로그인이 필요합니다.");
                     navigate("/signin");
                     return;
                 }
-                const src = raw.post_data ?? raw;
-
                 if (raw.notFound) {
                     setPost("not-found");
-                    return;
-                }
-
-                if(!raw.isTokenValid){
-                    alert("로그인 후 이용 가능합니다.")
-                    navigate("/signin");
                     return;
                 }
 
@@ -67,6 +94,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const toDate = (s?: string) => (s ? s.slice(0, 16).replace("T", " ") : "");
                 const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
+
+                const src = raw.post_data ?? raw;
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -79,22 +108,27 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     views: src.views ?? 0,
                     likes: src.likes_count ?? 0,
                     isLiked: src.is_liked ?? false,
+                    is_owner: !!src.is_owner,
                     attachments: (src.attachments || []).map((a: any) => ({
                         id: a.id,
-                        fileUrl: a.file,        // file => fileUrl
+                        fileUrl: a.file,
                         fileName: a.filename,
                         fileType: ext(a.filename),
                     })),
-                    comments: (src.comments || []).map((c: any) => ({
+                    comments: (src.comments || []).slice().reverse().map((c: any) => ({
                         id: c.id,
                         author: c.author,
                         content: c.content,
                         date: toDate(c.created_at),
-                        replies: (c.children || []).map((r: any) => ({
+                        is_owner: c.is_owner,
+                        is_deleted: c.is_deleted,
+                        replies: (c.children || []).slice().reverse().map((r: any) => ({
                             id: r.id,
                             author: r.author,
                             content: r.content,
                             date: toDate(r.created_at),
+                            is_owner: r.is_owner,
+                            is_deleted: r.is_deleted,
                         })),
                     })),
                 };
@@ -105,6 +139,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 setPost("not-found");
             }
         };
+
         loadPost();
     }, [authReady, accessToken, postId]);
 
@@ -119,32 +154,133 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             .catch(err => console.error("본문 로드 실패", err));
     }, [post]);
 
-    // 댓글 등록
-    const handleAddComment = () => {
-        if (!commentInput.trim() || !post || typeof post === "string") return;
+    // 게시글 삭제
+    const handleDeletePost = async () => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
 
-        const newComment: Comment = {
-            id: (post.comments?.length || 0) + 1,
-            author: userName,
-            content: commentInput,
-            date: new Date().toLocaleString().slice(0, 16),
-            replies: []
-        };
-        setPost({
-            ...post,
-            comments: [...(post.comments || []), newComment]
-        });
-        setCommentInput("");
+        if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
+
+        try {
+            const res = await deletePost(post.id, accessToken);
+            if (res?.status === 401) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res?.notFound) { alert("게시글을 찾을 수 없습니다."); return; }
+            // 성공
+            navigate(`/board/${boardId}`);
+        } catch (e) {
+            console.error(e);
+            alert("게시글 삭제에 실패했습니다.");
+        }
     };
 
-    //todo: 삭제 api 구현 및 연결
-    const deleteHandler = (commentId: number) => {
+    // 게시글 수정
+    const handleEditPost = () => {
+        if (!post || typeof post === "string") return;
+        navigate(`/board/${boardId}/${post.id}/modify`);
+    };
+
+    // 좋아요 버튼 핸들러
+    const handleToggleLike = async () => {
         if (!post || typeof post === "string") return;
 
-        setPost({
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
+        const nextLiked = !post.isLiked;
+        const nextLikes = post.likes + (nextLiked ? 1 : -1);
+        setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
+
+        try {
+            await togglePostLike(post.id, accessToken);
+        } catch (e) {
+            setPost(post);
+            alert("좋아요 처리 중 오류가 발생했습니다.");
+        }
+    };
+
+    // 댓글 등록
+    const handleAddComment = async () => {
+        if (!post || typeof post === "string") return;
+        const content = commentInput.trim();
+        if (!content) return;
+
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
+        try {
+            const created = await createComment(post.id, { content, parent: null }, accessToken);
+            setPost({
+                ...post,
+                comments: [ ...(post.comments || []), created ],
+            });
+            setCommentInput("");
+        } catch (e) {
+            console.error(e);
+            alert("댓글 등록에 실패했습니다.");
+        }
+    };
+
+    // 댓글 삭제
+    const handleDeleteComment = async (commentId: number) => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+
+        const prev = post;
+        // 낙관적 UI: 내용 치환 + is_deleted 표시
+        const optimistic = {
             ...post,
-            comments: post.comments?.filter((c) => c.id !== commentId) || []
-        });
+            comments: (post.comments || []).map(c =>
+                c.id === commentId ? { ...c, content: "삭제 된 댓글입니다", is_deleted: true } : c
+            ),
+        };
+        setPost(optimistic);
+
+        try {
+            const res: any = await deleteComment(commentId, accessToken);
+            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
+            // 성공 시 그대로 유지
+        } catch {
+            setPost(prev);
+            alert("댓글 삭제에 실패했습니다.");
+        }
+    };
+
+    // 답글 삭제
+    const handleDeleteReply = async (commentId: number, replyId: number) => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+
+        const prev = post;
+        const optimistic = {
+            ...post,
+            comments: (post.comments || []).map(c =>
+                c.id === commentId
+                    ? {
+                        ...c,
+                        replies: (c.replies || []).map(r =>
+                            r.id === replyId ? { ...r, content: "삭제 된 댓글입니다", is_deleted: true } : r
+                        ),
+                    }
+                    : c
+            ),
+        };
+        setPost(optimistic);
+
+        try {
+            const res: any = await deleteComment(replyId, accessToken); // 답글도 같은 엔드포인트
+            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
+        } catch {
+            setPost(prev);
+            alert("답글 삭제에 실패했습니다.");
+        }
     };
 
     // 답글쓰기 버튼 클릭
@@ -162,90 +298,109 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
-    // 답글 등록 todo: api 연동
-    const handleAddReply = (commentId: number) => {
-        if (!replyInput.trim() || !post || typeof post === "string") return;
-        setPost({
-            ...post,
-            comments: (post.comments || []).map(c =>
-                c.id === commentId
-                    ? {
-                        ...c,
-                        replies: [
-                            ...(c.replies || []),
-                            {
-                                id: (c.replies?.length || 0) + 1,
-                                author: userName,
-                                content: replyInput,
-                                date: new Date().toLocaleString().slice(0, 16)
-                            }
-                        ]
-                    }
-                    : c
-            )
-        });
-        setReplyInput("");
-        setReplyTargetId(null);
-    };
-
-    // 댓글 삭제
-    const handleDeleteReply = async (commentId: number, replyId: number) => {
+    // 답글 등록
+    const handleAddReply = async (commentId: number) => {
         if (!post || typeof post === "string") return;
+        const content = replyInput.trim();
+        if (!content) return;
 
-        // 안전장치: 정말 삭제할지 확인
-        if (!window.confirm("이 답글을 삭제하시겠습니까?")) return;
-
-        if(!accessToken){
-            alert("토큰을 찾을 수 없습니다.")
-            navigate("/signin");
-            return;
-        }
-
-        const res = await deleteComment(replyId, accessToken);
-
-        if (res.ok) {
-            // 서버에서 삭제 성공했으니 로컬 상태도 반영
-            setPost({
-                ...post,
-                comments: (post.comments || []).map((c) =>
-                    c.id === commentId
-                        ? {
-                            ...c,
-                            replies: (c.replies || []).filter((r) => r.id !== replyId),
-                        }
-                        : c
-                ),
-            });
-            return;
-        }
-
-        // 실패 케이스 처리
-        if (res.unauthorized) {
+        if (!accessToken) {
             alert("로그인이 필요합니다.");
             navigate("/signin");
             return;
         }
-        if (res.forbidden) {
-            alert("삭제 권한이 없습니다.");
-            return;
-        }
-        if (res.notFound) {
-            alert("이미 삭제되었거나 존재하지 않는 답글입니다.");
+
+        try {
+            const created = await createComment(post.id, { content, parent: commentId }, accessToken);
             setPost({
                 ...post,
-                comments: (post.comments || []).map((c) =>
+                comments: (post.comments || []).map(c =>
                     c.id === commentId
-                        ? {
-                            ...c,
-                            replies: (c.replies || []).filter((r) => r.id !== replyId),
-                        }
+                        ? { ...c, replies: [ ...(c.replies || []), created ] }
                         : c
                 ),
             });
-            return;
+            setReplyInput("");
+            setReplyTargetId(null);
+        } catch (e) {
+            console.error(e);
+            alert("답글 등록에 실패했습니다.");
         }
+    };
 
-        alert(res.error || "답글 삭제 중 오류가 발생했습니다.");
+    const cancelEdit = () => {
+        setEditingCommentId(null);
+        setEditingReplyKey(null);
+        setEditText("");
+    };
+
+    const saveEditComment = async (commentId: number) => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        const content = editText.trim();
+        if (!content) return;
+
+        try {
+            await updateComment(commentId, { content, parent: null }, accessToken);
+            setPost({
+                ...post,
+                comments: (post.comments || []).map(c => c.id === commentId ? { ...c, content } : c),
+            });
+            cancelEdit();
+        } catch (e) {
+            console.error(e);
+            alert("댓글 수정에 실패했습니다.");
+        }
+    };
+
+    const saveEditReply = async (cId: number, rId: number) => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        const content = editText.trim();
+        if (!content) return;
+
+        try {
+            await updateComment(rId, { content, parent: cId }, accessToken);
+            setPost({
+                ...post,
+                comments: (post.comments || []).map(c =>
+                    c.id === cId
+                        ? { ...c, replies: (c.replies || []).map(r => r.id === rId ? { ...r, content } : r) }
+                        : c
+                ),
+            });
+            cancelEdit();
+        } catch (e) {
+            console.error(e);
+            alert("답글 수정에 실패했습니다.");
+        }
+    };
+
+    // 댓글 수정 시작
+    const handleEditComment = (commentId: number) => {
+        if (!post || typeof post === "string") return;
+
+        const target = (post.comments || []).find(c => c.id === commentId);
+        if (!target) return;
+
+        setOpenMenu(null);               // 더보기 닫기
+        setEditingReplyKey(null);        // 답글 편집 모드 해제
+        setEditingCommentId(commentId);  // 댓글 편집 모드 진입
+        setEditText(target.content);     // 현재 내용으로 에디터 채우기
+    };
+
+    // 답글 수정 시작
+    const handleEditReply = (commentId: number, replyId: number) => {
+        if (!post || typeof post === "string") return;
+
+        const parent = (post.comments || []).find(c => c.id === commentId);
+        const target = parent?.replies?.find(r => r.id === replyId);
+        if (!parent || !target) return;
+
+        setOpenMenu(null);                     // 더보기 닫기
+        setEditingCommentId(null);             // 댓글 편집 모드 해제
+        setEditingReplyKey({ cId: commentId, rId: replyId }); // 답글 편집 모드 진입
+        setEditText(target.content);           // 현재 내용으로 에디터 채우기
     };
 
     if (post === "not-found") {
@@ -272,10 +427,30 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 >
                     {post.board}
                 </div>
+                {post.is_owner && (
+                    <div className="postdetail-actions">
+                        <span
+                            className="postdetail-edit-link"
+                            role="button"
+                            aria-label="게시글 수정"
+                            onClick={handleEditPost}
+                        >
+                          수정
+                        </span>
+                        <span
+                            className="postdetail-delete-link"
+                            role="button"
+                            aria-label="게시글 삭제"
+                            onClick={handleDeletePost}
+                        >
+                          삭제
+                        </span>
+                    </div>
+                )}
                 <h2 className="postdetail-title">{post.title}</h2>
             </div>
             <div className="postdetail-info-row">
-                <span className="postdetail-author">{post.author}</span>
+            <span className="postdetail-author">{post.author}</span>
                 <span className="postdetail-dot">·</span>
                 <span className="postdetail-date">
                     {post.date}
@@ -289,6 +464,23 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <span>조회수 {post.views}</span>
                 <span className="postdetail-dot">·</span>
                 <span>좋아요 {post.likes}</span>
+
+                <button
+                    type="button"
+                    className="postdetail-like-btn"
+                    onClick={handleToggleLike}
+                    aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
+                    title={post.isLiked ? "좋아요 취소" : "좋아요"}
+                >
+                    <Heart
+                        size={18}
+                        style={{
+                            fill: post.isLiked ? "#e0245e" : "transparent",
+                            stroke: post.isLiked ? "#e0245e" : "#999",
+                            transition: "all .15s ease",
+                        }}
+                    />
+                </button>
             </div>
             <div className="postdetail-divider"/>
 
@@ -317,7 +509,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             )}
 
             <div className="postdetail-btn-row">
-                <button className="postdetail-btn" onClick={() => navigate(-1)}>
+                <button
+                    className="postdetail-btn"
+                    onClick={() => navigate(`/board/${boardId ?? 0}`)}
+                >
                     목록으로
                 </button>
             </div>
@@ -330,82 +525,167 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <ul className="postdetail-comment-list">
                     {(post.comments || []).map(c => (
                         <li className="postdetail-comment-item" key={c.id}>
-                            <div className="comment-meta">
-                        <span className="comment-author">
-                            {c.author}
-                            {c.author === userName && (
-                                <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
-                                    (나)
-                                </span>
-                            )}
-                        </span>
-                                <span className="comment-date">{c.date}</span>
-                                <span
-                                    className="reply-write-btn"
-                                    onClick={() => handleReplyWriteClick(c.id)}
-                                >
-                            답글쓰기
-                        </span>
-                                {c.author === userName && (
-                                    <span
-                                        className="comment-delete"
-                                        onClick={() => deleteHandler(c.id)}
-                                    >
-                                삭제
-                            </span>
-                                )}
-                            </div>
-                            <div className="comment-content">{c.content}</div>
-                            {/* 답글 리스트 */}
-                            <ul className="reply-list">
-                                {(c.replies || []).map(r => (
-                                    <li className="reply-item" key={r.id}>
-                                        <div className="reply-meta">
-                                    <span className="reply-author">
-                                        {r.author}
-
-                                        {/* todo: 본인 확인 여부를 게시글 조회시 주도록 */}
-                                        {r.author === userName && (
+                            <div className="comment-item">
+                                <div className="comment-meta">
+                                    <span className="comment-author">
+                                        {c.author}
+                                        {!c.is_deleted && c.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
                                             </span>
                                         )}
                                     </span>
-                                            <span className="reply-date">{r.date}</span>
-                                            {r.author === userName && (
-                                                <span
-                                                    className="reply-delete"
-                                                    onClick={() => handleDeleteReply(c.id, r.id)}
-                                                >
-                                            삭제
+                                    <span className="comment-date">{c.date}</span>
+                                    {!c.is_deleted && (
+                                        <span
+                                            className="reply-write-btn"
+                                            onClick={() => handleReplyWriteClick(c.id)}
+                                        >
+                                        답글쓰기
                                         </span>
+                                    )}
+                                    {!c.is_deleted && c.is_owner && (
+                                        <div className="more-wrapper">
+                                            <button
+                                                type="button"
+                                                className="more-btn"
+                                                aria-haspopup="menu"
+                                                aria-expanded={openMenu?.type === "comment" && openMenu.id === c.id}
+                                                onClick={() => toggleCommentMenu(c.id)}
+                                                title="더보기"
+                                            >
+                                                ⋯
+                                            </button>
+                                            {openMenu?.type === "comment" && openMenu.id === c.id && (
+                                                <div className="more-menu" role="menu">
+                                                    <div className="more-menu-item" role="menuitem"
+                                                         onClick={() => { setOpenMenu(null); handleEditComment(c.id); }}>
+                                                        수정
+                                                    </div>
+                                                    <div className="more-menu-item danger" role="menuitem"
+                                                         onClick={() => { setOpenMenu(null); handleDeleteComment(c.id); }}>
+                                                        삭제
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                        <div className="reply-content">{r.content}</div>
+                                    )}
+                                </div>
+
+                                {editingCommentId === c.id ? (
+                                    <div className="reply-input-box">
+                                    <textarea
+                                        className="reply-input"
+                                        rows={2}
+                                        value={editText}
+                                        onChange={e => setEditText(e.target.value)}
+                                        placeholder="내용을 수정하세요"
+                                        style={{ resize: "none" }}
+                                    />
+                                        <div className="reply-action-row">
+                                            <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
+                                            <span
+                                                className={"reply-register-text" + (editText.trim() ? " active" : "")}
+                                                onClick={() => editText.trim() && saveEditComment(c.id)}
+                                            >저장</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className={"comment-content" + (c.is_deleted ? " deleted" : "")}>
+                                        {c.content}
+                                    </div>
+                                )}
+                            </div>
+                            {/* 답글 리스트 */}
+                            <ul className="reply-list">
+                                {(c.replies || []).map(r => (
+                                    <li className="reply-item" key={r.id}>
+                                        <div className="reply-meta">
+                                <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}>
+                                    {r.author}
+                                    {!r.is_deleted && r.is_owner && (
+                                        <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                            (나)
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="reply-date">{r.date}</span>
+                                    {!r.is_deleted && r.is_owner && (
+                                        <div className="more-wrapper">
+                                            <button
+                                                type="button"
+                                                className="more-btn"
+                                                aria-haspopup="menu"
+                                                aria-expanded={openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id}
+                                                onClick={() => toggleReplyMenu(c.id, r.id)}
+                                                title="더보기"
+                                            >
+                                                ⋯
+                                            </button>
+                                            {openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id && (
+                                                <div className="more-menu" role="menu">
+                                                    <div className="more-menu-item" role="menuitem"
+                                                         onClick={() => { setOpenMenu(null); handleEditReply(c.id, r.id); }}>
+                                                        수정
+                                                    </div>
+                                                    <div className="more-menu-item danger" role="menuitem"
+                                                         onClick={() => { setOpenMenu(null); handleDeleteReply(c.id, r.id); }}>
+                                                        삭제
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    </div>
+                                        {editingReplyKey && editingReplyKey.cId === c.id && editingReplyKey.rId === r.id ? (
+                                        <div className="reply-input-box">
+                                            <textarea
+                                                className="reply-input"
+                                                rows={2}
+                                                value={editText}
+                                                onChange={e => setEditText(e.target.value)}
+                                                placeholder="내용을 수정하세요"
+                                                style={{ resize: "none" }}
+                                            />
+                                            <div className="reply-action-row">
+                                                <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
+                                                <span
+                                                    className={"reply-register-text" + (editText.trim() ? " active" : "")}
+                                                    onClick={() => editText.trim() && saveEditReply(c.id, r.id)}
+                                                >저장</span>
+                                            </div>
+                                        </div>
+                                        ) : (
+                                        <div className={"reply-content" + (r.is_deleted ? " deleted" : "")}>
+                                            {r.content}
+                                        </div>
+                                        )}
+
                                     </li>
                                 ))}
                             </ul>
                             {/* 답글 입력창: replyTargetId와 id가 같을 때만 노출 */}
                             {replyTargetId === c.id && (
                                 <div className="reply-input-box">
-                            <textarea
-                                className="reply-input"
-                                rows={1}
-                                placeholder="답글을 입력하세요"
-                                value={replyInput}
-                                onChange={e => setReplyInput(e.target.value)}
-                                style={{resize: "none"}}
-                            />
+                                    <textarea
+                                        className="reply-input"
+                                        rows={1}
+                                        placeholder="답글을 입력하세요"
+                                        value={replyInput}
+                                        onChange={e => setReplyInput(e.target.value)}
+                                        style={{resize: "none"}}
+                                    />
                                     <div className="reply-action-row">
-                                <span
-                                    className="reply-cancel-text"
-                                    onClick={() => {
-                                        setReplyInput("");
-                                        setReplyTargetId(null);
-                                    }}
-                                >
-                                    취소
-                                </span>
+                                        <span
+                                            className="reply-cancel-text"
+                                            onClick={() => {
+                                                setReplyInput("");
+                                                setReplyTargetId(null);
+                                            }}
+                                        >
+                                            취소
+                                        </span>
                                         <span
                                             className={
                                                 "reply-register-text" +
@@ -415,8 +695,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                                 if (replyInput.trim()) handleAddReply(c.id);
                                             }}
                                         >
-                                    등록
-                                </span>
+                                            등록
+                                        </span>
                                     </div>
                                 </div>
                             )}
@@ -443,7 +723,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         </div>
                     </div>
                 </div>
-            );
-            };
+);
+};
 
-            export default PostDetail;
+export default PostDetail;

@@ -1,129 +1,103 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Note.css";
-import {useNavigate} from "react-router-dom";
-import {useUser} from "../Utils/UserContext";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../Utils/UserContext";
+import { fetchNotionHtml } from "../../API/req";
+
+const MEDIA_BASE = "http://211.188.54.115:3001/media/notion/";
 
 const Note: React.FC = () => {
-    const { user, authReady } = useUser();
+    const { user, authReady, accessToken } = useUser();
     const navigate = useNavigate();
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [html, setHtml] = useState<string>("");
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const handleRefresh = () => {
-        window.location.reload();
-    };
-
+    // 초기 로드: 서버가 주는 HTML 그대로 표시
     useEffect(() => {
         if (!authReady) return;
-        if (!user) {
+        if (!user || !accessToken) {
             alert("로그인이 필요합니다.");
             navigate("/signin");
+            return;
         }
-    }, [authReady, user, navigate]);
-
-
-    useEffect(() => {
-        const iframe = iframeRef.current;
-        if (!iframe) return;
-
-        // iframe 자체 스크롤바 비활성화
-        iframe.setAttribute("scrolling", "no"); // 일부 브라우저
-        iframe.style.overflow = "hidden";       // 보조
-
-        const resizeToContent = () => {
+        let cancelled = false;
+        (async () => {
             try {
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!doc) return;
-                // 문서 전체 높이를 기준으로 iFrame 높이 갱신
-                const h1 = doc.documentElement?.scrollHeight || 0;
-                const h2 = doc.body?.scrollHeight || 0;
-                const next = Math.max(h1, h2);
-                if (next && iframe.style.height !== `${next}px`) {
-                    iframe.style.height = `${next}px`;
-                }
-            } catch (e) {
-                // cross-origin이면 접근 불가
-                // 지금은 같은 도메인(/notion/...)이므로 OK
+                const raw = await fetchNotionHtml(accessToken);
+                if (!cancelled) setHtml(raw);
+            } catch {
+                alert("문서를 불러올 수 없습니다.");
             }
-        };
-
-        const handleLoad = () => {
-            // 최초 로드 시 한번 맞추고
-            resizeToContent();
-
-            try {
-                const win = iframe.contentWindow;
-                const doc = iframe.contentDocument || win?.document;
-                if (!win || !doc) return;
-
-                // <details> 토글 변화 반영
-                doc.addEventListener("toggle", resizeToContent, true);
-
-                // 레이아웃 변화(폰트 로드, 이미지 로드 등) 감지
-                let ro: ResizeObserver;
-                if ((win as any).ResizeObserver) {
-                    ro = new (win as any).ResizeObserver(resizeToContent);
-                } else {
-                    ro = new ResizeObserver(resizeToContent);
-                }
-                ro.observe(doc.documentElement);
-                ro.observe(doc.body);
-
-                // DOM 변경(열림/닫힘, 동적 삽입 등) 감지
-                const mo = new MutationObserver(resizeToContent);
-                mo.observe(doc.documentElement, {
-                    attributes: true,
-                    childList: true,
-                    subtree: true,
-                    characterData: true,
-                });
-
-                // 이미지/리소스 지연 로딩 대비
-                doc.addEventListener("load", resizeToContent, true);
-
-                // 윈도 리사이즈에도 반응
-                const onOuterResize = () => resizeToContent();
-                window.addEventListener("resize", onOuterResize);
-
-                // cleanup
-                const cleanup = () => {
-                    try {
-                        doc.removeEventListener("toggle", resizeToContent, true);
-                        doc.removeEventListener("load", resizeToContent, true);
-                        window.removeEventListener("resize", onOuterResize);
-                        mo.disconnect();
-                        ro.disconnect?.();
-                    } catch {}
-                };
-
-                // iFrame이 다시 로드될 때(경로 바뀌거나 새로 로드) cleanup 필요
-                iframe.addEventListener("beforeunload", cleanup);
-                // on unmount
-                (iframe as any)._cleanup = cleanup;
-            } catch {}
-        };
-
-        iframe.addEventListener("load", handleLoad);
+        })();
         return () => {
-            iframe.removeEventListener("load", handleLoad);
-            (iframe as any)._cleanup?.();
+            cancelled = true;
         };
-    }, []);
+    }, [authReady, user, accessToken, navigate]);
+
+    // 내부 내비게이션: /...html → MEDIA_BASE + ... 로 붙여서 div 안에만 로드
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const handleClick = (e: Event) => {
+            const target = e.target as Element | null;
+            const anchor = target?.closest?.("a") as HTMLAnchorElement | null;
+            if (!anchor) return;
+
+            const rawHref = anchor.getAttribute("href") || "";
+            if (!rawHref || /^javascript:/i.test(rawHref)) return;
+
+            // 기준: MEDIA_BASE
+            // - 절대경로 "/foo.html" → MEDIA_BASE + "/foo.html"
+            // - 상대경로 "foo.html"   → MEDIA_BASE + "foo.html"
+            // - 이미 절대URL이면(new URL) 그대로 사용
+            let finalUrl: string;
+            try {
+                // new URL(href, base) 가 모든 경우(절대/상대/루트) 처리
+                finalUrl = new URL(rawHref, MEDIA_BASE).toString();
+            } catch {
+                return; // 이상한 URL이면 무시
+            }
+
+            // MEDIA_BASE 아래로만 가로채기 (외부 링크는 기본 동작)
+            if (!finalUrl.startsWith(MEDIA_BASE)) return;
+
+            e.preventDefault();
+
+            fetch(finalUrl, { credentials: "include" })
+                .then((res) => {
+                    if (!res.ok) throw new Error(`Failed: ${res.status}`);
+                    return res.text();
+                })
+                .then((data) => {
+                    setHtml(data); // div 내용만 교체
+                    // 필요하면 스크롤 상단으로
+                    el.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+                })
+                .catch(() => {
+                    alert("페이지를 불러올 수 없습니다.");
+                });
+        };
+
+        el.addEventListener("click", handleClick);
+        return () => el.removeEventListener("click", handleClick);
+    }, [html]);
 
     return (
-        <div className="note-wrapper">
+        <div className="note-wrapper" style={{ width: "100%" }}>
             <div className="note-header">
-                <a href="/" className="note-logo">
-                    JBIG
-                </a>
-                <button className="refresh-button" onClick={handleRefresh}>
+                <a href="/" className="note-logo">JBIG</a>
+                <button className="refresh-button" onClick={() => window.location.reload()}>
                     새로고침
                 </button>
             </div>
-            <iframe
-                ref={iframeRef}
-                src="/notion/JBIG 교안 (New) 1ad4d7781cdc803a9a5ef553af7782fe.html"
-                title="Notion"
-                className="note-iframe"
+
+            {/* 여기만 교체 */}
+            <div
+                ref={containerRef}
+                className="note-html"
+                style={{ width: "100%" }}
+                dangerouslySetInnerHTML={{ __html: html }}
             />
         </div>
     );

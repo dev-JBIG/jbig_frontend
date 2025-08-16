@@ -16,7 +16,7 @@
 }
 
 .logo{
-    color: #2c3e50;
+    color: #3563e9;
     cursor: pointer;
 }
 
@@ -84,10 +84,10 @@
     box-sizing: border-box;
 }
 
-.search-button {
+.side-search-button {
     padding: 8px 12px;
     font-size: 12px;
-    background-color: #3498db;
+    background-color: #3563e9;
     border: 1px solid #ccc;
     border-radius: 0 4px 4px 0;
     border-left: none;
@@ -97,15 +97,15 @@
     box-sizing: border-box;
 }
 
-.search-button:hover {
-    background-color: #2980b9;
+.side-search-button:hover {
+    background-color: #274bb5;
 }
 
 .sidebar-button {
     width: 100%;
     padding: 8px 12px;
     font-size: 14px;
-    background-color: #3498db;
+    background-color: #3563e9;
     color: white;
     border: none;
     border-radius: 4px;
@@ -114,7 +114,7 @@
 }
 
 .sidebar-button:hover {
-    background-color: #2980b9;
+    background-color: #274bb5;
 }
 
 .menu {
@@ -168,21 +168,15 @@
 }
 
 .login-button:hover {
-    background-color: #2980b9;
+    background-color: #274bb5;
 }
 
 .main-banner {
-    width: 100%;
+    max-width: 790px;
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
-}
-
-.main-banner-image {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: 6px;
+    margin: 0;
+    overflow: hidden;
 }
 
 .board-icon {
@@ -253,3 +247,5 @@
     background-color: #f4f4f4;
 }
 
+/* 수상경력 */
+.awards-container { width:100%; max-width:790px; margin: 0 auto;}

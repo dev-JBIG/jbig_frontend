@@ -25,6 +25,8 @@ export interface Comment {
     content: string;
     date: string;
     replies?: Reply[];
+    is_owner: boolean;
+    is_deleted: boolean;
 }
 
 export interface Reply {
@@ -32,6 +34,8 @@ export interface Reply {
     author: string;
     content: string;
     date: string;
+    is_owner: boolean;
+    is_deleted: boolean;
 }
 
 export interface PostDetailData {
@@ -47,6 +51,7 @@ export interface PostDetailData {
     attachments?: Attachment[];
     comments?: Comment[];
     isLiked?: boolean;
+    is_owner: boolean;
 }
 
 export interface Board {
@@ -85,4 +90,5 @@ export interface UserProfile {
 export interface UploadFile {
     file: File;
     url: string;
+    id?: number;
 }

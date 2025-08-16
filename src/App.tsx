@@ -12,78 +12,95 @@ import {refreshTokenAPI} from "./API/req";
 import {useUser} from "./Components/Utils/UserContext";
 
 const BASE_WIDTH = 1000;
-const BASE_HEIGHT = BASE_WIDTH * 9 / 16;
 const MIN_WIDTH = 300;
 
 function App() {
     const [scale, setScale] = useState(1);
+    const [innerHeight, setInnerHeight] = useState(0);
+    const innerRef = useRef<HTMLDivElement>(null);
     const [staffAuth, setStaffAuth] = useState<boolean>(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
     const navigate = useNavigate();
 
-    const { setAuth, signOutLocal, refreshToken } = useUser();
+    const { setAuth, signOutLocal, refreshToken, authReady } = useUser();
+    const didRefreshOnReloadRef = useRef(false);
 
     // 스케일 조정 사용하지 않을 경로들
     const noScaleRoutes = ["/signin", "/signup"];
     const isNoScale = noScaleRoutes.includes(location.pathname);
 
-    useEffect(() => {
-        if (isNoScale) return; // scaling 필요 없는 경우 실행 안함
+    // 새로고침 시 중복 요청을 방지
+    const [refreshingOnReload, setRefreshingOnReload] = useState<boolean>(() => {
+        let isReload = false;
+        const nav = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+        if (nav && nav.length > 0) {
+            isReload = nav[0].type === "reload";
+        } else {
+            // @ts-ignore (deprecated fallback)
+            isReload = performance.navigation?.type === performance.navigation?.TYPE_RELOAD;
+        }
+        return isReload;
+    });
 
+    const didRunRef = useRef(false);
+
+    useEffect(() => {
         const resize = () => {
             const w = window.innerWidth;
-            const h = window.innerHeight;
-
-            const scaleX = w / BASE_WIDTH;
-            const scaleY = h / BASE_HEIGHT;
             const minScale = MIN_WIDTH / BASE_WIDTH;
-
-            const newScale = Math.max(Math.min(scaleX, scaleY, 1), minScale);
-            setScale(newScale);
-
-            const scaledWidth = BASE_WIDTH * newScale;
-            if (wrapperRef.current) {
-                wrapperRef.current.style.left = `${(w - scaledWidth) / 2}px`;
-            }
+            setScale(Math.max(Math.min(w / BASE_WIDTH, 1), minScale));
         };
-
         resize();
         window.addEventListener("resize", resize);
         return () => window.removeEventListener("resize", resize);
-    }, [isNoScale]);
+    }, []);
 
     useEffect(() => {
-        if (!refreshToken) return;
+        if (!innerRef.current) return;
+        const ro = new ResizeObserver(([entry]) => {
+            setInnerHeight(entry.contentRect.height); // 스케일 전 높이
+        });
+        ro.observe(innerRef.current);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!refreshingOnReload) return;
+        if (!authReady) return;
+        if (didRunRef.current) return;
+        didRunRef.current = true;
+        if (!refreshToken) {
+            setRefreshingOnReload(false);
+            return;
+        }
 
         (async () => {
             try {
-                const data = await refreshTokenAPI(refreshToken); // API 호출
-
-                if (data.isSuccess) {
+                const data = await refreshTokenAPI(refreshToken);
+                if (data?.isSuccess) {
                     setAuth(
-                        {
-                            username: data.username,
-                            semester: data.semester,
-                            email: data.email,
-                        },
+                        { username: data.username, semester: data.semester, email: data.email },
                         data.access,
                         data.refresh
                     );
                 } else {
-                    console.error("토큰 갱신 실패:", data?.error);
                     signOutLocal();
-                    navigate("/signin");
-                    window.location.reload();
+                    alert("토큰 갱신 실패, 다시 로그인해주세요.");
+                    navigate("/signin", { replace: true });
                 }
-            } catch (e) {
-                console.error("토큰 갱신 중 오류:", e);
+            } catch {
                 signOutLocal();
-                navigate("/signin");
-                window.location.reload();
+                alert("토큰 갱신 실패, 다시 로그인해주세요.");
+                navigate("/signin", { replace: true });
+            } finally {
+                // 리프레시 흐름 종료 → 라우트 렌더 시작
+                setRefreshingOnReload(false);
             }
         })();
-    }, [navigate]);
+    }, [authReady, refreshingOnReload, refreshToken, setAuth, signOutLocal, navigate]);
+
+    const scaledHeight = innerHeight * scale;
 
     return (
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>
@@ -95,27 +112,40 @@ function App() {
                     </Routes>
                 ) : (
                     <div
-                        ref={wrapperRef}
-                        className="scale-wrapper"
+                        className="scale-outer"
                         style={{
-                            position: "absolute",
-                            top: 0,
-                            width: `${BASE_WIDTH}px`,
-                            height: `${BASE_HEIGHT}px`,
-                            display: "flex",
-                            flexDirection: "column",
-                            transform: `scale(${scale})`,
-                            transformOrigin: "top left",
+                            width: "min(100%, 1000px)",
+                            minHeight: "100vh",
+                            height: `${Math.max(scaledHeight, window.innerHeight)}px`,
+                            margin: "0 auto",
+                            position: "relative",
                         }}
                     >
-                        <div style={{flex: 1}}>
-                            <Routes>
-                                <Route path="/note" element={<Note/>}/>
-                                <Route path="/admin" element={<Admin/>}/>
-                                <Route path="/*" element={<Home/>}/>
-                            </Routes>
-                        </div>
-                        <Footer/>
+                        {refreshingOnReload ? (
+                            <div/>
+                        ) : (
+                            <div
+                                ref={innerRef}
+                                className="scale-inner"
+                                style={{
+                                    width: `${BASE_WIDTH}px`,
+                                    transform: `scale(${scale})`,
+                                    transformOrigin: "top left",
+                                    willChange: "transform",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                }}
+                            >
+                                <div style={{ flex: 1 }}>
+                                    <Routes>
+                                        <Route path="/note" element={<Note />} />
+                                        <Route path="/admin" element={<Admin />} />
+                                        <Route path="/*" element={<Home />} />
+                                    </Routes>
+                                </div>
+                                <Footer />
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
