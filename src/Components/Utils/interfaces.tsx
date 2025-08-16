@@ -4,7 +4,7 @@ export interface PostItem {
     id: number;
     title: string;
     author: string;
-    author_id: number;
+    user_id: number;
     author_semester: number;
     date: string;
     views: number;
@@ -81,14 +81,30 @@ export interface MainLayoutProps {
 export interface UserProfile {
     username: string;
     email: string;
-    joinDate: string;
-    profileImageUrl?: string;
+    date_joined: string;
     role: string;
-    totalPosts?: number;
+    semester: number;
+    is_self: boolean;
+    post_count: number;
+    comment_count: number;
 }
 
 export interface UploadFile {
     file: File;
     url: string;
     id?: number;
+}
+
+export interface UserComment {
+    id: number;
+    post_id: number;
+    board_id: number;
+    user_id: string;
+    author: string;
+    content: string;
+    post_title: string,
+    created_at: string;
+    parent: number | null;
+    children: any[];
+    is_owner: boolean;
 }

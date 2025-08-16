@@ -18,6 +18,7 @@ const Signup: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [semester, setSemester] = useState<number | null>(null);
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -60,6 +61,10 @@ const Signup: React.FC = () => {
         }
         if (!isValidPassword(password)) {
             alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
+            return;
+        }
+        if (password !== confirmPassword) {
+            alert("비밀번호 확인이 일치하지 않습니다.");
             return;
         }
 
@@ -193,7 +198,17 @@ const Signup: React.FC = () => {
                                     {showPassword ? "숨기기" : "보이기"}
                                 </button>
                             </div>
-
+                            <label className="signup-label" htmlFor="confirmPassword">
+                                비밀번호 확인
+                            </label>
+                            <input
+                                className="signup-input"
+                                id="confirmPassword"
+                                type={showPassword ? "text" : "password"}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
 
                             <button className="signup-button" type="submit" disabled={loading}>인증코드 받기</button>
                         </form>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import {PostItem, Reply, Comment } from "../Components/Utils/interfaces";
+import {PostItem, Reply, Comment, UserProfile, UserComment} from "../Components/Utils/interfaces";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -158,7 +158,7 @@ export const fetchBoardPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -219,7 +219,7 @@ export const fetchSearchPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -259,7 +259,7 @@ export const fetchBoardSearchPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -320,30 +320,50 @@ export const togglePostLike = async (postId: number, token: string) => {
     return res.data;
 };
 
-// 사용자의 내 게시글 목록 api todo: 임시
+// 사용자의 내 게시글 목록 api
 export const fetchUserPosts = async (
-    username: string,
+    userId: string,
     pageSize: number,
-    page: number
+    page: number,
+    token: string
 ): Promise<{ posts: PostItem[]; totalPages: number }> => {
-    const query = `?page=${page}&page_size=${pageSize}`;
-    const url = `/api/user/${username}/posts${query}`;
+    const url = `${BASE_URL}/api/users/${userId}/posts/`;
 
-    const res = await fetch(url);
-    const data = await res.json();
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize },
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const posts = rawResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        user_id: item.user_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        views: item.views,
+        likes: item.likes_count,
+    }));
+
+    const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
-        posts: data.results.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            author: item.author,
-            date: item.created_at.slice(2, 10).replace(/-/g, "-"),
-            views: item.views,
-            likes: item.likes_count,
-        })),
-        totalPages: Math.ceil(data.count / pageSize),
+        posts,
+        totalPages: Math.ceil(count / pageSize),
     };
 };
+
 
 // 첨부파일 업로드
 export const uploadAttachment = async (file: File, token: String) => {
@@ -547,7 +567,6 @@ export const modifyPost = async (
         responseType: "json",
     });
 
-    console.log(payload); //debug
     return res.data;
 };
 
@@ -669,5 +688,107 @@ export const updateComment = async (
             replies: [] as Reply[],
         };
         return comment;
+    }
+};
+
+// 사용자 정보 조회
+export const fetchUserInfo = async (
+    userId: string,
+    token: string
+): Promise<UserProfile> => {
+    const url = `${BASE_URL}/api/users/${userId}/`;
+    const res = await axios.get(url, {
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const data = res.data as {
+        username: string;
+        email: string;
+        semester: number;
+        is_staff: boolean;
+        date_joined: string;
+        is_self: boolean;
+        post_count: number;
+        comment_count: number;
+    };
+
+    return {
+        username: data.username,
+        email: data.email,
+        semester: data.semester,
+        date_joined: data.date_joined,
+        is_self: data.is_self,
+        role: data.is_staff ? "관리자" : "멤버",
+        post_count: data.post_count,
+        comment_count: data.comment_count,
+    };
+};
+
+// 사용자 댓글 목록 조회
+export const fetchUserComments = async (
+    userId: string,
+    pageSize: number,
+    page: number,
+    token: string
+): Promise<{ comments: UserComment[]; totalPages: number }> => {
+    const url = `${BASE_URL}/api/users/${userId}/comments/`;
+
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize },
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const comments: UserComment[] = rawResults
+        .filter((c: any) => !c.is_deleted)
+        .map((c: any) => ({
+            id: c.id,
+            post_id: c.post_id,
+            user_id: c.user_id,
+            board_id: c.board_id,
+            author: c.author,
+            content: c.content,
+            post_title: c.post_title,
+            created_at: c.created_at.replace("T", " ").slice(0, 19),
+            parent: c.parent,
+            children: c.children,
+            is_owner: c.is_owner,
+        }));
+
+    const count = typeof res.data?.count === "number" ? res.data.count : comments.length;
+
+    return {
+        comments,
+        totalPages: Math.ceil(count / pageSize),
+    };
+};
+
+// 비밀번호 변경 이메일 인증 코드 전송
+export const requestPasswordChangeCode = async (email: string): Promise<boolean> => {
+    try {
+        const url = `${BASE_URL}/api/users/password/change/request/`;
+        const res = await axios.get(url, {
+            params: { email },
+        });
+
+        return res.status === 200;
+    } catch (err) {
+        console.error("비밀번호 변경 코드 요청 실패:", err);
+        return false;
     }
 };

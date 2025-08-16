@@ -8,6 +8,7 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
 const Signin: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const navigate = useNavigate();
     const { setAuth } = useUser();
@@ -59,22 +60,31 @@ const Signin: React.FC = () => {
                     <label className="signin-label" htmlFor="password">
                         비밀번호
                     </label>
-                    <input
-                        className="signin-input"
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
+                    <div className="signin-password-row">
+                        <input
+                            className="signin-input"
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <span
+                            className="signin-toggle"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                        {showPassword ? "숨기기" : "보이기"}
+                    </span>
+                    </div>
+
                     <button className="signin-button" type="submit">
                         로그인
                     </button>
                 </form>
                 <div className="signin-links">
-                <a href="/signup" className="signin-link">가입하기</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a href="#" className="signin-link">비밀번호를 잊어버리셨나요?</a>
-                    {/*  todo: 비밀번호 찾기  */}
+                    <a href="/signup" className="signin-link">가입하기</a>
+                    {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+                    {/*<a href="#" className="signin-link">비밀번호를 잊어버리셨나요?</a>*/}
+                    {/*    /!*  todo: 비밀번호 찾기  *!/*/}
                 </div>
             </div>
         </div>

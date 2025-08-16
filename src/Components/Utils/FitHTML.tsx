@@ -13,7 +13,7 @@ export const FitHTML: React.FC<FitHTMLProps> = ({ html, className }) => {
     useLayoutEffect(() => {
         if (!innerRef.current) return;
         innerRef.current.innerHTML = DOMPurify.sanitize(html || "", {
-            ADD_ATTR: ["style"],
+            ADD_ATTR: ["style", "class"],
         });
     }, [html]);
 
@@ -22,18 +22,21 @@ export const FitHTML: React.FC<FitHTMLProps> = ({ html, className }) => {
             className={className}
             style={{
                 width: "100%",
-                overflowX: "auto",
+                display: "flex",
+                justifyContent: "center", // 화면 기준 가운데
+                overflowX: "hidden",
             }}
         >
             <div
                 ref={innerRef}
                 style={{
-                    display: "inline-block",
+                    width: 790,                // 본문 폭 고정
                     maxWidth: "100%",
+                    boxSizing: "border-box",
                     whiteSpace: "normal",
+                    wordBreak: "break-word",
                 }}
             />
         </div>
     );
 };
-

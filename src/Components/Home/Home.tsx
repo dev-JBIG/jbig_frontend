@@ -12,6 +12,7 @@ import User from "../User/User";
 import {Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
+import {encryptUserId} from "../Utils/Encryption";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
@@ -104,7 +105,7 @@ const Home: React.FC = () => {
                 <div className="user-info-wrapper" ref={dropdownRef}>
                     {userName ? (
                         <div className="user-info-clickable" onClick={() => setMenuOpen(prev => !prev)}>
-                            <CircleUserRound size={18}/>
+                            <CircleUserRound size={19} color="#000" />
                             <span className="user-info-name">
                                 {typeof userSemester === "number" && userSemester > 0 && (
                                     <span style={{fontSize: 13, marginRight: 2}}>{userSemester}기&nbsp;</span>
@@ -120,8 +121,12 @@ const Home: React.FC = () => {
 
                     {menuOpen && (
                         <div className="user-dropdown">
-                            <div className="dropdown-item" onClick={() => {
-                                navigate("/my"); //todo : 사용자 페이지로 이동
+                            <div className="dropdown-item" onClick={async () => {
+                                if (user?.email) {
+                                    const plainId = user.email.split("@")[0];
+                                    const encrypted = await encryptUserId(plainId);
+                                    navigate(`/user/${encrypted}`);
+                                }
                                 setMenuOpen(false);
                             }}>
                                 내 정보
@@ -134,7 +139,7 @@ const Home: React.FC = () => {
                 </div>
             </header>
             <div className="home-banner">
-                <img src={bannerImage} alt="banner-image" className="banner-image"/>
+            <img src={bannerImage} alt="banner-image" className="banner-image"/>
             </div>
             <div className="home-content">
                 <Routes>
@@ -149,7 +154,6 @@ const Home: React.FC = () => {
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <div className="main-banner">
-                                {/* todo : 수상경력 */}
                                 <AwardsSection />
                             </div>
                             <PostList boards={boards} isHome={true} />
@@ -181,7 +185,7 @@ const Home: React.FC = () => {
                             </MainLayout>
                         }
                     />
-                    <Route path="user/:username" element={
+                    <Route path="user/:user_id" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <User />
                         </MainLayout>

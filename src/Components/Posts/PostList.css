@@ -30,7 +30,15 @@
     width: 100%;
     border-collapse: collapse;
     border-top: 2px solid #000; /* 상단 라인 */
+    table-layout: fixed;
 }
+
+.postlist-table .th-id { width: 40px; }
+.postlist-table .th-title { width: 50%; }
+.postlist-table .th-author { width: 80px; }
+.postlist-table .th-date { width: 60px; }
+.postlist-table .th-views { width: 40px; }
+.postlist-table .th-likes { width: 40px; }
 
 .postlist-table th,
 .postlist-table td {

@@ -1,0 +1,67 @@
+.pwchange-wrapper {
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 24px;
+    text-align: left;
+}
+
+.pwchange-step {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pwchange-step label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.pwchange-step input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.pwchange-step input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.pwchange-step button {
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.pwchange-step button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+.pwchange-step button:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.pwchange-error {
+    margin-top: 16px;
+    color: #d9534f;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.pwchange-success {
+    margin-top: 16px;
+    color: #28a745;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}

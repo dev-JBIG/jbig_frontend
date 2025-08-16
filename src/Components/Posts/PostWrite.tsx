@@ -98,7 +98,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
         const quill = document.querySelector('.ql-editor');
         if (quill && quill.innerHTML === '<p><br></p>') {
-            quill.innerHTML = '<p><span style="font-size:14px;"><br></span></p>';
+            quill.innerHTML = '<p><span style="font-size:16px;"><br></span></p>';
         }
     }, [accessToken, navigate]);
 
@@ -298,43 +298,30 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return;
         }
 
+        const fixedContent = ensureDefaultFontSize(content);
+
         try {
             if (isEdit && postIdNumber) {
-                // 기존 첨부 id 스냅샷 → 현재 유지 중인 attachmentIds에 없는 것들만 삭제 목록
                 const toDelete = existingAttachments
                     .map(a => a.id)
                     .filter(id => !attachmentIds.includes(id));
 
                 const payload = {
                     title,
-                    content_html: content,
+                    content_html: fixedContent,
                     attachment_ids: attachmentIds,
                     attachment_ids_to_delete: toDelete,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
                 };
 
-                const res = await modifyPost(postIdNumber, payload, accessToken);
-
-                if ("status" in res && res.status === 401) {
-                    signOutLocal();
-                    alert("인증에 문제가 있습니다. 다시 로그인해주세요.");
-                    navigate("/signin");
-                    return;
-                }
-                if ("notFound" in res && res.notFound) {
-                    alert("게시글을 찾을 수 없습니다.");
-                    return;
-                }
-
-                const toBoardId = selectedBoard?.id ?? Number(category);
-                navigate(`/board/${toBoardId}/${postIdNumber}`);
+                await modifyPost(postIdNumber, payload, accessToken);
+                navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            // 작성 모드 (기존 로직 유지)
             const res = await createPost(
                 selectedBoard!.id,
-                { title, content_html: content, attachment_ids: attachmentIds },
+                { title, content_html: fixedContent, attachment_ids: attachmentIds },
                 accessToken
             );
 
@@ -461,6 +448,22 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }),
         []
     );
+
+    // 폰트 기본 사이즈
+    const ensureDefaultFontSize = (html: string): string => {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+
+        // 폰트 크기 없는 텍스트 노드 래핑
+        div.querySelectorAll("p, span, li, div").forEach(el => {
+            const style = el.getAttribute("style") || "";
+            if (!/font-size/i.test(style)) {
+                el.setAttribute("style", (style + "; font-size:16px;").trim());
+            }
+        });
+
+        return div.innerHTML;
+    };
 
     const handleChange = (html: string) => {
         const fixedHtml = normalizeLinks(html);
