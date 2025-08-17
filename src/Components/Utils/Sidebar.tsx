@@ -10,7 +10,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                              isLogin,
                                              quizURL,
                                              totalCount,
-                                             homeBanner,
                                              navigate
                                          }) => {
 

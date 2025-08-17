@@ -1,6 +1,10 @@
 import axios from "axios";
 import {PostItem, Reply, Comment, UserProfile, UserComment} from "../Components/Utils/interfaces";
 
+/*
+ * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
+ */
+
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
 const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
@@ -109,15 +113,18 @@ export const signin = async (email: string, password: string) => {
 };
 
 // 로그아웃
-export const signout = async () => {
+export const signout = async (accessToken: string, refreshToken: string) => {
     try {
         await axios.post(
             `${BASE_URL}/api/token/logout/`,
-            {},
+            {
+                refresh: refreshToken,
+            },
             {
                 headers: {
                     Accept: "*/*",
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
                 },
                 withCredentials: true,
             }
@@ -128,6 +135,7 @@ export const signout = async () => {
         return { success: false, error };
     }
 };
+
 
 // 게시판 게시글 리스트 반환 api
 export const fetchBoardPosts = async (
@@ -412,35 +420,27 @@ export const fetchAwardsHtml = async (): Promise<string> => {
     return res.data;
 };
 
-// notion 불러오기
-export const fetchNotionHtml = async (token: string): Promise<string> => {
-    const url = `${BASE_URL}/api/html/notion`; // ?file 파라미터 제거
-    const res = await axios.get<string>(url, {
-        headers: {
-            Accept: "text/html",
-            Authorization: `Bearer ${token}`,
-        },
-        responseType: "text",
-        withCredentials: true,
-    });
-    return res.data; // 깡 HTML 그대로 반환
-};
+// notion html 불러오기
+export async function fetchNoteHtml(fileName: string, accessToken: string): Promise<string> {
+    const url = `${BASE_URL}/api/html/notion/?file=${encodeURIComponent(fileName)}`;
 
-// 수상경력 업로드, 어드민 페이지에서 사용
-export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => {
-    const url = `${BASE_URL}/api/html/awards/upload/`;
-    const form = new FormData();
-    const filename = (file as File).name ?? "awards.html";
-    form.append("file", file, filename);
+    try {
+        const res = await axios.get<string>(url, {
+            withCredentials: true,
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            responseType: "text",
+        });
 
-    const res = await axios.post(url, form, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
-
-    return res.data;
-};
+        return res.data;
+    } catch (err: any) {
+        if (err.response) {
+            throw new Error(`Failed to load HTML: ${err.response.status}`);
+        }
+        throw new Error("Failed to load HTML: Network error");
+    }
+}
 
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
@@ -778,17 +778,36 @@ export const fetchUserComments = async (
     };
 };
 
-// 비밀번호 변경 이메일 인증 코드 전송
-export const requestPasswordChangeCode = async (email: string): Promise<boolean> => {
+// 비밀번호 변경
+export async function changePassword(
+    oldPassword: string,
+    newPassword1: string,
+    newPassword2: string,
+    token: string
+): Promise<{ success: boolean; message?: string }> {
     try {
-        const url = `${BASE_URL}/api/users/password/change/request/`;
-        const res = await axios.get(url, {
-            params: { email },
-        });
-
-        return res.status === 200;
-    } catch (err) {
-        console.error("비밀번호 변경 코드 요청 실패:", err);
-        return false;
+        const res = await axios.post(
+            `${BASE_URL}/api/users/password/change/`,
+            {
+                old_password: oldPassword,
+                new_password1: newPassword1,
+                new_password2: newPassword2,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return { success: true, message: res.data?.detail || "비밀번호 변경 성공" };
+    } catch (err: any) {
+        return {
+            success: false,
+            message:
+                err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "비밀번호 변경에 실패했습니다.",
+        };
     }
-};
+}

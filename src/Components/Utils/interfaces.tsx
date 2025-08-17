@@ -69,7 +69,6 @@ export interface SidebarProps {
     isLogin: boolean;
     quizURL?: string;
     totalCount: number;
-    homeBanner?: string;
     navigate: (path: string) => void;
 }
 

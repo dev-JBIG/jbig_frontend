@@ -24,10 +24,9 @@ const Home: React.FC = () => {
     const [userSemester, setUserSemester] = useState<number | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
-    const [awards, setAwards] = useState<Section[]>([]);
 
     // 전 페이지 사용자 정보 공유
-    const { user, signOutLocal, authReady, accessToken } = useUser();
+    const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -90,13 +89,15 @@ const Home: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
+        if (accessToken && refreshToken) {
+            await signout(accessToken, refreshToken);
+        }
+        signOutLocal();
         navigate("/");
-        await signout();
-        signOutLocal(); // 로컬 데이터만 삭제
         window.location.reload();
     };
 
-    const sidebarProps = { boards, isLogin, quizURL, totalCount, homeBanner, navigate };
+    const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
     return (
         <div className="home-wrapper">

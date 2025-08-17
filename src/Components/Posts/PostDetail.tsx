@@ -151,7 +151,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         fetch(absoluteUrl)
             .then(res => res.text())
             .then(html => setHtmlContent(html))
-            .catch(err => console.error("본문 로드 실패", err));
+            .catch(() => console.error("본문 로드 실패"));
     }, [post]);
 
     // 게시글 삭제
