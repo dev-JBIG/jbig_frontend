@@ -438,25 +438,21 @@ export const fetchAwardsHtml = async (): Promise<string> => {
 };
 
 // notion html 불러오기
-export async function fetchNoteHtml(fileName: string, accessToken: string): Promise<string> {
-    const url = `${BASE_URL}/api/html/notion/?file=${encodeURIComponent(fileName)}`;
+export async function fetchNotionHtml(fileName: string | null, accessToken: string): Promise<string> {
+    const url = fileName
+        ? `${BASE_URL}/api/html/notion/?file=${encodeURIComponent(fileName)}`
+        : `${BASE_URL}/api/html/notion/`;
 
-    try {
-        const res = await axios.get<string>(url, {
-            withCredentials: true,
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-            responseType: "text",
-        });
+    const res = await fetch(url, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-        return res.data;
-    } catch (err: any) {
-        if (err.response) {
-            throw new Error(`Failed to load HTML: ${err.response.status}`);
-        }
-        throw new Error("Failed to load HTML: Network error");
+    if (!res.ok) {
+        throw new Error(`Failed to load HTML: ${res.status}`);
     }
+
+    return res.text();
 }
 
 // 토큰 갱신
@@ -617,6 +613,7 @@ export const createComment = async (
     const d = res.data as {
         id: number;
         user_id: string;
+        author_semester: number;
         author: string;
         content: string;
         created_at: string;
@@ -633,6 +630,7 @@ export const createComment = async (
         const reply: Reply = {
             id: d.id,
             user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -644,6 +642,7 @@ export const createComment = async (
         const comment: Comment = {
             id: d.id,
             user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -675,6 +674,7 @@ export const updateComment = async (
     const d = res.data as {
         id: number;
         user_id: string;
+        author_semester: number;
         author: string;
         content: string;
         created_at: string;
@@ -692,6 +692,7 @@ export const updateComment = async (
         const reply: Reply = {
             id: d.id,
             user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -703,6 +704,7 @@ export const updateComment = async (
         const comment: Comment = {
             id: d.id,
             user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,

@@ -100,11 +100,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const src = raw.post_data ?? raw;
 
-                console.log(src); // debug
-
                 const mapped: PostDetailData = {
                     id: src.id,
                     board: src.board?.name || "",
+                    author_semester: src.author_semester,
                     title: src.title || "",
                     content_html_url: src.content_html_url || "",
                     author: src.author || "",
@@ -124,6 +123,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     comments: (src.comments || []).slice().reverse().map((c: any) => ({
                         id: c.id,
                         user_id: c.user_id,
+                        author_semester: c.author_semester,
                         author: c.author,
                         content: c.content,
                         date: toDate(c.created_at),
@@ -131,7 +131,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         is_deleted: c.is_deleted,
                         replies: (c.children || []).slice().reverse().map((r: any) => ({
                             id: r.id,
-                            user_id: c.user_id,
+                            user_id: r.user_id,
+                            author_semester: r.author_semester,
                             author: r.author,
                             content: r.content,
                             date: toDate(r.created_at),
@@ -465,7 +466,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 const encrypted = await encryptUserId(String(post.user_id));
                 navigate(`/user/${encrypted}`);
             }}>
-                {post.author}
+                {post.author_semester}기 {post.author}
             </span>
                 <span className="postdetail-dot">·</span>
                 <span className="postdetail-date">
@@ -550,7 +551,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                               navigate(`/user/${encrypted}`);
                                           }}
                                     >
-                                        {c.author}
+                                        {c.author_semester}기 {c.author}
                                         {!c.is_deleted && c.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
@@ -630,7 +631,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                           navigate(`/user/${encrypted}`);
                                       }}
                                 >
-                                    {r.author}
+                                    {r.author_semester}기 {r.author}
                                     {!r.is_deleted && r.is_owner && (
                                         <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                             (나)

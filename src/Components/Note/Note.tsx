@@ -2,11 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import "./Note.css";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
-import { fetchNoteHtml } from "../../API/req";
+import { fetchNotionHtml } from "../../API/req";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const DEFAULT_FILE = "JBIG 교안 (New) 1ad4d7781cdc803a9a5ef553af7782fe.html";
 const API_BASE = `http://${SERVER_HOST}:${SERVER_PORT}/api/html/notion/`
 
 const Note: React.FC = () => {
@@ -38,19 +37,19 @@ const Note: React.FC = () => {
     };
 
     // HTML 불러오기
-    const loadHtml = async (rawFileName: string, replace = false) => {
-        // 방어: 혹시 "?file=" prefix가 들어오면 제거
-        let fileName = rawFileName.replace(/^\?file=/, "");
+    const loadHtml = async (rawFileName: string | null, replace = false) => {
+        let fileName: string | null = rawFileName;
 
-        // 한번 디코딩해서 원본 파일명 확보
-        try {
-            fileName = decodeURIComponent(fileName);
-        } catch {
-            // 디코딩 실패하면 원본 그대로 둠
+        if (fileName) {
+            fileName = fileName.replace(/^\?file=/, "");
+            try {
+                fileName = decodeURIComponent(fileName);
+            } catch {
+                // 무시
+            }
         }
-
         try {
-            let data = await fetchNoteHtml(fileName, accessToken!);
+            let data = await fetchNotionHtml(fileName, accessToken!);
             data = rewriteResourceUrls(data);
             setHtml(data);
 
@@ -59,8 +58,10 @@ const Note: React.FC = () => {
                 behavior: "instant" as ScrollBehavior,
             });
 
-            // 주소창에는 항상 인코딩된 값만 표시
-            const newUrl = `${window.location.pathname}?file=${encodeURIComponent(fileName)}`;
+            const newUrl = fileName
+                ? `${window.location.pathname}?file=${encodeURIComponent(fileName)}`
+                : `${window.location.pathname}`;
+
             if (replace) {
                 window.history.replaceState({ file: fileName }, "", newUrl);
             } else {
@@ -83,16 +84,18 @@ const Note: React.FC = () => {
         }
 
         const params = new URLSearchParams(window.location.search);
-        let fileParam = params.get("file") || DEFAULT_FILE;
+        let fileParam = params.get("file");
 
         // 반드시 디코딩
         try {
-            fileParam = decodeURIComponent(fileParam);
+            if (fileParam) {
+                fileParam = decodeURIComponent(fileParam);
+            }
         } catch {
             // 실패해도 무시
         }
 
-        loadHtml(fileParam, true);
+        loadHtml(fileParam ?? null, true);
     }, [authReady, user, accessToken, navigate]);
 
     // 내부 링크 클릭 처리
@@ -167,8 +170,8 @@ const Note: React.FC = () => {
     // 뒤로가기
     useEffect(() => {
         const onPopState = (e: PopStateEvent) => {
-            const file = (e.state && e.state.file) as string | undefined;
-            if (file) loadHtml(file, true);
+            const file = (e.state && e.state.file) as string | null | undefined;
+            loadHtml(file ?? null, true);
         };
         window.addEventListener("popstate", onPopState);
         return () => window.removeEventListener("popstate", onPopState);
@@ -179,7 +182,7 @@ const Note: React.FC = () => {
             <div className="note-header">
                 <a href="/" className="note-logo">JBIG</a>
                 <button className="refresh-button" onClick={() => {
-                    navigate(`/note?file=${DEFAULT_FILE}`, { replace: true });
+                    navigate("/note");
                     window.location.reload()
                 }}>
                     새로고침

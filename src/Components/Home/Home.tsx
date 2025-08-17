@@ -17,7 +17,6 @@ import {encryptUserId} from "../Utils/Encryption";
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
     const [bannerImage, setBannerImage] = useState<string>();
-    const [homeBanner, setHomeBanner] = useState<string>();
     const [totalCount, setTotalCount] = useState<number>(0);
     const [quizURL, setQuizURL] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
