@@ -6,6 +6,7 @@ import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 import {encryptUserId} from "../Utils/Encryption";
 import {useUser} from "../Utils/UserContext";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 /**
  * 게시물 리스트 컴포넌트로, 일반적인 게시판의 게시물을 나열합니다
@@ -19,6 +20,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [searchKeyword, setSearchKeyword] = useState("");
 
     const { accessToken, signOutLocal } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     const { boardId: boardIdRaw } = useParams();
     const navigate = useNavigate();
@@ -277,13 +279,17 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                         return (
                             <>
-                                {!isSearchPage && !isUserPage && !isHome && activeBoardID !== 0 && (
-                                    <div className="write-button-row">
-                                        <button className="write-button" onClick={handleWrite}>
-                                            글쓰기
-                                        </button>
-                                    </div>
-                                )}
+                                {!isSearchPage &&
+                                    !isUserPage &&
+                                    !isHome &&
+                                    activeBoardID !== 0 &&
+                                    !(activeBoard?.name === "공지사항" && !staffAuth) && (
+                                        <div className="write-button-row">
+                                            <button className="write-button" onClick={handleWrite}>
+                                                글쓰기
+                                            </button>
+                                        </div>
+                                    )}
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"

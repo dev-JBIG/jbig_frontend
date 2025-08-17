@@ -4,12 +4,13 @@ import {useNavigate, useParams} from "react-router-dom";
 import Quill from "quill";
 import "react-quill/dist/quill.snow.css";
 import ReactQuill from "react-quill";
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, signout, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 
 import { ImageFormats } from '@xeger/quill-image-formats';
 import { ImageResize } from 'quill-image-resize-module-ts';
 import {useUser} from "../Utils/UserContext";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 Quill.register('modules/imageResize', ImageResize);
 Quill.register('modules/imageFormats', ImageFormats);
@@ -58,6 +59,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
 
     const { signOutLocal, accessToken } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     const isImageFileName = (name: string) =>
         /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
@@ -82,6 +84,19 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         [boards]
     );
 
+    const filteredBoardList = useMemo<Board[]>(() => {
+        if (staffAuth) return BOARD_LIST; // 운영자면 전체 보드
+        return BOARD_LIST.filter(b => b.name !== "공지사항"); // 운영자 아니면 공지사항 제외
+    }, [BOARD_LIST, staffAuth]);
+
+    // 공지사항인데 사용자가 url을 변경하여 강제로 글을 작성하려고 할 경우 대비
+    useEffect(() => {
+        if (!staffAuth && selectedBoard?.name === "공지사항") {
+            alert("공지사항에는 글을 작성할 수 없습니다.");
+            navigate("/");
+        }
+    }, [selectedBoard, staffAuth, navigate]);
+
     useEffect(() => {
         if (!category) return;
         const id = Number(category);
@@ -91,8 +106,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     useEffect(() => {
         if(!accessToken){
+            signOutLocal();
             alert("로그인이 필요합니다.");
-            navigate("/signin");
+            navigate("/signin")
             return;
         }
 
@@ -479,14 +495,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     value={selectedBoard?.id ?? ""}
                     onChange={(e) => {
                         const v = Number(e.target.value);
-                        const found = BOARD_LIST.find((b) => b.id === v) || null;
+                        const found = filteredBoardList.find((b) => b.id === v) || null;
                         setSelectedBoard(found);
                     }}
                 >
                     <option value="" hidden>
                         게시판 선택
                     </option>
-                    {BOARD_LIST.map((b) => (
+                    {filteredBoardList.map((b) => (
                         <option key={b.id} value={b.id}>
                             {b.name}
                         </option>

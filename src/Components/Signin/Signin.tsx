@@ -5,6 +5,11 @@ import {signin} from "../../API/req";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 
+const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
+// 8~16자, 영문/숫자 각 1개 이상, 특수문자 ! 또는 @ 최소 1개 포함
+const isValidPassword = (pwd: string) =>
+    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
+
 const Signin: React.FC = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
@@ -16,6 +21,16 @@ const Signin: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isValidEmailDomain(userId.trim())) {
+            alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
+            return;
+        }
+        if (!isValidPassword(password.trim())) {
+            alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
+            return;
+        }
+
         try {
             const result = await signin(userId, password);
             if (result.access && result.username && result.semester) {

@@ -45,6 +45,7 @@ const Signup: React.FC = () => {
 
         const trimmedEmail = email.trim();
         const trimmedUserId = userId.trim();
+        const trimmedPwd = password.trim();
 
         // 검증
         if (!isValidEmailDomain(trimmedEmail)) {
@@ -59,7 +60,7 @@ const Signup: React.FC = () => {
             alert("부적절한 기수 입니다.");
             return;
         }
-        if (!isValidPassword(password)) {
+        if (!isValidPassword(trimmedPwd)) {
             alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
             return;
         }
