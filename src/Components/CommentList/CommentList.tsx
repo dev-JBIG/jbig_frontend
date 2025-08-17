@@ -50,19 +50,19 @@ const CommentList: React.FC<CommentListProps> = ({ userId }) => {
     }, [page, userId, accessToken]);
 
     return (
-        <div className="comment-list">
+        <div className="user-comment-list">
             {comments.map((c, idx) => {
                 const isLast = idx === comments.length - 1;
                 return (
                     <div
                         key={c.id}
                         ref={isLast ? lastCommentRef : null}
-                        className="comment-item"
+                        className="user-comment-item"
                         onClick={() => navigate(`/board/${c.board_id}/${c.post_id}`)}
                     >
-                        <div className="comment-post">{c.post_title}</div>
-                        <div className="comment-content">{c.content}</div>
-                        <div className="comment-date">{c.created_at}</div>
+                        <div className="user-comment-post">{c.post_title}</div>
+                        <div className="user-comment-content">{c.content}</div>
+                        <div className="user-comment-date">{c.created_at}</div>
                     </div>
                 );
             })}

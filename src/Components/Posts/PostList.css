@@ -173,6 +173,10 @@
     vertical-align: bottom;
 }
 
+.author-text:hover {
+    text-decoration: underline;
+}
+
 /* 페이지네이션 */
 .pagination-row {
     display: flex;

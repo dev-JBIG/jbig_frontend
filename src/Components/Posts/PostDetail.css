@@ -75,6 +75,10 @@
     color: #000;
 }
 
+.postdetail-author:hover {
+    cursor: pointer;
+}
+
 .postdetail-like-btn {
     margin-left: auto;         /* 우측 끝 고정 */
     display: inline-flex;
@@ -382,6 +386,11 @@
 .reply-author {
     font-size: 15px;
     color: #000;
+}
+
+.comment-author:hover,
+.reply-author:hover{
+    cursor: pointer;
 }
 
 /* === 삭제 버튼 위치/스타일 통일 (항상 우측 끝) === */

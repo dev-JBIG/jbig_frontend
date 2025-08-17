@@ -6,7 +6,7 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import {fetchQuizUrl, getBoards, signout} from "../../API/req";
+import {fetchBannerImage, fetchQuizUrl, getBoards, signout} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
 import {Section} from "../Utils/interfaces";
@@ -32,8 +32,15 @@ const Home: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // todo : 실제 파일 반영 연결 필요
-        setBannerImage("https://crocuscoaching.co.uk/wp/wp-content/uploads/2013/03/maldivian_sunset-wallpaper-1000x300.jpg");
+        (async () => {
+            try {
+                const blob = await fetchBannerImage();
+                const url = URL.createObjectURL(blob);
+                setBannerImage(url);
+            } catch (err) {
+                console.error(err);
+            }
+        })();
     }, []);
 
     useEffect(() => {

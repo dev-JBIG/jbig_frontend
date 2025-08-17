@@ -204,6 +204,23 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
     }
 };
 
+// 배너 이미지 가져오기
+export async function fetchBannerImage(): Promise<Blob> {
+    const url = `${BASE_URL}/api/html/banner/`;
+
+    try {
+        const res = await axios.get(url, {
+            responseType: "blob",
+        });
+
+        return res.data; // Blob 반환
+    } catch (err: any) {
+        if (err.response) {
+            throw new Error(`Failed to load banner: ${err.response.status}`);
+        }
+        throw new Error("Failed to load banner: Network error");
+    }
+}
 
 // 전체 게시판 검색 (전체 카테고리)
 export const fetchSearchPosts = async (
@@ -583,7 +600,7 @@ export const deleteComment = async (commentId: number, token: string): Promise<v
 // 댓글 등록
 export const createComment = async (
     postId: number,
-    payload: { content: string; parent: number | null }, // ← 루트 댓글은 null
+    payload: { content: string; parent: number | null },
     token: string
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;
@@ -599,6 +616,7 @@ export const createComment = async (
 
     const d = res.data as {
         id: number;
+        user_id: string;
         author: string;
         content: string;
         created_at: string;
@@ -614,6 +632,7 @@ export const createComment = async (
     if (isReply) {
         const reply: Reply = {
             id: d.id,
+            user_id: d.user_id,
             author: d.author,
             content: d.content,
             date,
@@ -624,6 +643,7 @@ export const createComment = async (
     } else {
         const comment: Comment = {
             id: d.id,
+            user_id: d.user_id,
             author: d.author,
             content: d.content,
             date,
@@ -654,6 +674,7 @@ export const updateComment = async (
 
     const d = res.data as {
         id: number;
+        user_id: string;
         author: string;
         content: string;
         created_at: string;
@@ -670,6 +691,7 @@ export const updateComment = async (
     if (isReply) {
         const reply: Reply = {
             id: d.id,
+            user_id: d.user_id,
             author: d.author,
             content: d.content,
             date,
@@ -680,6 +702,7 @@ export const updateComment = async (
     } else {
         const comment: Comment = {
             id: d.id,
+            user_id: d.user_id,
             author: d.author,
             content: d.content,
             date,

@@ -21,6 +21,7 @@ export interface Attachment {
 
 export interface Comment {
     id: number;
+    user_id: string;
     author: string;
     content: string;
     date: string;
@@ -31,6 +32,7 @@ export interface Comment {
 
 export interface Reply {
     id: number;
+    user_id: string;
     author: string;
     content: string;
     date: string;
@@ -40,6 +42,7 @@ export interface Reply {
 
 export interface PostDetailData {
     id: number;
+    user_id: string;
     board: string;
     title: string;
     content_html_url: string;
