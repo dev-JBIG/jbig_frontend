@@ -16,6 +16,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [posts, setPosts] = useState<PostItem[] | null>(null);
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
+    const [searchKeyword, setSearchKeyword] = useState("");
+
     const { accessToken, signOutLocal } = useUser();
 
     const { boardId: boardIdRaw } = useParams();
@@ -146,38 +148,67 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             <div className="postlist-header">
                 {!isUserPage && !isSearchPage && (
                     <>
-                        <h2>
+                        <h2
+                            className={`postlist-title ${isHome ? "home" : ""} ${isSearchPage ? "search" : ""}`}
+                        >
                             {activeBoard ? activeBoard.name : (isHome ? "전체글보기" : "전체글보기")}
                         </h2>
                         {!isHome ? (
-                            <select
-                                className="perpage-select"
-                                value={perPage}
-                                onChange={(e) => {
-                                    setPage(1);
-                                    setPerPage(Number(e.target.value));
-                                }}
-                            >
-                                {[5, 10, 15, 20, 30].map((n) => (
-                                    <option key={n} value={n}>
-                                        {n}개씩
-                                    </option>
-                                ))}
-                            </select>
+                            <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
+                                {/* 검색란 (조건: 검색페이지/유저페이지/홈이 아닐 때만) */}
+                                {!isHome && !isSearchPage && !isUserPage && (
+                                    <form
+                                        className="list-search-form"
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            if (searchKeyword.trim()) {
+                                                navigate(
+                                                    `/search/${activeBoardID || "all"}?q=${encodeURIComponent(searchKeyword)}&page_size=${perPage}`
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        <input
+                                            className="list-search-input"
+                                            type="text"
+                                            placeholder="검색어 입력"
+                                            value={searchKeyword}
+                                            onChange={(e) => setSearchKeyword(e.target.value)}
+                                        />
+                                        <button type="submit" className="list-search-button">검색</button>
+                                    </form>
+                                )}
+
+                                <select
+                                    className="perpage-select"
+                                    value={perPage}
+                                    onChange={(e) => {
+                                        setPage(1);
+                                        setPerPage(Number(e.target.value));
+                                    }}
+                                >
+                                    {[5, 10, 15, 20, 30].map((n) => (
+                                        <option key={n} value={n}>
+                                            {n}개씩
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         ) : (
                             <span
                                 className="more-link"
                                 onClick={() => navigate("/board/0")}
                             >
-                더보기 &gt;
-              </span>
+                    더보기 &gt;
+                </span>
                         )}
                     </>
                 )}
             </div>
 
+
             {isSearchPage && (!q.trim() || displayPosts.length === 0) ? (
-                <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+                <div style={{padding: "20px", textAlign: "center", color: "#666"}}>
                     해당 게시물이 없습니다.
                 </div>
             ) : (
@@ -246,6 +277,13 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                         return (
                             <>
+                                {!isSearchPage && !isUserPage && !isHome && activeBoardID !== 0 && (
+                                    <div className="write-button-row">
+                                        <button className="write-button" onClick={handleWrite}>
+                                            글쓰기
+                                        </button>
+                                    </div>
+                                )}
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
@@ -264,7 +302,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     이전
                                 </button>
 
-                                {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
+                                {Array.from({length: end - start + 1}, (_, i) => start + i).map((n) => (
                                     <button
                                         key={n}
                                         className={`pagination-btn ${n === page ? "active" : ""}`}
@@ -294,14 +332,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             </>
                         );
                     })()}
-                </div>
-            )}
-
-            {!isSearchPage && !isUserPage && !isHome && activeBoardID !== 0 && (
-                <div className="write-button-row">
-                    <button className="write-button" onClick={handleWrite}>
-                        글쓰기
-                    </button>
                 </div>
             )}
         </div>

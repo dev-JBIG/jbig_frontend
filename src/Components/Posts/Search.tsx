@@ -31,7 +31,6 @@ const Search: React.FC<{ boards?: Section[] }> = ({ boards }) => {
             navigate(`/search/all${qs}`, { replace: true });
             return;
         }
-        // URL에 :boardId가 있으면 그걸 상태로 반영(유효성은 PostList에서 처리)
         setSelectedBoardId(boardId);
     }, [boardId, qFromUrl, navigate]);
 

@@ -90,9 +90,9 @@ const Home: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
+        navigate("/");
         await signout();
         signOutLocal(); // 로컬 데이터만 삭제
-        navigate("/");
         window.location.reload();
     };
 
@@ -171,14 +171,6 @@ const Home: React.FC = () => {
                     }/>
                     <Route
                         path="search/:boardId"
-                        element={
-                            <MainLayout sidebarProps={sidebarProps}>
-                                <Search boards={boards}/>
-                            </MainLayout>
-                        }
-                    />
-                    <Route
-                        path="search"
                         element={
                             <MainLayout sidebarProps={sidebarProps}>
                                 <Search boards={boards}/>
