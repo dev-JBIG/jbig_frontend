@@ -243,6 +243,11 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 className="author-cell th-author"
                                 onClick={async (e) => {
                                     e.stopPropagation();
+                                    if (!accessToken) {
+                                        alert("로그인이 필요합니다.");
+                                        navigate("/signin");
+                                        return;
+                                    }
                                     const encrypted = await encryptUserId(String(p.user_id));
                                     navigate(`/user/${encrypted}`);
                                 }}
