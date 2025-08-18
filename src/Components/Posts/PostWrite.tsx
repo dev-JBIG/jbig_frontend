@@ -4,12 +4,13 @@ import {useNavigate, useParams} from "react-router-dom";
 import Quill from "quill";
 import "react-quill/dist/quill.snow.css";
 import ReactQuill from "react-quill";
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, signout, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 
 import { ImageFormats } from '@xeger/quill-image-formats';
 import { ImageResize } from 'quill-image-resize-module-ts';
 import {useUser} from "../Utils/UserContext";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 Quill.register('modules/imageResize', ImageResize);
 Quill.register('modules/imageFormats', ImageFormats);
@@ -58,6 +59,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
 
     const { signOutLocal, accessToken } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     const isImageFileName = (name: string) =>
         /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
@@ -82,6 +84,19 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         [boards]
     );
 
+    const filteredBoardList = useMemo<Board[]>(() => {
+        if (staffAuth) return BOARD_LIST; // 운영자면 전체 보드
+        return BOARD_LIST.filter(b => b.name !== "공지사항"); // 운영자 아니면 공지사항 제외
+    }, [BOARD_LIST, staffAuth]);
+
+    // 공지사항인데 사용자가 url을 변경하여 강제로 글을 작성하려고 할 경우 대비
+    useEffect(() => {
+        if (!staffAuth && selectedBoard?.name === "공지사항") {
+            alert("공지사항에는 글을 작성할 수 없습니다.");
+            navigate("/");
+        }
+    }, [selectedBoard, staffAuth, navigate]);
+
     useEffect(() => {
         if (!category) return;
         const id = Number(category);
@@ -91,14 +106,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     useEffect(() => {
         if(!accessToken){
+            signOutLocal();
             alert("로그인이 필요합니다.");
-            navigate("/signin");
+            navigate("/signin")
             return;
         }
 
         const quill = document.querySelector('.ql-editor');
         if (quill && quill.innerHTML === '<p><br></p>') {
-            quill.innerHTML = '<p><span style="font-size:14px;"><br></span></p>';
+            quill.innerHTML = '<p><span style="font-size:16px;"><br></span></p>';
         }
     }, [accessToken, navigate]);
 
@@ -298,43 +314,30 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return;
         }
 
+        const fixedContent = ensureDefaultFontSize(content);
+
         try {
             if (isEdit && postIdNumber) {
-                // 기존 첨부 id 스냅샷 → 현재 유지 중인 attachmentIds에 없는 것들만 삭제 목록
                 const toDelete = existingAttachments
                     .map(a => a.id)
                     .filter(id => !attachmentIds.includes(id));
 
                 const payload = {
                     title,
-                    content_html: content,
+                    content_html: fixedContent,
                     attachment_ids: attachmentIds,
                     attachment_ids_to_delete: toDelete,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
                 };
 
-                const res = await modifyPost(postIdNumber, payload, accessToken);
-
-                if ("status" in res && res.status === 401) {
-                    signOutLocal();
-                    alert("인증에 문제가 있습니다. 다시 로그인해주세요.");
-                    navigate("/signin");
-                    return;
-                }
-                if ("notFound" in res && res.notFound) {
-                    alert("게시글을 찾을 수 없습니다.");
-                    return;
-                }
-
-                const toBoardId = selectedBoard?.id ?? Number(category);
-                navigate(`/board/${toBoardId}/${postIdNumber}`);
+                await modifyPost(postIdNumber, payload, accessToken);
+                navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            // 작성 모드 (기존 로직 유지)
             const res = await createPost(
                 selectedBoard!.id,
-                { title, content_html: content, attachment_ids: attachmentIds },
+                { title, content_html: fixedContent, attachment_ids: attachmentIds },
                 accessToken
             );
 
@@ -462,6 +465,22 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         []
     );
 
+    // 폰트 기본 사이즈
+    const ensureDefaultFontSize = (html: string): string => {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+
+        // 폰트 크기 없는 텍스트 노드 래핑
+        div.querySelectorAll("p, span, li, div").forEach(el => {
+            const style = el.getAttribute("style") || "";
+            if (!/font-size/i.test(style)) {
+                el.setAttribute("style", (style + "; font-size:16px;").trim());
+            }
+        });
+
+        return div.innerHTML;
+    };
+
     const handleChange = (html: string) => {
         const fixedHtml = normalizeLinks(html);
         setContent(fixedHtml);
@@ -476,14 +495,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     value={selectedBoard?.id ?? ""}
                     onChange={(e) => {
                         const v = Number(e.target.value);
-                        const found = BOARD_LIST.find((b) => b.id === v) || null;
+                        const found = filteredBoardList.find((b) => b.id === v) || null;
                         setSelectedBoard(found);
                     }}
                 >
                     <option value="" hidden>
                         게시판 선택
                     </option>
-                    {BOARD_LIST.map((b) => (
+                    {filteredBoardList.map((b) => (
                         <option key={b.id} value={b.id}>
                             {b.name}
                         </option>

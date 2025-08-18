@@ -6,34 +6,40 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import {fetchQuizUrl, getBoards, signout} from "../../API/req";
+import {fetchBannerImage, fetchQuizUrl, getBoards, signout} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
 import {Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
+import {encryptUserId} from "../Utils/Encryption";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
     const [bannerImage, setBannerImage] = useState<string>();
-    const [homeBanner, setHomeBanner] = useState<string>();
     const [totalCount, setTotalCount] = useState<number>(0);
     const [quizURL, setQuizURL] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
     const [userSemester, setUserSemester] = useState<number | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
-    const [awards, setAwards] = useState<Section[]>([]);
 
     // 전 페이지 사용자 정보 공유
-    const { user, signOutLocal, authReady, accessToken } = useUser();
+    const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        // todo : 실제 파일 반영 연결 필요
-        setBannerImage("https://crocuscoaching.co.uk/wp/wp-content/uploads/2013/03/maldivian_sunset-wallpaper-1000x300.jpg");
+        (async () => {
+            try {
+                const blob = await fetchBannerImage();
+                const url = URL.createObjectURL(blob);
+                setBannerImage(url);
+            } catch (err) {
+                console.error(err);
+            }
+        })();
     }, []);
 
     useEffect(() => {
@@ -89,13 +95,15 @@ const Home: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
-        await signout();
-        signOutLocal(); // 로컬 데이터만 삭제
+        if (accessToken && refreshToken) {
+            await signout(accessToken, refreshToken);
+        }
+        signOutLocal();
         navigate("/");
         window.location.reload();
     };
 
-    const sidebarProps = { boards, isLogin, quizURL, totalCount, homeBanner, navigate };
+    const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
     return (
         <div className="home-wrapper">
@@ -104,7 +112,7 @@ const Home: React.FC = () => {
                 <div className="user-info-wrapper" ref={dropdownRef}>
                     {userName ? (
                         <div className="user-info-clickable" onClick={() => setMenuOpen(prev => !prev)}>
-                            <CircleUserRound size={18}/>
+                            <CircleUserRound size={19} color="#000" />
                             <span className="user-info-name">
                                 {typeof userSemester === "number" && userSemester > 0 && (
                                     <span style={{fontSize: 13, marginRight: 2}}>{userSemester}기&nbsp;</span>
@@ -120,8 +128,12 @@ const Home: React.FC = () => {
 
                     {menuOpen && (
                         <div className="user-dropdown">
-                            <div className="dropdown-item" onClick={() => {
-                                navigate("/my"); //todo : 사용자 페이지로 이동
+                            <div className="dropdown-item" onClick={async () => {
+                                if (user?.email) {
+                                    const plainId = user.email.split("@")[0];
+                                    const encrypted = await encryptUserId(plainId);
+                                    navigate(`/user/${encrypted}`);
+                                }
                                 setMenuOpen(false);
                             }}>
                                 내 정보
@@ -134,7 +146,7 @@ const Home: React.FC = () => {
                 </div>
             </header>
             <div className="home-banner">
-                <img src={bannerImage} alt="banner-image" className="banner-image"/>
+            <img src={bannerImage} alt="banner-image" className="banner-image"/>
             </div>
             <div className="home-content">
                 <Routes>
@@ -149,7 +161,6 @@ const Home: React.FC = () => {
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <div className="main-banner">
-                                {/* todo : 수상경력 */}
                                 <AwardsSection />
                             </div>
                             <PostList boards={boards} isHome={true} />
@@ -173,15 +184,7 @@ const Home: React.FC = () => {
                             </MainLayout>
                         }
                     />
-                    <Route
-                        path="search"
-                        element={
-                            <MainLayout sidebarProps={sidebarProps}>
-                                <Search boards={boards}/>
-                            </MainLayout>
-                        }
-                    />
-                    <Route path="user/:username" element={
+                    <Route path="user/:user_id" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <User />
                         </MainLayout>

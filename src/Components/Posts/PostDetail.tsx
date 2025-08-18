@@ -6,6 +6,7 @@ import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
+import {encryptUserId} from "../Utils/Encryption";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -30,7 +31,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 본문
     const [htmlContent, setHtmlContent] = useState("");
 
-    const { accessToken, authReady } = useUser();
+    const { accessToken, authReady, signOutLocal } = useUser();
 
     type OpenMenu =
         | { type: "comment"; id: number }
@@ -68,6 +69,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
         if (!accessToken) {
             alert("로그인이 필요합니다.");
+            signOutLocal();
             navigate("/signin");
             return;
         }
@@ -82,6 +84,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 if (raw.unauthorized || !raw.isTokenValid) {
                     alert("로그인이 필요합니다.");
+                    signOutLocal();
                     navigate("/signin");
                     return;
                 }
@@ -100,6 +103,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 const mapped: PostDetailData = {
                     id: src.id,
                     board: src.board?.name || "",
+                    author_semester: src.author_semester,
                     title: src.title || "",
                     content_html_url: src.content_html_url || "",
                     author: src.author || "",
@@ -107,6 +111,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     updatedAt: toDate(src.updated_at),
                     views: src.views ?? 0,
                     likes: src.likes_count ?? 0,
+                    user_id: src.user_id,
                     isLiked: src.is_liked ?? false,
                     is_owner: !!src.is_owner,
                     attachments: (src.attachments || []).map((a: any) => ({
@@ -117,6 +122,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     })),
                     comments: (src.comments || []).slice().reverse().map((c: any) => ({
                         id: c.id,
+                        user_id: c.user_id,
+                        author_semester: c.author_semester,
                         author: c.author,
                         content: c.content,
                         date: toDate(c.created_at),
@@ -124,6 +131,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         is_deleted: c.is_deleted,
                         replies: (c.children || []).slice().reverse().map((r: any) => ({
                             id: r.id,
+                            user_id: r.user_id,
+                            author_semester: r.author_semester,
                             author: r.author,
                             content: r.content,
                             date: toDate(r.created_at),
@@ -151,7 +160,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         fetch(absoluteUrl)
             .then(res => res.text())
             .then(html => setHtmlContent(html))
-            .catch(err => console.error("본문 로드 실패", err));
+            .catch(() => console.error("본문 로드 실패"));
     }, [post]);
 
     // 게시글 삭제
@@ -322,6 +331,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             });
             setReplyInput("");
             setReplyTargetId(null);
+            window.location.reload();
         } catch (e) {
             console.error(e);
             alert("답글 등록에 실패했습니다.");
@@ -450,7 +460,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <h2 className="postdetail-title">{post.title}</h2>
             </div>
             <div className="postdetail-info-row">
-            <span className="postdetail-author">{post.author}</span>
+            <span className="postdetail-author"
+                  onClick={async (e) => {
+                e.stopPropagation();
+                const encrypted = await encryptUserId(String(post.user_id));
+                navigate(`/user/${encrypted}`);
+            }}>
+                {post.author_semester}기 {post.author}
+            </span>
                 <span className="postdetail-dot">·</span>
                 <span className="postdetail-date">
                     {post.date}
@@ -527,8 +544,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         <li className="postdetail-comment-item" key={c.id}>
                             <div className="comment-item">
                                 <div className="comment-meta">
-                                    <span className="comment-author">
-                                        {c.author}
+                                    <span className="comment-author"
+                                          onClick={async (e) => {
+                                              e.stopPropagation();
+                                              const encrypted = await encryptUserId(String(c.user_id));
+                                              navigate(`/user/${encrypted}`);
+                                          }}
+                                    >
+                                        {c.author_semester}기 {c.author}
                                         {!c.is_deleted && c.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
@@ -601,8 +624,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                 {(c.replies || []).map(r => (
                                     <li className="reply-item" key={r.id}>
                                         <div className="reply-meta">
-                                <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}>
-                                    {r.author}
+                                <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
+                                      onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const encrypted = await encryptUserId(String(r.user_id));
+                                          navigate(`/user/${encrypted}`);
+                                      }}
+                                >
+                                    {r.author_semester}기 {r.author}
                                     {!r.is_deleted && r.is_owner && (
                                         <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                             (나)

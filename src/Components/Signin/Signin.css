@@ -122,3 +122,28 @@
     margin: 0;
     text-align: left;
 }
+
+/* 비밀번호 */
+.signin-password-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.signin-password-row .signin-input {
+    flex: 1;
+    padding-right: 50px;
+}
+
+.signin-toggle {
+    position: absolute;
+    right: 10px;
+    font-size: 13px;
+    color: #007bff;
+    cursor: pointer;
+    user-select: none;
+    top: 9px;
+}
+.signin-toggle:hover {
+    text-decoration: underline;
+}

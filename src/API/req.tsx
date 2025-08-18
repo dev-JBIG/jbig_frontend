@@ -1,5 +1,9 @@
 import axios from "axios";
-import {PostItem, Reply, Comment } from "../Components/Utils/interfaces";
+import {PostItem, Reply, Comment, UserProfile, UserComment} from "../Components/Utils/interfaces";
+
+/*
+ * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
+ */
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -109,15 +113,18 @@ export const signin = async (email: string, password: string) => {
 };
 
 // 로그아웃
-export const signout = async () => {
+export const signout = async (accessToken: string, refreshToken: string) => {
     try {
         await axios.post(
             `${BASE_URL}/api/token/logout/`,
-            {},
+            {
+                refresh: refreshToken,
+            },
             {
                 headers: {
                     Accept: "*/*",
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
                 },
                 withCredentials: true,
             }
@@ -128,6 +135,7 @@ export const signout = async () => {
         return { success: false, error };
     }
 };
+
 
 // 게시판 게시글 리스트 반환 api
 export const fetchBoardPosts = async (
@@ -158,7 +166,7 @@ export const fetchBoardPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -196,6 +204,23 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
     }
 };
 
+// 배너 이미지 가져오기
+export async function fetchBannerImage(): Promise<Blob> {
+    const url = `${BASE_URL}/api/html/banner/`;
+
+    try {
+        const res = await axios.get(url, {
+            responseType: "blob",
+        });
+
+        return res.data; // Blob 반환
+    } catch (err: any) {
+        if (err.response) {
+            throw new Error(`Failed to load banner: ${err.response.status}`);
+        }
+        throw new Error("Failed to load banner: Network error");
+    }
+}
 
 // 전체 게시판 검색 (전체 카테고리)
 export const fetchSearchPosts = async (
@@ -219,7 +244,7 @@ export const fetchSearchPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -259,7 +284,7 @@ export const fetchBoardSearchPosts = async (
         id: item.id,
         title: item.title,
         author: item.author,
-        author_id: item.author_id,
+        user_id: item.user_id,
         author_semester: item.author_semester,
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
         views: item.views,
@@ -320,30 +345,50 @@ export const togglePostLike = async (postId: number, token: string) => {
     return res.data;
 };
 
-// 사용자의 내 게시글 목록 api todo: 임시
+// 사용자의 내 게시글 목록 api
 export const fetchUserPosts = async (
-    username: string,
+    userId: string,
     pageSize: number,
-    page: number
+    page: number,
+    token: string
 ): Promise<{ posts: PostItem[]; totalPages: number }> => {
-    const query = `?page=${page}&page_size=${pageSize}`;
-    const url = `/api/user/${username}/posts${query}`;
+    const url = `${BASE_URL}/api/users/${userId}/posts/`;
 
-    const res = await fetch(url);
-    const data = await res.json();
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize },
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const posts = rawResults.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        user_id: item.user_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        views: item.views,
+        likes: item.likes_count,
+    }));
+
+    const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
-        posts: data.results.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            author: item.author,
-            date: item.created_at.slice(2, 10).replace(/-/g, "-"),
-            views: item.views,
-            likes: item.likes_count,
-        })),
-        totalPages: Math.ceil(data.count / pageSize),
+        posts,
+        totalPages: Math.ceil(count / pageSize),
     };
 };
+
 
 // 첨부파일 업로드
 export const uploadAttachment = async (file: File, token: String) => {
@@ -392,35 +437,23 @@ export const fetchAwardsHtml = async (): Promise<string> => {
     return res.data;
 };
 
-// notion 불러오기
-export const fetchNotionHtml = async (token: string): Promise<string> => {
-    const url = `${BASE_URL}/api/html/notion`; // ?file 파라미터 제거
-    const res = await axios.get<string>(url, {
-        headers: {
-            Accept: "text/html",
-            Authorization: `Bearer ${token}`,
-        },
-        responseType: "text",
-        withCredentials: true,
-    });
-    return res.data; // 깡 HTML 그대로 반환
-};
+// notion html 불러오기
+export async function fetchNotionHtml(fileName: string | null, accessToken: string): Promise<string> {
+    const url = fileName
+        ? `${BASE_URL}/api/html/notion/?file=${encodeURIComponent(fileName)}`
+        : `${BASE_URL}/api/html/notion/`;
 
-// 수상경력 업로드, 어드민 페이지에서 사용
-export const uploadAwardsHtmlFile = async (token: string, file: File | Blob) => {
-    const url = `${BASE_URL}/api/html/awards/upload/`;
-    const form = new FormData();
-    const filename = (file as File).name ?? "awards.html";
-    form.append("file", file, filename);
-
-    const res = await axios.post(url, form, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
+    const res = await fetch(url, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    return res.data;
-};
+    if (!res.ok) {
+        throw new Error(`Failed to load HTML: ${res.status}`);
+    }
+
+    return res.text();
+}
 
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
@@ -547,7 +580,6 @@ export const modifyPost = async (
         responseType: "json",
     });
 
-    console.log(payload); //debug
     return res.data;
 };
 
@@ -564,7 +596,7 @@ export const deleteComment = async (commentId: number, token: string): Promise<v
 // 댓글 등록
 export const createComment = async (
     postId: number,
-    payload: { content: string; parent: number | null }, // ← 루트 댓글은 null
+    payload: { content: string; parent: number | null },
     token: string
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;
@@ -580,6 +612,8 @@ export const createComment = async (
 
     const d = res.data as {
         id: number;
+        user_id: string;
+        author_semester: number;
         author: string;
         content: string;
         created_at: string;
@@ -595,6 +629,8 @@ export const createComment = async (
     if (isReply) {
         const reply: Reply = {
             id: d.id,
+            user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -605,6 +641,8 @@ export const createComment = async (
     } else {
         const comment: Comment = {
             id: d.id,
+            user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -635,6 +673,8 @@ export const updateComment = async (
 
     const d = res.data as {
         id: number;
+        user_id: string;
+        author_semester: number;
         author: string;
         content: string;
         created_at: string;
@@ -651,6 +691,8 @@ export const updateComment = async (
     if (isReply) {
         const reply: Reply = {
             id: d.id,
+            user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -661,6 +703,8 @@ export const updateComment = async (
     } else {
         const comment: Comment = {
             id: d.id,
+            user_id: d.user_id,
+            author_semester: d.author_semester,
             author: d.author,
             content: d.content,
             date,
@@ -671,3 +715,124 @@ export const updateComment = async (
         return comment;
     }
 };
+
+// 사용자 정보 조회
+export const fetchUserInfo = async (
+    userId: string,
+    token: string
+): Promise<UserProfile> => {
+    const url = `${BASE_URL}/api/users/${userId}/`;
+    const res = await axios.get(url, {
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const data = res.data as {
+        username: string;
+        email: string;
+        semester: number;
+        is_staff: boolean;
+        date_joined: string;
+        is_self: boolean;
+        post_count: number;
+        comment_count: number;
+    };
+
+    return {
+        username: data.username,
+        email: data.email,
+        semester: data.semester,
+        date_joined: data.date_joined,
+        is_self: data.is_self,
+        role: data.is_staff ? "관리자" : "멤버",
+        post_count: data.post_count,
+        comment_count: data.comment_count,
+    };
+};
+
+// 사용자 댓글 목록 조회
+export const fetchUserComments = async (
+    userId: string,
+    pageSize: number,
+    page: number,
+    token: string
+): Promise<{ comments: UserComment[]; totalPages: number }> => {
+    const url = `${BASE_URL}/api/users/${userId}/comments/`;
+
+    const res = await axios.get(url, {
+        params: { page, page_size: pageSize },
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const rawResults = Array.isArray(res.data?.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+            ? res.data
+            : [];
+
+    const comments: UserComment[] = rawResults
+        .filter((c: any) => !c.is_deleted)
+        .map((c: any) => ({
+            id: c.id,
+            post_id: c.post_id,
+            user_id: c.user_id,
+            board_id: c.board_id,
+            author: c.author,
+            content: c.content,
+            post_title: c.post_title,
+            created_at: c.created_at.replace("T", " ").slice(0, 19),
+            parent: c.parent,
+            children: c.children,
+            is_owner: c.is_owner,
+        }));
+
+    const count = typeof res.data?.count === "number" ? res.data.count : comments.length;
+
+    return {
+        comments,
+        totalPages: Math.ceil(count / pageSize),
+    };
+};
+
+// 비밀번호 변경
+export async function changePassword(
+    oldPassword: string,
+    newPassword1: string,
+    newPassword2: string,
+    token: string
+): Promise<{ success: boolean; message?: string }> {
+    try {
+        const res = await axios.post(
+            `${BASE_URL}/api/users/password/change/`,
+            {
+                old_password: oldPassword,
+                new_password1: newPassword1,
+                new_password2: newPassword2,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return { success: true, message: res.data?.detail || "비밀번호 변경 성공" };
+    } catch (err: any) {
+        return {
+            success: false,
+            message:
+                err.response?.data?.detail ||
+                err.response?.data?.error ||
+                "비밀번호 변경에 실패했습니다.",
+        };
+    }
+}

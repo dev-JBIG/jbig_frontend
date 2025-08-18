@@ -1,0 +1,54 @@
+.comment-list {
+    width: 100%;
+    max-width: 790px;
+    margin: 0 auto;
+    font-family: inherit;
+}
+
+.user-comment-item {
+    border-bottom: 1px solid #e5e5e5;
+    padding: 12px 16px;
+    background: #fff;
+    transition: background 0.2s ease;
+}
+
+.user-comment-item:hover {
+    background: #f9f9f9;
+    cursor: pointer;
+}
+
+.user-comment-item div {
+    line-height: 1.4;
+}
+
+.user-comment-item .user-comment-post {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #222;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-comment-item .user-comment-content {
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-comment-item .user-comment-date {
+    font-size: 14px;
+    color: #888;
+}
+
+.user-comment-list .loading,
+.user-comment-list .end {
+    text-align: center;
+    padding: 16px;
+    color: #777;
+    font-size: 13px;
+}

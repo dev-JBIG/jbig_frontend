@@ -75,6 +75,10 @@
     color: #000;
 }
 
+.postdetail-author:hover {
+    cursor: pointer;
+}
+
 .postdetail-like-btn {
     margin-left: auto;         /* 우측 끝 고정 */
     display: inline-flex;
@@ -92,7 +96,7 @@
 }
 
 .postdetail-divider {
-    border-top: 1.5px solid #eee;
+    border-top: 2px solid #eee;
     margin: 16px 0 18px 0;
 }
 
@@ -107,8 +111,8 @@
 .postdetail-attachments {
     margin: 18px 0 0 0;
     padding: 10px 0 10px 0;
-    border-top: 1px solid #ececec;
-    border-bottom: 1px solid #ececec;
+    border-top: 2px solid #ececec;
+    border-bottom: 2px solid #ececec;
 }
 .postdetail-attachments-title {
     font-size: 1.06rem;
@@ -166,7 +170,7 @@
     font-size: 1.07rem;
     font-weight: 600;
     padding-bottom: 13px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid #ececec;
     color: #243763;
 }
 .postdetail-comment-list {
@@ -175,11 +179,11 @@
     margin: 0 0 14px 0;
 }
 .postdetail-comment-item {
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 2px solid #ececec;
 }
 
 .comment-item{
-    padding: 10px 0 10px 0;
+    padding: 6px 0 10px 0;
 }
 .comment-meta {
     display: flex;
@@ -229,7 +233,7 @@
 .reply-list {
     padding-left: 0;
     list-style: none;
-    border-top: 1px solid #f5f5f5;
+    border-top: 2px solid #ececec;
 }
 
 .reply-list:empty {
@@ -239,9 +243,9 @@
 }
 
 .reply-item {
-    padding: 9px 0 10px 18px;
+    padding: 8px 0 10px 18px;
     font-size: 15px;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 2px solid #ececec;
 }
 
 .reply-item:last-child {
@@ -344,10 +348,6 @@
     cursor: pointer;
 }
 
-.postdetail-content.ql-editor{
-    padding: 0;
-}
-
 /* 글쓰기, 보여주기 공통 본문 래퍼: 폭/패딩/타이포 일치 */
 .content-body{
     width: 100%;
@@ -386,6 +386,11 @@
 .reply-author {
     font-size: 15px;
     color: #000;
+}
+
+.comment-author:hover,
+.reply-author:hover{
+    cursor: pointer;
 }
 
 /* === 삭제 버튼 위치/스타일 통일 (항상 우측 끝) === */
