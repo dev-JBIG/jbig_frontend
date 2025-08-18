@@ -554,7 +554,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                             navigate(`/user/${encrypted}`);
                                         }}
                                     >
-                                        {c.author_semester}기 {c.author}
+                                        {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
                                         {!c.is_deleted && c.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
@@ -637,7 +637,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                           navigate(`/user/${encrypted}`);
                                       }}
                                 >
-                                    {r.author_semester}기 {r.author}
+                                    {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
                                     {!r.is_deleted && r.is_owner && (
                                         <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                             (나)

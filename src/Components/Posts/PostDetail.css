@@ -358,12 +358,19 @@
 }
 
 /* 삭제 된 댓글,답글 흐리게 */
+.comment-author.deleted,
 .comment-content.deleted,
 .reply-content.deleted,
 .reply-author.deleted{
     color: #999;
 }
 
+.comment-content.deleted:hover,
+.reply-content.deleted:hover,
+.comment-author.deleted:hover,
+.reply-author.deleted:hover {
+    cursor: default;
+}
 
 /* 폰트 사이즈 및 정렬 일치를 위한 오버라이드 */
 .comment-meta,
