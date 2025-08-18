@@ -78,7 +78,6 @@ const User: React.FC = () => {
 
     // 내 계정이 아니면 비밀번호 변경 탭 숨김
     useEffect(() => {
-        // todo: api 실제 연결
         if (!isSelf && tab === "changepw") setTab("posts");
     }, [isSelf, tab]);
 
