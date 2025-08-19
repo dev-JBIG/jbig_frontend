@@ -300,7 +300,7 @@ export const fetchBoardSearchPosts = async (
     };
 };
 
-// 게시물 세부 정보 조회
+// 게시글 세부 정보 조회
 export const fetchPostDetail = async (postId: number, token?: string | null) => {
     const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
         method: "GET",

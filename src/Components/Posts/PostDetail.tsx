@@ -128,7 +128,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         content: c.content,
                         date: toDate(c.created_at),
                         is_owner: c.is_owner,
-                        is_deleted: c.is_deleted,
+                        is_deleted: !!c.is_deleted,
                         replies: (c.children || []).slice().reverse().map((r: any) => ({
                             id: r.id,
                             user_id: r.user_id,
@@ -137,7 +137,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             content: r.content,
                             date: toDate(r.created_at),
                             is_owner: r.is_owner,
-                            is_deleted: r.is_deleted,
+                            is_deleted: !!r.is_deleted,
                         })),
                     })),
                 };
@@ -544,14 +544,17 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         <li className="postdetail-comment-item" key={c.id}>
                             <div className="comment-item">
                                 <div className="comment-meta">
-                                    <span className="comment-author"
-                                          onClick={async (e) => {
-                                              e.stopPropagation();
-                                              const encrypted = await encryptUserId(String(c.user_id));
-                                              navigate(`/user/${encrypted}`);
-                                          }}
+                                    <span className={"comment-author" + (c.is_deleted ? " deleted" : "")}
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (c.is_deleted) {
+                                                return;
+                                            }
+                                            const encrypted = await encryptUserId(String(c.user_id));
+                                            navigate(`/user/${encrypted}`);
+                                        }}
                                     >
-                                        {c.author_semester}기 {c.author}
+                                        {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
                                         {!c.is_deleted && c.is_owner && (
                                             <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                                 (나)
@@ -627,25 +630,28 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                 <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
                                       onClick={async (e) => {
                                           e.stopPropagation();
+                                          if (r.is_deleted) {
+                                              return;
+                                          }
                                           const encrypted = await encryptUserId(String(r.user_id));
                                           navigate(`/user/${encrypted}`);
                                       }}
                                 >
-                                    {r.author_semester}기 {r.author}
+                                    {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
                                     {!r.is_deleted && r.is_owner && (
                                         <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
                                             (나)
                                         </span>
                                     )}
                                 </span>
-                                <span className="reply-date">{r.date}</span>
-                                    {!r.is_deleted && r.is_owner && (
-                                        <div className="more-wrapper">
-                                            <button
-                                                type="button"
-                                                className="more-btn"
-                                                aria-haspopup="menu"
-                                                aria-expanded={openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id}
+                                            <span className="reply-date">{r.date}</span>
+                                            {!r.is_deleted && r.is_owner && (
+                                                <div className="more-wrapper">
+                                                    <button
+                                                        type="button"
+                                                        className="more-btn"
+                                                        aria-haspopup="menu"
+                                                        aria-expanded={openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id}
                                                 onClick={() => toggleReplyMenu(c.id, r.id)}
                                                 title="더보기"
                                             >

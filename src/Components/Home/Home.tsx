@@ -95,11 +95,11 @@ const Home: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
+        navigate("/");
         if (accessToken && refreshToken) {
             await signout(accessToken, refreshToken);
         }
         signOutLocal();
-        navigate("/");
         window.location.reload();
     };
 
