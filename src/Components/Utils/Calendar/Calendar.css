@@ -1,0 +1,70 @@
+/* 툴바 버튼 */
+.fc .fc-toolbar-chunk .fc-button {
+    background: transparent !important;
+    border: none !important;
+    color: black !important;
+    font-size: 20px !important;
+    box-shadow: none !important;
+}
+
+/* 툴바 타이틀 */
+.fc .fc-toolbar-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* 이벤트 텍스트 크기 */
+.fc .fc-daygrid-event {
+    font-size: 13px;
+}
+
+.fc-daygrid-day-frame {
+    overflow: visible !important;
+}
+
+.fc-daygrid-event-harness,
+.fc-daygrid-event {
+    overflow: visible !important;
+}
+
+.fc .fc-timegrid-event {
+    font-size: 13px;
+}
+
+/* 커스텀 이벤트 공통 */
+.fc .fc-custom-event {
+    position: relative;
+    display: inline-block;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* 시간 (호버 시만 표시) */
+.fc .fc-custom-event .fc-time {
+    display: none;
+    margin-left: 4px;
+    font-size: 12px;
+}
+
+.fc .fc-custom-event:hover .fc-time {
+    display: inline;
+}
+
+.fc-custom-tooltip {
+    position: fixed; /* body를 기준으로 위치를 잡기 위해 fixed 사용 */
+    background: black;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1001; /* 다른 요소들보다 위에 오도록 z-index 설정 */
+
+    /* 기본적으로 한 줄로 표시 */
+    white-space: nowrap;
+
+    /* 초기에는 보이지 않도록 설정 */
+    opacity: 0;
+    pointer-events: none; /* 툴팁이 마우스 이벤트를 가로채지 않도록 설정 */
+
+    transition: opacity 0.2s;
+}

@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
             )}
             {isLogin && (
-                <button className="sidebar-button" onClick={() => window.open("/note", "_blank")}>
+                <button className="sidebar-button open-notion-btn" onClick={() => window.open("/note", "_blank")}>
                     교안 탭 열기
                 </button>
             )}
@@ -43,7 +43,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onKeyDown={e => {
                         if (e.key === 'Enter' && sidebarQuery.trim()) {
                             setSidebarQuery("");
-                            navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
+                            // 전체 글에서 조회됨을 기본으로 함
+                            navigate(`/search/all?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
                 />
@@ -52,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => {
                         if (sidebarQuery.trim()) {
                             setSidebarQuery("");
-                            navigate(`/search?q=${encodeURIComponent(sidebarQuery)}`);
+                            navigate(`/search/all?q=${encodeURIComponent(sidebarQuery)}`);
                         }
                     }}
                 >
@@ -63,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <span style={{display: "flex", alignItems: "center"}}>
                         <FileText size={18} className="board-icon"/>
-                        전체글보기
+                        전체 글 보기
                     </span>
                     <span className="viewall-count">{totalCount.toLocaleString()}</span>
                 </li>

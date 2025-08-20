@@ -153,7 +153,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         <h2
                             className={`postlist-title ${isHome ? "home" : ""} ${isSearchPage ? "search" : ""}`}
                         >
-                            {activeBoard ? activeBoard.name : (isHome ? "전체글보기" : "전체글보기")}
+                            {activeBoard ? activeBoard.name : (isHome ? "전체 글 보기" : "전체 글 보기")}
                         </h2>
                         {!isHome ? (
                             <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
@@ -272,7 +272,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             )}
 
             {/* Pagination (5개 단위 그룹) */}
-            {!isHome && totalPages > 1 && (
+            {!isHome && totalPages >= 1 && (
                 <div className="pagination-row">
                     {(() => {
                         const GROUP_SIZE = 5;

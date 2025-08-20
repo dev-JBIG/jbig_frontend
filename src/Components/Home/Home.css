@@ -113,8 +113,18 @@
     margin-bottom: 16px;
 }
 
+.sidebar-button.open-notion-btn {
+    height: 72px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
 .sidebar-button:hover {
     background-color: #274bb5;
+}
+
+.open-notion-btn{
+    padding: 8px 20px;
 }
 
 .menu {
@@ -248,5 +258,27 @@
     background-color: #f4f4f4;
 }
 
-/* 수상경력 */
+/* 수상경력(소개로 대체) */
 .awards-container { width:100%; max-width:790px; margin: 0 auto;}
+
+
+/* 캘린더 */
+.calendar-section-wrapper {
+    width: 100%;
+}
+
+.add-event-text-home {
+    display: block;
+    text-align: right;
+    padding: 10px 20px 20px 0;
+    color: #3563e9;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.add-event-text-home:hover {
+    color: #274bb5;
+    text-decoration: underline;
+}

@@ -31,12 +31,18 @@ const Signup: React.FC = () => {
 
     // 타이머 진행
     useEffect(() => {
-        if (step !== 2 || secondsLeft <= 0) return;
+        if (step !== 2) return;
+
+        const expireAt = Date.now() + 300 * 1000; // 현재 시각 + 5분
+
         const t = setInterval(() => {
-            setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+            const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
+            setSecondsLeft(remaining);
+            if (remaining === 0) clearInterval(t);
         }, 1000);
+
         return () => clearInterval(t);
-    }, [step, secondsLeft]);
+    }, [step]);
 
     // 1단계: 회원가입 요청 -> 서버가 인증코드 이메일 발송
     const handleSignupRequest = async (e: React.FormEvent) => {
@@ -139,7 +145,7 @@ const Signup: React.FC = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                placeholder="example@jbnu.ac.kr"
+                                placeholder="예: example@jbnu.ac.kr"
                             />
 
                             <label className="signup-label" htmlFor="userId">이름</label>
@@ -148,7 +154,7 @@ const Signup: React.FC = () => {
                                 id="userId"
                                 type="text"
                                 value={userId}
-                                placeholder="홍길동"
+                                placeholder="예: 홍길동"
                                 onChange={(e) => setUserId(e.target.value)}
                                 required
                             />
@@ -177,6 +183,7 @@ const Signup: React.FC = () => {
                                     id="password"
                                     type={showPassword ? "text" : "password"}
                                     value={password}
+                                    placeholder="숫자 + 영문 + !,@"
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
@@ -209,6 +216,7 @@ const Signup: React.FC = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
+                                placeholder="숫자 + 영문 + !,@"
                             />
 
                             <button className="signup-button" type="submit" disabled={loading}>인증코드 받기</button>

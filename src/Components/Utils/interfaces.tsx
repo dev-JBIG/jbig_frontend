@@ -113,3 +113,18 @@ export interface UserComment {
     children: any[];
     is_owner: boolean;
 }
+
+// 생성 시 사용할 타입
+export interface CalendarEventCreate {
+    title: string;
+    start: Date;
+    end: Date | null;
+    allDay?: boolean;
+    color: string;
+    description?: string;
+}
+
+// 서버에서 불러온 이벤트
+export interface CalendarEvent extends CalendarEventCreate {
+    id: string;
+}
