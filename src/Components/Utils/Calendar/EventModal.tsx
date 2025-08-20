@@ -51,15 +51,19 @@ const EventModal: React.FC<EventModalProps> = ({ onClose, onSave }) => {
         e.preventDefault();
 
         if (!start) {
-            alert("시작 날짜/시간은 필수입니다.");
+            alert("시작 시각을 입력해주세요.");
             return;
         }
         if (!title) {
-            alert("일정 제목은 필수입니다.");
+            alert("일정 제목을 입력해주세요.");
             return;
         }
         if (!allDay && !end) {
-            alert("종료 날짜/시간은 필수입니다.");
+            alert("종료 시각을 입력해주세요.");
+            return;
+        }
+        if(description.length < 1 || !description){
+            alert("설명란이 비어있습니다.");
             return;
         }
 
@@ -129,14 +133,14 @@ const EventModal: React.FC<EventModalProps> = ({ onClose, onSave }) => {
                         </>
                     )}
 
-                    <label htmlFor="description">설명 (선택)</label>
+                    <label htmlFor="description">설명</label>
                     <textarea
                         id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         maxLength={50}
                     />
-                    <p style={{ textAlign: "right" }}>{description.length} / 50</p>
+                    <p style={{ textAlign: "right" }}>{description.length} / 20</p>
 
                     <label>색상</label>
                     <div className="color-picker">

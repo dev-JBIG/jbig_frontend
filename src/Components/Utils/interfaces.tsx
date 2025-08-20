@@ -121,7 +121,7 @@ export interface CalendarEventCreate {
     end: Date | null;
     allDay?: boolean;
     color: string;
-    description?: string;
+    description: string;
 }
 
 // 서버에서 불러온 이벤트
