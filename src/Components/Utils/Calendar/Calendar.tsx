@@ -11,6 +11,11 @@ import {CalendarEvent} from "../interfaces";
 
 const Calendar: React.FC = () => {
     const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [selectedEventInfo, setSelectedEventInfo] = useState<{
+        title: string;
+        time: string;
+        description?: string;
+    } | null>(null);
 
     function toFullCalendarEvent(e: CalendarEvent): EventInput {
         return {
@@ -62,7 +67,6 @@ const Calendar: React.FC = () => {
         setEvents(sampleEvents);
     }, []);
 
-
     return (
         <div style={{padding: "30px 20px 0 20px"}}>
             <FullCalendar events={events.map(toFullCalendarEvent)}
@@ -83,9 +87,7 @@ const Calendar: React.FC = () => {
                 expandRows={true}
                 eventDidMount={(info) => {
                     const el = info.el;
-
-                    const {start, end, extendedProps, allDay, title} = info.event;
-
+                    const { start, end, extendedProps, allDay, title } = info.event;
                     const formatTime = (date: Date | null) => {
                         if (!date) return "";
                         return date.toLocaleTimeString("ko-KR", {
@@ -96,86 +98,80 @@ const Calendar: React.FC = () => {
                     };
 
                     let tooltipText = "";
-                    const description = extendedProps.description;
-
-                    // 하루 종일 일정이 아닐 때만 시간 정보를 툴팁에 추가합니다.
                     if (!allDay) {
                         const startTime = formatTime(start);
                         const endTime = formatTime(end);
-
-                        if (startTime && endTime) {
-                            tooltipText = `${startTime} ~ ${endTime}`;
-                        } else if (startTime) {
-                            tooltipText = startTime;
-                        } else if (endTime) {
-                            tooltipText = `~ ${endTime}`;
-                        }
+                        if (startTime && endTime) tooltipText = `${startTime} ~ ${endTime}`;
+                        else if (startTime) tooltipText = startTime;
+                        else if (endTime) tooltipText = `~ ${endTime}`;
                     }
+                    tooltipText = extendedProps.description
+                        ? (tooltipText ? `${tooltipText} : ${extendedProps.description}` : extendedProps.description)
+                        : (tooltipText ? `${tooltipText} : ${title}` : title);
 
-                    // 설명이 있다면 툴팁에 추가하고, 없다면 제목을 대신 추가합니다.
-                    if (description) {
-                        tooltipText = tooltipText ? `${tooltipText} : ${description}` : description;
-                    } else {
-                        tooltipText = tooltipText ? `${tooltipText} : ${title}` : title;
-                    }
-
-                    // 마우스를 올렸을 때 툴팁 생성 및 위치 계산
+                    // hover용 (데스크톱)
                     const handleMouseEnter = () => {
-                        // 기존 툴팁이 있다면 제거
-                        const existingTooltip = document.querySelector('.fc-custom-tooltip');
-                        if (existingTooltip) existingTooltip.remove();
+                        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+                            const existingTooltip = document.querySelector('.fc-custom-tooltip');
+                            if (existingTooltip) existingTooltip.remove();
 
-                        const tooltip = document.createElement('div');
-                        tooltip.className = 'fc-custom-tooltip';
-                        tooltip.innerText = tooltipText;
-                        document.body.appendChild(tooltip);
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'fc-custom-tooltip';
+                            tooltip.innerText = tooltipText;
+                            document.body.appendChild(tooltip);
 
-                        const calendar = el.closest(".fc") as HTMLElement;
-                        if (!calendar) return;
+                            const calendar = el.closest(".fc") as HTMLElement;
+                            if (!calendar) return;
 
-                        const calRect = calendar.getBoundingClientRect();
-                        const elRect = el.getBoundingClientRect();
-                        const tipRect = tooltip.getBoundingClientRect();
-                        const margin = 4;
+                            const calRect = calendar.getBoundingClientRect();
+                            const elRect = el.getBoundingClientRect();
+                            const tipRect = tooltip.getBoundingClientRect();
+                            const margin = 4;
 
-                        // 툴팁의 기본 위치 계산 (이벤트 요소 위 중앙)
-                        let top = elRect.top - tipRect.height - 4;
-                        let left = elRect.left + (elRect.width / 2) - (tipRect.width / 2);
+                            let top = elRect.top - tipRect.height - 4;
+                            let left = elRect.left + (elRect.width / 2) - (tipRect.width / 2);
 
-                        // 달력 왼쪽 경계를 벗어나는지 확인하고 보정
-                        if (left < calRect.left) {
-                            left = calRect.left + margin;
+                            if (left < calRect.left) left = calRect.left + margin;
+                            if (left + tipRect.width > calRect.right) {
+                                left = calRect.right - tipRect.width - margin;
+                            }
+
+                            tooltip.style.left = `${left}px`;
+                            tooltip.style.top = `${top}px`;
+                            tooltip.style.opacity = '1';
                         }
-                        // 달력 오른쪽 경계를 벗어나는지 확인하고 보정
-                        if (left + tipRect.width > calRect.right) {
-                            left = calRect.right - tipRect.width - margin;
-                        }
-
-                        tooltip.style.left = `${left}px`;
-                        tooltip.style.top = `${top}px`;
-                        tooltip.style.opacity = '1';
                     };
-
-                    // 마우스가 벗어났을 때 툴팁 제거
                     const handleMouseLeave = () => {
-                        const tooltip = document.querySelector('.fc-custom-tooltip');
-                        if (tooltip) {
-                            tooltip.remove();
+                        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+                            const tooltip = document.querySelector('.fc-custom-tooltip');
+                            if (tooltip) tooltip.remove();
                         }
                     };
 
-                    el.addEventListener('mouseenter', handleMouseEnter);
-                    el.addEventListener('mouseleave', handleMouseLeave);
+                    // 모바일 전용 모달
+                    const handleClick = () => {
+                    if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+                        setSelectedEventInfo({
+                            title,
+                            time: tooltipText,
+                            description: extendedProps.description,
+                        });
+                    }
+                };
 
-                    // 컴포넌트 언마운트 시 이벤트 리스너 정리
-                    info.event.setExtendedProp('_listeners', {handleMouseEnter, handleMouseLeave});
+                    el.addEventListener("mouseenter", handleMouseEnter);
+                    el.addEventListener("mouseleave", handleMouseLeave);
+                    el.addEventListener("click", handleClick);
+
+                    info.event.setExtendedProp("_listeners", { handleMouseEnter, handleMouseLeave, handleClick });
                 }}
                 eventWillUnmount={(info) => {
-                    const {el, event} = info;
+                    const { el, event } = info;
                     const listeners = event.extendedProps._listeners;
                     if (listeners) {
-                        el.removeEventListener('mouseenter', listeners.handleMouseEnter);
-                        el.removeEventListener('mouseleave', listeners.handleMouseLeave);
+                        el.removeEventListener("mouseenter", listeners.handleMouseEnter);
+                        el.removeEventListener("mouseleave", listeners.handleMouseLeave);
+                        el.removeEventListener("click", listeners.handleClick);
                     }
                 }}
                 eventContent={(arg) => {
@@ -217,6 +213,16 @@ const Calendar: React.FC = () => {
                     );
                 }}
             />
+            {selectedEventInfo && (
+                <div className="mobile-event-modal">
+                    <div className="modal-content">
+                        <h3>{selectedEventInfo.title}</h3>
+                        <p>{selectedEventInfo.time}</p>
+                        {selectedEventInfo.description && <p>{selectedEventInfo.description}</p>}
+                        <button onClick={() => setSelectedEventInfo(null)}>닫기</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -68,3 +68,25 @@
 
     transition: opacity 0.2s;
 }
+
+/* 모바일 전용 모달 */
+.mobile-event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.mobile-event-modal .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 90%;
+    text-align: center;
+}
