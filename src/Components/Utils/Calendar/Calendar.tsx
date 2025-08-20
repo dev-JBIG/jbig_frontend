@@ -16,6 +16,7 @@ const Calendar: React.FC = () => {
         time: string;
         description?: string;
     } | null>(null);
+    const onClose = () => setSelectedEventInfo(null);
 
     function toFullCalendarEvent(e: CalendarEvent): EventInput {
         return {
@@ -56,10 +57,10 @@ const Calendar: React.FC = () => {
             {
                 id: "3",
                 title: "휴가",
-                start: new Date("2025-08-23"),
-                end: new Date("2025-08-25"),
+                start: new Date("2025-08-23T11:30:00"),
+                end: new Date("2025-08-25T13:30:00"),
                 color: "#2ecc71",
-                allDay: true,
+                allDay: false,
                 description: "여행",
             },
         ];
@@ -88,28 +89,62 @@ const Calendar: React.FC = () => {
                 eventDidMount={(info) => {
                     const el = info.el;
                     const { start, end, extendedProps, allDay, title } = info.event;
+
+                    const formatDateTime = (date: Date | null) => {
+                        if (!date) return "";
+                        const month = String(date.getMonth() + 1).padStart(2, "0");
+                        const day = String(date.getDate()).padStart(2, "0");
+                        const hour = String(date.getHours()).padStart(2, "0");
+                        const minute = String(date.getMinutes()).padStart(2, "0");
+                        return `${month}/${day} ${hour}:${minute}`;
+                    };
+
                     const formatTime = (date: Date | null) => {
                         if (!date) return "";
-                        return date.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                        });
+                        const hour = String(date.getHours()).padStart(2, "0");
+                        const minute = String(date.getMinutes()).padStart(2, "0");
+                        return `${hour}:${minute}`;
                     };
 
                     let tooltipText = "";
-                    if (!allDay) {
-                        const startTime = formatTime(start);
-                        const endTime = formatTime(end);
-                        if (startTime && endTime) tooltipText = `${startTime} ~ ${endTime}`;
-                        else if (startTime) tooltipText = startTime;
-                        else if (endTime) tooltipText = `~ ${endTime}`;
-                    }
-                    tooltipText = extendedProps.description
-                        ? (tooltipText ? `${tooltipText} : ${extendedProps.description}` : extendedProps.description)
-                        : (tooltipText ? `${tooltipText} : ${title}` : title);
+                    let displayTime = "";
 
-                    // hover용 (데스크톱)
+                    if (!allDay) {
+                        const startText = formatDateTime(start);
+                        const endText = formatDateTime(end);
+
+                        if (start && end) {
+                            const sameDay =
+                                start.getFullYear() === end.getFullYear() &&
+                                start.getMonth() === end.getMonth() &&
+                                start.getDate() === end.getDate();
+
+                            if (sameDay) {
+                                // 하루 일정 → MM/DD HH:mm ~ HH:mm
+                                const dayPart = `${String(start.getMonth() + 1).padStart(2, "0")}/${String(start.getDate()).padStart(2, "0")}`;
+                                const startTime = formatTime(start);
+                                const endTime = formatTime(end);
+                                displayTime = `${dayPart} ${startTime} ~ ${endTime}`;
+                            } else {
+                                // 여러 날 일정 → MM/DD HH:mm ~ MM/DD HH:mm
+                                displayTime = `${startText} ~ ${endText}`;
+                            }
+                        } else if (start) {
+                            displayTime = formatDateTime(start);
+                        } else if (end) {
+                            displayTime = formatDateTime(end);
+                        }
+                    }
+
+                    // hover(데스크톱) tooltip → 시간 + description
+                    if (extendedProps.description) {
+                        tooltipText = displayTime
+                            ? `${displayTime} : ${extendedProps.description}`
+                            : extendedProps.description;
+                    } else {
+                        tooltipText = displayTime || title;
+                    }
+                    // hover용
                     const handleMouseEnter = () => {
                         if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
                             const existingTooltip = document.querySelector('.fc-custom-tooltip');
@@ -141,6 +176,7 @@ const Calendar: React.FC = () => {
                             tooltip.style.opacity = '1';
                         }
                     };
+
                     const handleMouseLeave = () => {
                         if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
                             const tooltip = document.querySelector('.fc-custom-tooltip');
@@ -148,16 +184,15 @@ const Calendar: React.FC = () => {
                         }
                     };
 
-                    // 모바일 전용 모달
                     const handleClick = () => {
-                    if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
-                        setSelectedEventInfo({
-                            title,
-                            time: tooltipText,
-                            description: extendedProps.description,
-                        });
-                    }
-                };
+                        if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+                            setSelectedEventInfo({
+                                title,
+                                time: displayTime,
+                                description: extendedProps.description,
+                            });
+                        }
+                    };
 
                     el.addEventListener("mouseenter", handleMouseEnter);
                     el.addEventListener("mouseleave", handleMouseLeave);
@@ -176,16 +211,13 @@ const Calendar: React.FC = () => {
                 }}
                 eventContent={(arg) => {
                     // 각 입력 시간 케이스별 보여지는 값 조정
-
                     const {start, end, extendedProps, title} = arg.event;
 
                     const formatTime = (date: Date | null) => {
                         if (!date) return "";
-                        return date.toLocaleTimeString("ko-KR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                        });
+                        const hour = String(date.getHours()).padStart(2, "0");
+                        const minute = String(date.getMinutes()).padStart(2, "0");
+                        return `${hour}:${minute}`;
                     };
 
                     const startTime = formatTime(start);
@@ -214,12 +246,21 @@ const Calendar: React.FC = () => {
                 }}
             />
             {selectedEventInfo && (
-                <div className="mobile-event-modal">
-                    <div className="modal-content">
+                <div
+                    className="modal-backdrop"
+                    onClick={onClose}
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) onClose();
+                    }}
+                    onTouchStart={(e) => {
+                        if (e.target === e.currentTarget) onClose();
+                    }}
+                >
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-btn" onClick={onClose}>×</button>
                         <h3>{selectedEventInfo.title}</h3>
-                        <p>{selectedEventInfo.time}</p>
+                        {selectedEventInfo.time && <p>{selectedEventInfo.time}</p>}
                         {selectedEventInfo.description && <p>{selectedEventInfo.description}</p>}
-                        <button onClick={() => setSelectedEventInfo(null)}>닫기</button>
                     </div>
                 </div>
             )}
