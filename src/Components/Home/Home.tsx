@@ -6,15 +6,23 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import {fetchBannerImage, fetchQuizUrl, getBoards, signout} from "../../API/req";
+import {
+    createCalendarEvent,
+    fetchBannerImage,
+    fetchQuizUrl,
+    getBoards,
+    signout,
+    updateCalendarEvent
+} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
-import {Section} from "../Utils/interfaces";
+import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
 import {encryptUserId} from "../Utils/Encryption";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
+import $ from "jquery";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
@@ -26,6 +34,8 @@ const Home: React.FC = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
     const [isModalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
+    const [initialEvent, setInitialEvent] = useState<any>(null);
 
     // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
@@ -43,6 +53,17 @@ const Home: React.FC = () => {
                 console.error(err);
             }
         })();
+    }, []);
+
+    useEffect(() => {
+        const openHandler = (e: any) => {
+            const { mode, event } = e.detail || {};
+            setModalMode(mode || 'create');
+            setInitialEvent(event || null);
+            setModalOpen(true);
+        };
+        window.addEventListener('OPEN_EVENT_MODAL', openHandler);
+        return () => window.removeEventListener('OPEN_EVENT_MODAL', openHandler);
     }, []);
 
     // modal 오픈 시 스크롤 차단, 우측 패딩으로 UI 변동 차단
@@ -135,13 +156,46 @@ const Home: React.FC = () => {
             navigate("/signin");
             return;
         }
+        setModalMode('create');
+        setInitialEvent(null);
         setModalOpen(true);
     };
 
-    const handleSaveEvent = (newEvent: any) => {
-        console.log("새 일정 저장:", newEvent);
-        // TODO: 여기서 API로 새 일정을 서버에 전송하는 로직을 추가해야 합니다.
-        setModalOpen(false); // 저장 후 모달 닫기
+    const ModifyHandler = () => {
+        if(!authReady || !accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
+    };
+
+    const handleSaveEvent = async (newEvent: CalendarEventCreate, id?: string) => {
+        try {
+            if (!accessToken) {
+                alert("로그인이 필요합니다.");
+                signOutLocal();
+                navigate("/signin");
+                return;
+            }
+
+            if (modalMode === "edit" && id) {
+                // 1) 서버 반영
+                const updated = await updateCalendarEvent(id, newEvent, accessToken);
+
+                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더)
+                ($("#calendar") as any).fullCalendar("removeEvents", id);
+                ($("#calendar") as any).fullCalendar("renderEvent", updated);
+            } else {
+                const created = await createCalendarEvent(newEvent, accessToken);
+                ($("#calendar") as any).fullCalendar("renderEvent", created);
+            }
+
+            setModalOpen(false);
+        } catch (err) {
+            console.error("이벤트 저장 실패:", err);
+            alert("이벤트 저장 중 오류가 발생했습니다.");
+        }
     };
 
     const handleCloseModal = () => {
@@ -211,9 +265,14 @@ const Home: React.FC = () => {
                             </div>
                             <div className="calendar-section-wrapper">
                                 <Calendar/>
-                                <span className="add-event-text-home" onClick={handleAddEvent}>
-                                    + 새 일정
-                                </span>
+                                <div className="calendar-btns">
+                                    <span className="add-event-text-home" onClick={handleAddEvent}>
+                                        추가
+                                    </span>
+                                    <span className="modify-event-text-home" onClick={ModifyHandler}>
+                                        수정/삭제
+                                    </span>
+                                </div>
                             </div>
                             <PostList boards={boards} isHome={true}/>
                         </MainLayout>
@@ -245,6 +304,8 @@ const Home: React.FC = () => {
             </div>
             {isModalOpen && (
                 <EventModal
+                    mode={modalMode}
+                    initial={initialEvent}
                     onClose={handleCloseModal}
                     onSave={handleSaveEvent}
                 />

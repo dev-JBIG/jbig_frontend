@@ -1,16 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import $ from "jquery";
+import Swal, { SweetAlertResult } from "sweetalert2";
 import "fullcalendar/dist/fullcalendar.css";
 import "fullcalendar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { CalendarEvent}  from "../interfaces";
 import moment from "moment";
+import {deleteCalendarEvent, fetchCalendarEvents} from "../../../API/req";
+import {useUser} from "../UserContext";
+import {useNavigate} from "react-router-dom";
 
 const Calendar: React.FC = () => {
+    const { signOutLocal, accessToken } = useUser();
+
+    const navigate = useNavigate();
+
     useEffect(() => {
+        $(document).on("show.bs.popover", "[data-toggle='popover']", function () {
+            // 현재 트리거(this)를 제외한 다른 popover는 모두 닫기
+            ($("[data-toggle='popover']").not(this) as any).popover("hide");
+        });
+
+        // 바깥 클릭 시 닫기
         const handler = (e: any) => {
-            console.log("????D");
             if (
                 !$(e.target).closest(".popover").length &&
                 !$(e.target).closest("[data-toggle='popover']").length
@@ -18,88 +31,139 @@ const Calendar: React.FC = () => {
                 ($("[data-toggle='popover']") as any).popover("hide");
             }
         };
-
         $(document).on("click", handler);
+
         return () => {
+            $(document).off("show.bs.popover");
             $(document).off("click", handler);
         };
     }, []);
 
     useEffect(() => {
-        // 샘플 이벤트 (실제는 API 연동)
-        const sampleEvents: CalendarEvent[] = [
-            {
-                id: "1",
-                title: "팀 미팅",
-                start: new Date("2025-08-21T10:00:00"),
-                end: new Date("2025-08-21T11:00:00"),
-                color: "#3788d8",
-                description: "주간 업무 점검",
-            },
-            {
-                id: "2",
-                title: "점심 약속",
-                start: new Date("2025-08-24T10:00:00"),
-                end: new Date("2025-08-24T11:00:00"),
-                color: "#e74c3c",
-                description: "맛있는 식당 맛있는 음식 맛있는 것,"
-            },
-            {
-                id: "3",
-                title: "휴가",
-                start: new Date("2025-08-15T10:00:00"),
-                end: new Date("2025-08-18T11:00:00"),
-                color: "#2ecc71",
-                description: "여행",
-            },
-        ];
+        const loadEvents = async () => {
+            try {
+                const events: CalendarEvent[] = await fetchCalendarEvents();
 
-        ($("#calendar") as any).fullCalendar({
-            locale: "ko",
-            defaultView: "month",
-            header: {
-                left: "prev",
-                center: "title",
-                right: "next",
-            },
-            buttonIcons: {
-                prev: "left-single-arrow",
-                next: "right-single-arrow",
-            },
-            editable: false,
-            eventLimit: true,
-            events: sampleEvents,
+                ($("#calendar") as any).fullCalendar({
+                    locale: "ko",
+                    defaultView: "month",
+                    header: {
+                        left: "prev",
+                        center: "title",
+                        right: "next",
+                    },
+                    buttonIcons: {
+                        prev: "left-single-arrow",
+                        next: "right-single-arrow",
+                    },
+                    editable: false,
+                    eventLimit: true,
+                    events,
+                    eventClick: function (calEvent: any, jsEvent: MouseEvent) {
+                        jsEvent.preventDefault();
 
-            eventRender: function (event: any, element: any) {
-                element.attr("data-toggle", "popover");
+                        Swal.fire({
+                            title: `${calEvent.title}`,
+                            text: "무엇을 하시겠습니까?",
+                            icon: "question",
+                            showCancelButton: true,
+                            showDenyButton: true,
+                            confirmButtonText: "수정",
+                            denyButtonText: "삭제",
+                            cancelButtonText: "취소",
+                            customClass: {
+                                confirmButton: "btn btn-primary",
+                                denyButton: "btn btn-danger",
+                                cancelButton: "btn btn-secondary"
+                            },
+                            buttonsStyling: true
+                        }).then(async (result: SweetAlertResult) => {
+                            if (result.isConfirmed) {
+                                const payload = {
+                                    id: calEvent.id,
+                                    title: calEvent.title,
+                                    description: calEvent.description || '',
+                                    color: calEvent.color || '#3788d8',
+                                    allDay: !!calEvent.allDay,
+                                    start: calEvent.start ? calEvent.start.toDate() : null,
+                                    end: calEvent.end ? calEvent.end.toDate() : null,
+                                };
 
-                // 기본 시간/타이틀 제거
-                element.find(".fc-time").remove();
-                element.find(".fc-title").html("");
+                                window.dispatchEvent(new CustomEvent('OPEN_EVENT_MODAL', {
+                                    detail: {mode: 'edit', event: payload}
+                                }));
+                                // 팝오버 닫기
+                                ($("[data-toggle='popover']") as any).popover("hide");
+                            } else if (result.isDenied) {
+                                const removeKey = calEvent.id ?? calEvent._id;
 
-                // 시간 포맷 (시작 ~ 종료)
-                const start = event.start ? moment(event.start).format("MM/DD HH:mm") : "";
-                const end = event.end ? moment(event.end).format("MM/DD HH:mm") : "";
-                const timeText = start && end ? `${start} ~ ${end}` : start || end;
+                                if (!accessToken) {
+                                    alert("로그인이 필요합니다.");
+                                    signOutLocal();
+                                    navigate("/signin");
+                                    return;
+                                }
 
-                // Popover 내용 (시간 + description)
-                element.popover({
-                    title: event.title, // 팝오버 제목은 title만
-                    content: `
-                    <div><strong>시간:</strong> ${timeText}</div>
-                    <div><strong>내용:</strong> ${event.description}</div>
-                    `,
-                    trigger: "click",
-                    placement: "top",
-                    container: "body",
-                    html: true
+                                try {
+                                    await deleteCalendarEvent(removeKey, accessToken);
+                                    ($("#calendar") as any).fullCalendar("removeEvents", removeKey); // UI 반영
+                                    ($("[data-toggle='popover']") as any).popover("hide");
+                                } catch (err) {
+                                    console.error("이벤트 삭제 실패:", err);
+                                    alert("이벤트 삭제 중 오류가 발생했습니다.");
+                                }
+                            }
+                        });
+                    },
+                    eventRender: function (event: any, element: any) {
+                        element.attr("data-toggle", "popover");
+
+                        // 기본 시간/타이틀 제거
+                        element.find(".fc-time").remove();
+                        element.find(".fc-title").html("");
+
+                        // 시간 포맷 (시작 ~ 종료)
+                        const start = event.start ? moment(event.start).format("MM/DD HH:mm") : "";
+                        const end = event.end ? moment(event.end).format("MM/DD HH:mm") : "";
+                        const timeText = start && end ? `${start} ~ ${end}` : start || end;
+
+                        // Popover 내용 (시간 + description)
+                        element.popover({
+                            title: `${event.title}`,
+                            content: `
+                                <div><strong>시간: </strong> ${timeText}</div>
+                                <div><strong>설명: </strong>${event.description || ""}</div>
+                            `,
+                            trigger: "manual",
+                            placement: "top",
+                            container: "body",
+                            html: true
+                        });
+
+                        element.on("mouseenter", function (this: HTMLElement) {
+                            ($(this) as any).popover("show");
+                        });
+                        element.on("mouseleave", function (this: HTMLElement) {
+                            setTimeout(() => {
+                                if (!$(".popover:hover").length) ($(this) as any).popover("hide");
+                            }, 120);
+                        });
+                        element.on("click", function (this: HTMLElement) {
+                            setTimeout(() => { ($(this) as any).popover("toggle"); }, 0);
+                        });
+
+                        // 캘린더 셀 내부에는 title만 표시
+                        element.find(".fc-title").append(`
+                            <div class="fc-event-title">${event.title}</div>
+                        `);
+                    }
                 });
+            } catch (err) {
+                console.error("캘린더 이벤트 불러오기 실패:", err);
+            }
+        };
 
-                // 캘린더 셀 내부에는 title만 표시
-                element.find(".fc-title").append(`
-                <div class="fc-event-title">${event.title}</div>
-            `);}
-        });
+        loadEvents();
     }, []);
 
     return (

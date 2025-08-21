@@ -6,8 +6,10 @@ import './EventModal.css';
 import {CalendarEventCreate} from "../interfaces";
 
 interface EventModalProps {
+    mode: 'create' | 'edit';
+    initial?: Partial<CalendarEventCreate> & { id?: string };
     onClose: () => void;
-    onSave: (event: CalendarEventCreate) => void;
+    onSave: (event: CalendarEventCreate, id?: string) => void; // id는 edit일 때만
 }
 
 const colorOptions = [
@@ -20,14 +22,14 @@ const getInitialStartTime = () => {
     return now;
 };
 
-const EventModal: React.FC<EventModalProps> = ({ onClose, onSave }) => {
-    const [title, setTitle] = useState('');
-    const [start, setStart] = useState<Date | null>(getInitialStartTime());
+const EventModal: React.FC<EventModalProps> = ({ mode, initial, onClose, onSave }) => {
+    const [title, setTitle] = useState(initial?.title ?? '');
+    const [start, setStart] = useState<Date | null>(initial?.start ?? getInitialStartTime());
     const [endManuallySet, setEndManuallySet] = useState(false);
-    const [end, setEnd] = useState<Date | null>(null);
-    const [description, setDescription] = useState('');
-    const [allDay, setAllDay] = useState(false);
-    const [color, setColor] = useState(colorOptions[0]);
+    const [end, setEnd] = useState<Date | null>(initial?.end ?? null);
+    const [description, setDescription] = useState(initial?.description ?? '');
+    const [allDay, setAllDay] = useState(initial?.allDay ?? false);
+    const [color, setColor] = useState(initial?.color ?? colorOptions[0]);
 
     useEffect(() => {
         if (start instanceof Date && !endManuallySet) {
@@ -67,24 +69,16 @@ const EventModal: React.FC<EventModalProps> = ({ onClose, onSave }) => {
             return;
         }
 
-        const newEvent: CalendarEventCreate = {
-            title,
-            start,
-            end,
-            allDay,
-            color,
-            description,
-        };
-
-        onSave(newEvent);
+        const newEvent: CalendarEventCreate = { title, start, end, allDay, color, description };
+        onSave(newEvent, initial?.id); // edit이면 id 전달
     };
 
     return ReactDOM.createPortal(
         <div className="modal-backdrop">
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <h2>새 일정 추가</h2>
+                <h2>{mode === 'edit' ? '일정 수정' : '새 일정 추가'}</h2>
                 <form onSubmit={handleSubmit}>
-                    <label htmlFor="title">일정 제목</label>
+                <label htmlFor="title">일정 제목</label>
                     <input
                         id="title"
                         type="text"

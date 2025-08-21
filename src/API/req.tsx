@@ -1,5 +1,13 @@
 import axios from "axios";
-import {PostItem, Reply, Comment, UserProfile, UserComment} from "../Components/Utils/interfaces";
+import {
+    PostItem,
+    Reply,
+    Comment,
+    UserProfile,
+    UserComment,
+    CalendarEvent,
+    CalendarEventCreate
+} from "../Components/Utils/interfaces";
 
 /*
  * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
@@ -941,3 +949,107 @@ export async function changePassword(
         };
     }
 }
+
+// 캘린더 일정 정보 가져오기
+export const fetchCalendarEvents = async (): Promise<CalendarEvent[]> => {
+    const url = `${BASE_URL}/api/calendar/`;
+
+    const res = await axios.get(url, {
+        headers: { Accept: "application/json" },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const data = res.data as any[];
+
+    return data.map(ev => ({
+        id: String(ev.id),
+        title: ev.title,
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+        allDay: ev.allDay ?? false,
+        color: ev.color,
+        description: ev.description,
+    }));
+};
+
+// 캘린더 일정 추가하기
+export const createCalendarEvent = async (
+    newEvent: CalendarEventCreate,
+    token: string
+): Promise<CalendarEvent> => {
+    const url = `${BASE_URL}/api/calendar/`;
+
+    const payload = {
+        ...newEvent,
+        start: newEvent.start.toISOString(),
+        end: newEvent.end ? newEvent.end.toISOString() : null,
+    };
+
+    const res = await axios.post(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const ev = res.data as CalendarEvent;
+
+    return {
+        ...ev,
+        id: String(ev.id),
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+    };
+};
+
+// 캘린더 일정 수정하기 (PUT)
+export const updateCalendarEvent = async (
+    id: string,
+    event: CalendarEventCreate,
+    token: string
+): Promise<CalendarEvent> => {
+    const url = `${BASE_URL}/api/calendar/${id}/`;
+
+    const payload = {
+        ...event,
+        start: event.start.toISOString(),
+        end: event.end ? event.end.toISOString() : null,
+    };
+
+    const res = await axios.put(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const ev = res.data as CalendarEvent;
+    return {
+        ...ev,
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+    };
+};
+
+// 캘린더 일정 삭제하기 (DELETE)
+export const deleteCalendarEvent = async (
+    id: string,
+    token: string
+): Promise<void> => {
+    const url = `${BASE_URL}/api/calendar/${id}/`;
+    await axios.delete(url, {
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+};

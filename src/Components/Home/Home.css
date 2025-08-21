@@ -269,18 +269,27 @@
     width: 100%;
 }
 
-.add-event-text-home {
+.calendar-btns {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 10px 0 20px 0;
+}
+
+.add-event-text-home,
+.modify-event-text-home {
     display: block;
     text-align: right;
-    padding: 10px 0 20px 0;
+    padding: 0 0 20px 0;
     color: #3563e9;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     transition: color 0.2s;
 }
 
-.add-event-text-home:hover {
+.add-event-text-home:hover,
+.modify-event-text-home:hover {
     color: #274bb5;
     text-decoration: underline;
 }
