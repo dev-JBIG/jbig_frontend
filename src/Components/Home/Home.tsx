@@ -265,14 +265,9 @@ const Home: React.FC = () => {
                             </div>
                             <div className="calendar-section-wrapper">
                                 <Calendar/>
-                                <div className="calendar-btns">
-                                    <span className="add-event-text-home" onClick={handleAddEvent}>
-                                        추가
-                                    </span>
-                                    <span className="modify-event-text-home" onClick={ModifyHandler}>
-                                        수정/삭제
-                                    </span>
-                                </div>
+                                <span className="add-event-text-home" onClick={handleAddEvent}>
+                                    일정 추가
+                                </span>
                             </div>
                             <PostList boards={boards} isHome={true}/>
                         </MainLayout>
