@@ -129,6 +129,12 @@ const Home: React.FC = () => {
 
     /** 이하 모달 관련 함수 */
     const handleAddEvent = () => {
+        if(!authReady || !accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
         setModalOpen(true);
     };
 
