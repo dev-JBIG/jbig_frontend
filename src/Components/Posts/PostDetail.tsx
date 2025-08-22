@@ -7,6 +7,7 @@ import {FitHTML} from "../Utils/FitHTML";
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
@@ -32,6 +33,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [htmlContent, setHtmlContent] = useState("");
 
     const { accessToken, authReady, signOutLocal } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     type OpenMenu =
         | { type: "comment"; id: number }
@@ -114,6 +116,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     user_id: src.user_id,
                     isLiked: src.is_liked ?? false,
                     is_owner: !!src.is_owner,
+                    is_admin: src.is_admin,
+                    is_reason: src.is_reason,
                     attachments: (src.attachments || []).map((a: any) => ({
                         id: a.id,
                         fileUrl: a.file,
@@ -141,6 +145,20 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         })),
                     })),
                 };
+
+                // 어드민 게시판 & 어드민이 아닌 경우
+                if(src.is_admin && !staffAuth){
+                    alert("접근 권한이 없습니다.");
+                    navigate("/", { replace: true });
+                    return;
+                }
+
+                // 사유서 게시판 & 어드민도 아니고 작성자도 아닌 경우
+                if(src.is_reason && !staffAuth && !src.is_owner){
+                    alert("접근 권한이 없습니다.");
+                    navigate("/", { replace: true });
+                    return;
+                }
 
                 setPost(mapped);
             } catch (err) {
@@ -241,7 +259,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
 
         const prev = post;
-        // 낙관적 UI: 내용 치환 + is_deleted 표시
         const optimistic = {
             ...post,
             comments: (post.comments || []).map(c =>

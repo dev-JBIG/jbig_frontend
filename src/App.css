@@ -19,3 +19,8 @@ html, body, #root {
 
 /* 전역 가로 스크롤 제거 */
 html, body { overflow-x: visible; }
+
+/* modal 오픈시 스크롤 차단 */
+body.modal-open {
+    overflow: hidden;
+}

@@ -96,7 +96,7 @@
     width: 60px;
 }
 .th-title {
-    width: 40%;
+    width: 35%;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -109,10 +109,10 @@
     width: 100px;
 }
 .th-views {
-    width: 80px;
+    width: 90px;
 }
 .th-likes {
-    width: 80px;
+    width: 90px;
 }
 
 
@@ -183,7 +183,7 @@
     justify-content: center;
     align-items: center;
     gap: 6px;
-    margin-top: 24px;
+    margin-top: 16px;
     flex-wrap: wrap;
 }
 

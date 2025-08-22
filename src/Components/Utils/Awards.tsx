@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { fetchAwardsHtml } from "../../API/req";
 
-const MAX_WIDTH = 790;
+const MAX_WIDTH = 900;
 
 export const AwardsSection: React.FC = () => {
     const hostRef = useRef<HTMLDivElement>(null);
@@ -57,15 +57,17 @@ export const AwardsSection: React.FC = () => {
             :host { display:block; width:100%; }
 
             /* Notion export의 article을 가로 중앙 + 최대폭 제한 */
-            article.page, article[class~="page"]{
+            article.page, article[class~="page"] {
               width: min(100%, ${MAX_WIDTH}px);
               margin: 0 auto;
               padding: 0 8px;
               box-sizing: border-box;
+              white-space: pre-wrap; /* 원본 개행 보존 */
+              transform-origin: top left; /* scale 대응 */
             }
 
             /* 가로 넘침 방지 */
-            article.page *{
+            article.page * {
               box-sizing: border-box;
               max-width: 100%;
               min-width: 0;
@@ -74,12 +76,17 @@ export const AwardsSection: React.FC = () => {
             }
 
             /* 미디어/표 */
-            article.page img, article.page video, article.page canvas, article.page svg{
+            article.page img,
+            article.page video,
+            article.page canvas,
+            article.page svg {
               display: block;
-              max-width: 100%;
-              height: auto;
+              max-width: 100%;   /* 부모보다 크면 줄어듦 */
+              width: auto;       /* 원본 크기 유지 */
+              height: auto;      /* 비율 유지 */
+              margin: 0 auto;    /* 중앙 정렬 */
             }
-            article.page table{
+            article.page table {
               display: block;
               width: 100%;
               overflow-x: auto;

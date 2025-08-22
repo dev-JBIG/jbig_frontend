@@ -8,7 +8,7 @@ import { useUser } from "../Utils/UserContext";
 import {decryptUserId} from "../Utils/Encryption";
 import CommentList from "../CommentList/CommentList";
 import {CircleUserRound} from "lucide-react";
-import ChangePWD from "../ChangePWD/ChangePWD";
+import UserChangePWD from "../User-changePWD/User-changePWD";
 
 const User: React.FC = () => {
     const { user_id: encryptedUserId } = useParams<{ user_id: string }>();
@@ -136,7 +136,7 @@ const User: React.FC = () => {
                     </div>
                 )}
 
-                {tab === "changepw" && isSelf && <ChangePWD />}
+                {tab === "changepw" && isSelf && <UserChangePWD />}
             </div>
         </div>
     );

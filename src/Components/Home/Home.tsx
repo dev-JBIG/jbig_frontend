@@ -6,13 +6,23 @@ import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
-import {fetchBannerImage, fetchQuizUrl, getBoards, signout} from "../../API/req";
+import {
+    createCalendarEvent,
+    fetchBannerImage,
+    fetchQuizUrl,
+    getBoards,
+    signout,
+    updateCalendarEvent
+} from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
 import User from "../User/User";
-import {Section} from "../Utils/interfaces";
+import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
 import {encryptUserId} from "../Utils/Encryption";
+import Calendar from "../Utils/Calendar/Calendar";
+import EventModal from "../Utils/Calendar/EventModal";
+import $ from "jquery";
 
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
@@ -23,6 +33,9 @@ const Home: React.FC = () => {
     const [userSemester, setUserSemester] = useState<number | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLogin, setLogin] = useState(false);
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
+    const [initialEvent, setInitialEvent] = useState<any>(null);
 
     // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
@@ -41,6 +54,37 @@ const Home: React.FC = () => {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        const openHandler = (e: any) => {
+            const { mode, event } = e.detail || {};
+            setModalMode(mode || 'create');
+            setInitialEvent(event || null);
+            setModalOpen(true);
+        };
+        window.addEventListener('OPEN_EVENT_MODAL', openHandler);
+        return () => window.removeEventListener('OPEN_EVENT_MODAL', openHandler);
+    }, []);
+
+    // modal 오픈 시 스크롤 차단, 우측 패딩으로 UI 변동 차단
+    useEffect(() => {
+        if (isModalOpen) {
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+            // body에 스크롤바 너비만큼 오른쪽 패딩을 추가합니다.
+            document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.style.paddingRight = '';
+            document.body.classList.remove('modal-open');
+        }
+
+        return () => {
+            document.body.style.paddingRight = '';
+            document.body.classList.remove('modal-open');
+        };
+    }, [isModalOpen]);
 
     useEffect(() => {
         if (!authReady) return;
@@ -103,6 +147,62 @@ const Home: React.FC = () => {
         window.location.reload();
     };
 
+
+    /** 이하 모달 관련 함수 */
+    const handleAddEvent = () => {
+        if(!authReady || !accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
+        setModalMode('create');
+        setInitialEvent(null);
+        setModalOpen(true);
+    };
+
+    const ModifyHandler = () => {
+        if(!authReady || !accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
+    };
+
+    const handleSaveEvent = async (newEvent: CalendarEventCreate, id?: string) => {
+        try {
+            if (!accessToken) {
+                alert("로그인이 필요합니다.");
+                signOutLocal();
+                navigate("/signin");
+                return;
+            }
+
+            if (modalMode === "edit" && id) {
+                // 1) 서버 반영
+                const updated = await updateCalendarEvent(id, newEvent, accessToken);
+
+                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더)
+                ($("#calendar") as any).fullCalendar("removeEvents", id);
+                ($("#calendar") as any).fullCalendar("renderEvent", updated);
+            } else {
+                const created = await createCalendarEvent(newEvent, accessToken);
+                ($("#calendar") as any).fullCalendar("renderEvent", created);
+            }
+
+            setModalOpen(false);
+        } catch (err) {
+            console.error("이벤트 저장 실패:", err);
+            alert("이벤트 저장 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+    };
+
+    /** 사이드 바 파라미터 */
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
     return (
@@ -154,16 +254,22 @@ const Home: React.FC = () => {
                     <Route path="board/:category/write" element={
                         <PostWrite boards={boards}/>
                     }/>
-                    <Route path="/board/:category/:id/modify" element={<
-                        PostWrite boards={boards}/>
+                    <Route path="/board/:category/:id/modify" element={
+                        <PostWrite boards={boards}/>
                     }/>
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <div className="main-banner">
-                                <AwardsSection />
+                                <AwardsSection/>
                             </div>
-                            <PostList boards={boards} isHome={true} />
+                            <div className="calendar-section-wrapper">
+                                <Calendar/>
+                                <span className="add-event-text-home" onClick={handleAddEvent}>
+                                    일정 추가
+                                </span>
+                            </div>
+                            <PostList boards={boards} isHome={true}/>
                         </MainLayout>
                     }/>
                     <Route path="board/:boardId" element={
@@ -191,6 +297,14 @@ const Home: React.FC = () => {
                     } />
                 </Routes>
             </div>
+            {isModalOpen && (
+                <EventModal
+                    mode={modalMode}
+                    initial={initialEvent}
+                    onClose={handleCloseModal}
+                    onSave={handleSaveEvent}
+                />
+            )}
         </div>
     );
 };

@@ -10,6 +10,7 @@ import { StaffAuthContext } from "./Components/Utils/StaffAuthContext";
 import Footer from "./Components/Footer/Footer";
 import {refreshTokenAPI} from "./API/req";
 import {useUser} from "./Components/Utils/UserContext";
+import ChangePWD from "./Components/ChangePWD/ChangePWD";
 
 const BASE_WIDTH = 1000;
 const MIN_WIDTH = 300;
@@ -19,15 +20,13 @@ function App() {
     const [innerHeight, setInnerHeight] = useState(0);
     const innerRef = useRef<HTMLDivElement>(null);
     const [staffAuth, setStaffAuth] = useState<boolean>(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
     const navigate = useNavigate();
 
     const { setAuth, signOutLocal, refreshToken, authReady } = useUser();
-    const didRefreshOnReloadRef = useRef(false);
 
     // 스케일 조정 사용하지 않을 경로들
-    const noScaleRoutes = ["/signin", "/signup"];
+    const noScaleRoutes = ["/signin", "/signup", "/changepwd"];
     const isNoScale = noScaleRoutes.includes(location.pathname);
 
     // 새로고침 시 중복 요청을 방지
@@ -109,6 +108,7 @@ function App() {
                     <Routes>
                         <Route path="/signin" element={<Signin />} />
                         <Route path="/signup" element={<Signup />} />
+                        <Route path="/changepwd" element={<ChangePWD />} />
                     </Routes>
                 ) : (
                     <div

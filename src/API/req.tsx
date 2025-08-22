@@ -1,5 +1,13 @@
 import axios from "axios";
-import {PostItem, Reply, Comment, UserProfile, UserComment} from "../Components/Utils/interfaces";
+import {
+    PostItem,
+    Reply,
+    Comment,
+    UserProfile,
+    UserComment,
+    CalendarEvent,
+    CalendarEventCreate
+} from "../Components/Utils/interfaces";
 
 /*
  * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
@@ -75,7 +83,29 @@ export const signupUser = async (
         };
     } catch (error: any) {
         const status = error?.response?.status;
-        const message = error?.response?.data?.detail || "회원가입 실패";
+        let message = "회원가입 실패"; // 기본 에러 메시지
+
+        const errorData = error?.response?.data;
+
+        if (errorData) {
+            // 'detail' 필드가 있는 경우, 해당 메시지를 사용
+            if (typeof errorData.detail === 'string') {
+                message = errorData.detail;
+            }
+            // 필드별 에러 객체인 경우 (e.g., { email: [...], username: [...] })
+            else if (typeof errorData === 'object' && !Array.isArray(errorData) && errorData !== null) {
+                const errorKeys = Object.keys(errorData);
+                // 첫 번째 에러 키의 첫 번째 메시지를 대표 메시지로 사용
+                if (errorKeys.length > 0) {
+                    const firstErrorField = errorKeys[0];
+                    const messages = errorData[firstErrorField];
+                    if (Array.isArray(messages) && messages.length > 0) {
+                        message = messages[0];
+                    }
+                }
+            }
+        }
+
         return { success: false, status, message };
     }
 };
@@ -107,8 +137,26 @@ export const signin = async (email: string, password: string) => {
         );
         return response.data;
     } catch (error: any) {
-        console.error(error);
-        return error.data;
+        console.error("Signin error:", error);
+        let message = "로그인 요청 중 오류가 발생했습니다."; // 기본 에러 메시지
+
+        // error.request.response에 JSON 문자열이 담겨 오는 경우를 처리
+        if (error?.request?.response) {
+            try {
+                const errorResponse = JSON.parse(error.request.response);
+                if (errorResponse && typeof errorResponse.message === 'string') {
+                    message = errorResponse.message;
+                }
+            } catch (e) {
+                console.error("Failed to parse error response from error.request.response", e);
+            }
+        }
+        // 일반적인 axios 에러 응답 (error.response.data가 객체인 경우)
+        else if (error?.response?.data?.message) {
+            message = error.response.data.message;
+        }
+
+        return { message };
     }
 };
 
@@ -133,6 +181,71 @@ export const signout = async (accessToken: string, refreshToken: string) => {
     } catch (error: any) {
         console.error("로그아웃 요청 실패:", error);
         return { success: false, error };
+    }
+};
+
+// 비밀번호 찾기 api - 인증 코드 요청
+export const requestVerificationCode = async (email: string) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/users/password/reset/request/`,
+            { email },
+            {
+                headers: {
+                    "Accept": "*/*",
+                    "Content-Type": "application/json"
+                },
+                withCredentials: true
+            }
+        );
+        // 성공 시 { success: true } 와 같은 응답을 기대합니다.
+        return { success: true, ...response.data };
+    } catch (error: any) {
+        console.error("Verification code request error:", error);
+        // 실패 시 에러 응답에 포함된 메시지를 반환합니다.
+        return { success: false, message: error.response?.data?.message || "인증코드 요청에 실패했습니다." };
+    }
+};
+
+// 비밀번호 찾기 api - 인증 코드 확인
+export const verifyCode = async (email: string, verification_code: string) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/users/password/reset/verify/`,
+            { email, verification_code },
+            {
+                headers: {
+                    "Accept": "*/*",
+                    "Content-Type": "application/json"
+                },
+                withCredentials: true
+            }
+        );
+        return { success: true, ...response.data };
+    } catch (error: any) {
+        console.error("Code verification error:", error);
+        return { success: false, message: error.response?.data?.message || "인증코드 확인에 실패했습니다." };
+    }
+};
+
+// 비밀번호 찾기 api - 비밀번호 재설정
+export const resetPassword = async (email: string, new_password1: string, new_password2: string) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/users/password/reset/`,
+            { email, new_password1, new_password2 },
+            {
+                headers: {
+                    "Accept": "*/*",
+                    "Content-Type": "application/json"
+                },
+                withCredentials: true
+            }
+        );
+        return { success: true, ...response.data };
+    } catch (error: any) {
+        console.error("Password reset error:", error);
+        return { success: false, message: error.response?.data?.message || "비밀번호 재설정에 실패했습니다." };
     }
 };
 
@@ -836,3 +949,107 @@ export async function changePassword(
         };
     }
 }
+
+// 캘린더 일정 정보 가져오기
+export const fetchCalendarEvents = async (): Promise<CalendarEvent[]> => {
+    const url = `${BASE_URL}/api/calendar/`;
+
+    const res = await axios.get(url, {
+        headers: { Accept: "application/json" },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const data = res.data as any[];
+
+    return data.map(ev => ({
+        id: String(ev.id),
+        title: ev.title,
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+        allDay: ev.allDay ?? false,
+        color: ev.color,
+        description: ev.description,
+    }));
+};
+
+// 캘린더 일정 추가하기
+export const createCalendarEvent = async (
+    newEvent: CalendarEventCreate,
+    token: string
+): Promise<CalendarEvent> => {
+    const url = `${BASE_URL}/api/calendar/`;
+
+    const payload = {
+        ...newEvent,
+        start: newEvent.start.toISOString(),
+        end: newEvent.end ? newEvent.end.toISOString() : null,
+    };
+
+    const res = await axios.post(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const ev = res.data as CalendarEvent;
+
+    return {
+        ...ev,
+        id: String(ev.id),
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+    };
+};
+
+// 캘린더 일정 수정하기 (PUT)
+export const updateCalendarEvent = async (
+    id: string,
+    event: CalendarEventCreate,
+    token: string
+): Promise<CalendarEvent> => {
+    const url = `${BASE_URL}/api/calendar/${id}/`;
+
+    const payload = {
+        ...event,
+        start: event.start.toISOString(),
+        end: event.end ? event.end.toISOString() : null,
+    };
+
+    const res = await axios.put(url, payload, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+
+    const ev = res.data as CalendarEvent;
+    return {
+        ...ev,
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : null,
+    };
+};
+
+// 캘린더 일정 삭제하기 (DELETE)
+export const deleteCalendarEvent = async (
+    id: string,
+    token: string
+): Promise<void> => {
+    const url = `${BASE_URL}/api/calendar/${id}/`;
+    await axios.delete(url, {
+        headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+        responseType: "json",
+    });
+};
