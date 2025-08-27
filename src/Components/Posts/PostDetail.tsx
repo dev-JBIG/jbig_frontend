@@ -116,8 +116,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     user_id: src.user_id,
                     isLiked: src.is_liked ?? false,
                     is_owner: !!src.is_owner,
-                    is_admin: src.is_admin,
-                    is_reason: src.is_reason,
+                    post_type: src.post_type,
                     attachments: (src.attachments || []).map((a: any) => ({
                         id: a.id,
                         fileUrl: a.file,
@@ -146,15 +145,15 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     })),
                 };
 
-                // 어드민 게시판 & 어드민이 아닌 경우
-                if(src.is_admin && !staffAuth){
+                // 접근 권한 체크
+                // 어드민 게시글
+                if (mapped.post_type === 2 && !staffAuth) {
                     alert("접근 권한이 없습니다.");
                     navigate("/", { replace: true });
                     return;
                 }
-
-                // 사유서 게시판 & 어드민도 아니고 작성자도 아닌 경우
-                if(src.is_reason && !staffAuth && !src.is_owner){
+                // 사유서 게시글
+                if (mapped.post_type === 3 && !staffAuth && !mapped.is_owner) {
                     alert("접근 권한이 없습니다.");
                     navigate("/", { replace: true });
                     return;

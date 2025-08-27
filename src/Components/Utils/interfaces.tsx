@@ -58,8 +58,7 @@ export interface PostDetailData {
     comments?: Comment[];
     isLiked?: boolean;
     is_owner: boolean;
-    is_admin: boolean;
-    is_reason: boolean;
+    post_type: number;
 }
 
 export interface Board {
