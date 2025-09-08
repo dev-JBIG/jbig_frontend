@@ -3,7 +3,7 @@
   "name": "JBIG(JBNU Big data & AI Group)은 데이터 사이언스와 딥러닝, 머신러닝을 포함한 AI에 대한 학술 교류를 목표로 2021년 설립된 전북대학교의 학생 학회입니다.",
   "icons": [
     {
-      "src": "JBIG-logo-192.png",
+      "src": "/JBIG-logo-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },

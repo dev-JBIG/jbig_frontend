@@ -83,6 +83,7 @@ function App() {
                         data.access,
                         data.refresh
                     );
+                    setStaffAuth(data.is_staff);
                 } else {
                     signOutLocal();
                     alert("토큰 갱신 실패, 다시 로그인해주세요.");

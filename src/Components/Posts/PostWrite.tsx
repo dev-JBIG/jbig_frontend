@@ -86,13 +86,25 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     const filteredBoardList = useMemo<Board[]>(() => {
         if (staffAuth) return BOARD_LIST; // 운영자면 전체 보드
-        return BOARD_LIST.filter(b => b.name !== "공지사항"); // 운영자 아니면 공지사항 제외
+
+        // 운영자가 아니면 특정 키워드 포함된 게시판 제외
+        const blockedKeywords = ["공지사항", "admin", "어드민", "운영진", "관리자"];
+        return BOARD_LIST.filter(
+            (b) => !blockedKeywords.some((kw) => b.name.toLowerCase().includes(kw.toLowerCase()))
+        );
     }, [BOARD_LIST, staffAuth]);
+
 
     // 공지사항인데 사용자가 url을 변경하여 강제로 글을 작성하려고 할 경우 대비
     useEffect(() => {
-        if (!staffAuth && selectedBoard?.name === "공지사항") {
-            alert("공지사항에는 글을 작성할 수 없습니다.");
+        if (
+            !staffAuth &&
+            selectedBoard &&
+            ["공지사항", "admin", "어드민", "운영진", "관리자"].some((kw) =>
+                selectedBoard.name.toLowerCase().includes(kw.toLowerCase())
+            )
+        ) {
+            alert("해당 게시판에는 글을 작성할 수 없습니다.");
             navigate("/");
         }
     }, [selectedBoard, staffAuth, navigate]);

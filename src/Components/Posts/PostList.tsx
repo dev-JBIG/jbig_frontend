@@ -18,6 +18,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState("");
+    const [postPermission, setPostPermission] = useState(false);
 
     const { accessToken, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
@@ -148,24 +149,16 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         isHome ? undefined : (activeBoardID !== 0 ? String(activeBoardID) : undefined),
                         isHome ? 10 : effectivePerPage,
                         isHome ? 1 : page,
-                        !!isHome
+                        !!isHome,
+                        accessToken ?? undefined
                     );
                 }
 
                 // 여기서 마지막 요청만 반영
                 if (seq !== reqSeqRef.current) return;
-                
-                // API 응답 데이터 변환
-                const transformedPosts = response.posts.map(transformPostData);
-                
-                // totalPages 계산 (API에서 count가 있는 경우)
-                let calculatedTotalPages = response.totalPages;
-                if (response.count !== undefined && effectivePerPage) {
-                    calculatedTotalPages = Math.ceil(response.count / effectivePerPage);
-                }
-                
-                setPosts(transformedPosts);
-                setTotalPages(calculatedTotalPages);
+                setPosts(response.posts);
+                setPostPermission((response as any).postPermission ?? false);
+                setTotalPages(response.totalPages);
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
                 console.error("게시물 로딩 중 오류:", e);
@@ -205,8 +198,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         >
                             {activeBoard ? activeBoard.name : (isHome ? "전체 글 보기" : "전체 글 보기")}
                         </h2>
-                        {!isHome ? (
-                            <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
+
+                        {/* 검색/셀렉트: 검색페이지가 아니고, 홈도 아니고, 게시글이 '있는' 경우에만 표시 */}
+                        {!isHome && !isSearchPage && displayPosts.length > 0 && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                                 {/* 검색란 (조건: 검색페이지/유저페이지/홈이 아닐 때만) */}
                                 {!isHome && !isSearchPage && !isUserPage && (
                                     <form
@@ -246,78 +241,164 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     ))}
                                 </select>
                             </div>
-                        ) : (
+                        )}
+
+                        {isHome && (
                             <span
                                 className="more-link"
                                 onClick={() => navigate("/board/0")}
                             >
-                    더보기 &gt;
-                </span>
+              더보기 &gt;
+            </span>
                         )}
                     </>
                 )}
             </div>
-
-            {isSearchPage && (!q.trim() || displayPosts.length === 0) ? (
-                <div style={{padding: "20px", textAlign: "center", color: "#666"}}>
-                    해당 게시물이 없습니다.
-                </div>
-            ) : (
-                <table className="postlist-table">
-                    <thead>
-                    <tr>
-                        <th className="th-id">번호</th>
-                        <th className="th-title">제목</th>
-                        <th className="th-author">작성자</th>
-                        <th className="th-date">작성일</th>
-                        <th className="th-views">조회수</th>
-                        {!isUserPage && <th className="th-likes">좋아요</th>}
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {displayPosts.map((p) => (
-                        <tr
-                            key={p.id}
-                            onClick={() => {
-                                const targetBoardId = isSearchPage
-                                    ? (boardIdRaw === "all" ? 0 : boardIdRaw)
-                                    : (boardIdRaw ?? 0);
-
-                                navigate(`/board/${targetBoardId}/${p.id}`);
-                            }}
-                        >
-                            <td className="th-id">{p.id}</td>
-                            <td className="title-cell th-title">{p.title}</td>
-                            <td
-                                className="author-cell th-author"
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (!accessToken) {
-                                        alert("로그인이 필요합니다.");
-                                        navigate("/signin");
-                                        return;
-                                    }
-                                    const encrypted = await encryptUserId(String(p.user_id));
-                                    navigate(`/user/${encrypted}`);
-                                }}
-                                style={{
-                                    color: "#3563e9",
-                                    cursor: "pointer",
-                                    fontWeight: 500,
-                                }}
-                                title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
-                            >
-                                <span className="author-text">
-                                {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
-                              </span>
-                            </td>
-                            <td className="th-date">{p.date}</td>
-                            <td className="th-views">{p.views.toLocaleString()}</td>
-                            {!isUserPage && <td className="th-likes">{p.likes}</td>}
+            {/* 리스트 영역 */}
+            {isSearchPage ? (
+                // 검색 페이지
+                (!q.trim() || displayPosts.length === 0) ? (
+                    <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+                        해당 게시물이 없습니다.
+                    </div>
+                ) : (
+                    <table className="postlist-table">
+                        <thead>
+                        <tr>
+                            <th className="th-id">번호</th>
+                            <th className="th-title">제목</th>
+                            <th className="th-author">작성자</th>
+                            <th className="th-date">작성일</th>
+                            <th className="th-views">조회수</th>
+                            {!isUserPage && <th className="th-likes">좋아요</th>}
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {displayPosts.map((p) => (
+                            <tr
+                                key={p.id}
+                                onClick={() => {
+                                    const targetBoardId = isSearchPage
+                                        ? (boardIdRaw === "all" ? 0 : boardIdRaw)
+                                        : (boardIdRaw ?? 0);
+                                    navigate(`/board/${targetBoardId}/${p.id}`);
+                                }}
+                            >
+                                <td className="th-id">{p.id}</td>
+                                <td className="title-cell th-title">{p.title}</td>
+                                <td
+                                    className="author-cell th-author"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!accessToken) {
+                                            alert("로그인이 필요합니다.");
+                                            navigate("/signin");
+                                            return;
+                                        }
+                                        const encrypted = await encryptUserId(String(p.user_id));
+                                        navigate(`/user/${encrypted}`);
+                                    }}
+                                    style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
+                                    title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
+                                >
+                  <span className="author-text">
+                    {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
+                  </span>
+                                </td>
+                                <td className="th-date">{p.date}</td>
+                                <td className="th-views">{p.views.toLocaleString()}</td>
+                                {!isUserPage && <td className="th-likes">{p.likes}</td>}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                )
+            ) : (
+                // 검색 페이지가 아닐 때
+                displayPosts.length === 0 && !isHome ? (
+                    <div style={{ textAlign: "center", color: "#666" }}>
+                        <div>게시글이 없습니다</div>
+                        {(!isUserPage &&
+                            !isHome &&
+                            activeBoardID !== 0 &&
+                            !(activeBoard?.name === "공지사항" && !staffAuth) &&
+                            postPermission) && (
+                            <div style={{ marginTop: 10 }}>
+                                <span
+                                  role="link"
+                                  tabIndex={0}
+                                  onClick={handleWrite}
+                                  onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          handleWrite();
+                                      }
+                                  }}
+                                  style={{
+                                      color: "#3563e9",
+                                      textDecoration: "underline",
+                                      cursor: "pointer",
+                                      borderRadius: "6px",
+                                      fontWeight: 500,
+                                  }}
+                                >
+                                    게시글 작성하러가기
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <table className="postlist-table">
+                        <thead>
+                        <tr>
+                            <th className="th-id">번호</th>
+                            <th className="th-title">제목</th>
+                            <th className="th-author">작성자</th>
+                            <th className="th-date">작성일</th>
+                            <th className="th-views">조회수</th>
+                            {!isUserPage && <th className="th-likes">좋아요</th>}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {displayPosts.map((p) => (
+                            <tr
+                                key={p.id}
+                                onClick={() => {
+                                    const targetBoardId = isSearchPage
+                                        ? (boardIdRaw === "all" ? 0 : boardIdRaw)
+                                        : (boardIdRaw ?? 0);
+                                    navigate(`/board/${targetBoardId}/${p.id}`);
+                                }}
+                            >
+                                <td className="th-id">{p.id}</td>
+                                <td className="title-cell th-title">{p.title}</td>
+                                <td
+                                    className="author-cell th-author"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!accessToken) {
+                                            alert("로그인이 필요합니다.");
+                                            navigate("/signin");
+                                            return;
+                                        }
+                                        const encrypted = await encryptUserId(String(p.user_id));
+                                        navigate(`/user/${encrypted}`);
+                                    }}
+                                    style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
+                                    title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
+                                >
+                  <span className="author-text">
+                    {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
+                  </span>
+                                </td>
+                                <td className="th-date">{p.date}</td>
+                                <td className="th-views">{p.views.toLocaleString()}</td>
+                                {!isUserPage && <td className="th-likes">{p.likes}</td>}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                )
             )}
 
             {/* Pagination (5개 단위 그룹) */}
@@ -337,13 +418,15 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     !isUserPage &&
                                     !isHome &&
                                     activeBoardID !== 0 &&
-                                    !(activeBoard?.name === "공지사항" && !staffAuth) && (
+                                    !(activeBoard?.name === "공지사항" && !staffAuth) &&
+                                    postPermission && (
                                         <div className="write-button-row">
                                             <button className="write-button" onClick={handleWrite}>
                                                 글쓰기
                                             </button>
                                         </div>
                                     )}
+
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
@@ -362,7 +445,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     이전
                                 </button>
 
-                                {Array.from({length: end - start + 1}, (_, i) => start + i).map((n) => (
+                                {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
                                     <button
                                         key={n}
                                         className={`pagination-btn ${n === page ? "active" : ""}`}

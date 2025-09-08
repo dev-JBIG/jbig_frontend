@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import "./Note.css";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
@@ -13,6 +13,8 @@ const Note: React.FC = () => {
     const navigate = useNavigate();
     const [html, setHtml] = useState<string>("");
     const containerRef = useRef<HTMLDivElement>(null);
+    const tokenRef = useRef<string | null>(null);
+    useEffect(() => { tokenRef.current = accessToken ?? null; }, [accessToken]);
 
     // 내부 리소스 경로 보정
     const rewriteResourceUrls = (htmlString: string): string => {
@@ -37,41 +39,39 @@ const Note: React.FC = () => {
     };
 
     // HTML 불러오기
-    const loadHtml = async (rawFileName: string | null, replace = false) => {
-        let fileName: string | null = rawFileName;
+    const loadHtml = useCallback(async (rawFileName: string | null, replace = false) => {
+        if (!accessToken) {
+            // authReady 직후 토큰 준비 전일 수 있으니 가드
+            console.warn("No accessToken on loadHtml");
+            return;
+        }
 
+        let fileName: string | null = rawFileName;
         if (fileName) {
             fileName = fileName.replace(/^\?file=/, "");
-            try {
-                fileName = decodeURIComponent(fileName);
-            } catch {
-                // 무시
-            }
+            try { fileName = decodeURIComponent(fileName); } catch {}
         }
+
         try {
-            let data = await fetchNotionHtml(fileName, accessToken!);
+            const token = tokenRef.current;
+            if (!token) return;
+            let data = await fetchNotionHtml(fileName, token);
             data = rewriteResourceUrls(data);
             setHtml(data);
 
-            containerRef.current?.scrollIntoView({
-                block: "start",
-                behavior: "instant" as ScrollBehavior,
-            });
+            containerRef.current?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
 
             const newUrl = fileName
                 ? `${window.location.pathname}?file=${encodeURIComponent(fileName)}`
                 : `${window.location.pathname}`;
 
-            if (replace) {
-                window.history.replaceState({ file: fileName }, "", newUrl);
-            } else {
-                window.history.pushState({ file: fileName }, "", newUrl);
-            }
+            if (replace) window.history.replaceState({ file: fileName }, "", newUrl);
+            else window.history.pushState({ file: fileName }, "", newUrl);
         } catch (err) {
             console.error(err);
             alert("페이지를 불러올 수 없습니다.");
         }
-    };
+    }, [accessToken]);
 
     // 최초 로드
     useEffect(() => {
@@ -82,21 +82,11 @@ const Note: React.FC = () => {
             navigate("/signin");
             return;
         }
-
         const params = new URLSearchParams(window.location.search);
         let fileParam = params.get("file");
-
-        // 반드시 디코딩
-        try {
-            if (fileParam) {
-                fileParam = decodeURIComponent(fileParam);
-            }
-        } catch {
-            // 실패해도 무시
-        }
-
+        try { if (fileParam) fileParam = decodeURIComponent(fileParam); } catch {}
         loadHtml(fileParam ?? null, true);
-    }, [authReady, user, accessToken, navigate]);
+    }, [authReady, user, accessToken, navigate, loadHtml]);
 
     // 내부 링크 클릭 처리
     useEffect(() => {
@@ -170,12 +160,15 @@ const Note: React.FC = () => {
     // 뒤로가기
     useEffect(() => {
         const onPopState = (e: PopStateEvent) => {
-            const file = (e.state && e.state.file) as string | null | undefined;
-            loadHtml(file ?? null, true);
+            const stateFile = (e.state && e.state.file) as string | null | undefined;
+            // state가 비어있으면 URL을 파싱해 fallback
+            const urlFile = new URLSearchParams(window.location.search).get("file");
+            const file = stateFile ?? urlFile ?? null;
+            loadHtml(file, true); // 항상 최신 loadHtml 호출
         };
         window.addEventListener("popstate", onPopState);
         return () => window.removeEventListener("popstate", onPopState);
-    }, []);
+    }, [loadHtml]);
 
     return (
         <div className="note-wrapper" style={{ width: "100%" }}>

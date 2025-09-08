@@ -288,17 +288,25 @@ export const fetchBoardPosts = async (
     boardId: string | undefined,
     pageSize: number,
     page: number,
-    isHome: boolean = false
-): Promise<{ posts: PostItem[]; totalPages: number }> => {
+    isHome: boolean = false,
+    token?: string
+): Promise<{ posts: PostItem[]; totalPages: number; postPermission: boolean }> => {
     const url = isHome
         ? `${BASE_URL}/api/posts/all`
         : boardId
             ? `${BASE_URL}/api/boards/${boardId}/posts/`
             : `${BASE_URL}/api/posts/all`;
 
-    const config = isHome
-        ? {} // 홈은 페이징 미지원: 파라미터 없이 호출
+    const config: any = isHome
+        ? {}
         : { params: { page, page_size: pageSize } };
+
+    if (token) {
+        config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`,
+        };
+    }
 
     const res = await axios.get(url, config);
 
@@ -310,6 +318,8 @@ export const fetchBoardPosts = async (
             : Array.isArray(res.data)
                 ? res.data
                 : [];
+
+    const postPermission = Boolean(res.data?.board?.post_permission);
 
     const posts = rawResults.map((item: any) => ({
         id: item.id,
@@ -327,6 +337,7 @@ export const fetchBoardPosts = async (
     return {
         posts,
         totalPages: isHome ? 1 : Math.ceil(count / pageSize),
+        postPermission,
     };
 };
 
