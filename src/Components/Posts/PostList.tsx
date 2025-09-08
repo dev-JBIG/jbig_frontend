@@ -1,4 +1,4 @@
-// PostList.tsx (수정 버전 전체)
+// PostList.tsx
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
