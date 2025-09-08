@@ -123,6 +123,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 setTotalPages(response.totalPages);
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
+                setTotalPages(0);
                 console.error(e);
             }
         };
