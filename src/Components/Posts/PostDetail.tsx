@@ -84,7 +84,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized || !raw.isTokenValid) {
+                if (raw.unauthorized) {
                     alert("로그인이 필요합니다.");
                     signOutLocal();
                     navigate("/signin");
