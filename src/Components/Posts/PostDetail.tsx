@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData, Comment } from "../Utils/interfaces";
+import { PostDetailData } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import {FitHTML} from "../Utils/FitHTML";
@@ -66,15 +66,20 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         return () => document.removeEventListener("pointerdown", onPointerDown);
     }, []);
 
+    const redirectedRef = useRef(false);
+    const safeAuthRedirect = () => {
+        if (redirectedRef.current) return;
+        redirectedRef.current = true;
+
+        alert("로그인이 필요합니다.");
+        signOutLocal();
+        navigate("/signin", { replace: true });
+    };
+
     useEffect(() => {
         if (!authReady || !postId) return;
 
-        if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            signOutLocal();
-            navigate("/signin");
-            return;
-        }
+        if (!accessToken) return;
 
         const key = `${postId}:${accessToken}`;
         if (fetchedKeyRef.current === key) return;
@@ -84,10 +89,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized || !raw.isTokenValid) {
-                    alert("로그인이 필요합니다.");
-                    signOutLocal();
-                    navigate("/signin");
+                if (raw.unauthorized === true || raw.isTokenValid === false) {
+                    safeAuthRedirect();
                     return;
                 }
                 if (raw.notFound) {
@@ -104,6 +107,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const mapped: PostDetailData = {
                     id: src.id,
+                    board_post_id: src.id,
                     board: src.board?.name || "",
                     author_semester: src.author_semester,
                     title: src.title || "",
@@ -347,7 +351,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             });
             setReplyInput("");
             setReplyTargetId(null);
-            window.location.reload();
         } catch (e) {
             console.error(e);
             alert("답글 등록에 실패했습니다.");

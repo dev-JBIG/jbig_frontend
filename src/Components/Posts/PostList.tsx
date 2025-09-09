@@ -326,13 +326,12 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             <tr
                                 key={p.id}
                                 onClick={() => {
-                                    const targetBoardId = isSearchPage
-                                        ? (boardIdRaw === "all" ? 0 : boardIdRaw)
-                                        : (boardIdRaw ?? 0);
-                                    navigate(`/board/${targetBoardId}/${p.id}`);
+                                    navigate(`/board/${activeBoardID}/${p.id}`);
                                 }}
                             >
-                                <td className="th-id">{p.id}</td>
+                                <td className="th-id">
+                                    {activeBoardID === 0 || isHome ? p.id : p.board_post_id}
+                                </td>
                                 <td className="title-cell th-title">{p.title}</td>
                                 <td
                                     className="author-cell th-author"
@@ -346,7 +345,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                         const encrypted = await encryptUserId(String(p.user_id));
                                         navigate(`/user/${encrypted}`);
                                     }}
-                                    style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
+                                    style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
                                 >
                   <span className="author-text">

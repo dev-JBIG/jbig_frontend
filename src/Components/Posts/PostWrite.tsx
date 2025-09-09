@@ -4,7 +4,7 @@ import {useNavigate, useParams} from "react-router-dom";
 import Quill from "quill";
 import "react-quill/dist/quill.snow.css";
 import ReactQuill from "react-quill";
-import {createPost, fetchPostDetail, modifyPost, signout, uploadAttachment} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 
 import { ImageFormats } from '@xeger/quill-image-formats';

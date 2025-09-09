@@ -2,6 +2,7 @@ import React from "react";
 
 export interface PostItem {
     id: number;
+    board_post_id: number;
     title: string;
     author: string;
     user_id: number;
@@ -44,6 +45,7 @@ export interface Reply {
 
 export interface PostDetailData {
     id: number;
+    board_post_id: number;
     user_id: string;
     author_semester: number;
     board: string;

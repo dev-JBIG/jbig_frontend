@@ -107,6 +107,7 @@
 }
 .th-date {
     width: 100px;
+    white-space: nowrap;
 }
 .th-views {
     width: 90px;

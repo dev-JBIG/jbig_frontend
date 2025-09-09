@@ -287,11 +287,12 @@ export const fetchBoardPosts = async (
 
     const posts = rawResults.map((item: any) => ({
         id: item.id,
+        board_post_id: item.board_post_id,
         title: item.title,
         author: item.author,
         user_id: item.user_id,
         author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "/"),
         views: item.views,
         likes: item.likes_count,
     }));
@@ -414,6 +415,8 @@ export const fetchBoardSearchPosts = async (
         views: item.views,
         likes: item.likes_count,
     }));
+
+
 
     const count =
         typeof res.data?.count === "number" ? res.data.count : posts.length;

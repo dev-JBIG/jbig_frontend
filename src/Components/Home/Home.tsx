@@ -161,15 +161,6 @@ const Home: React.FC = () => {
         setModalOpen(true);
     };
 
-    const ModifyHandler = () => {
-        if(!authReady || !accessToken) {
-            alert("로그인이 필요합니다.");
-            signOutLocal();
-            navigate("/signin");
-            return;
-        }
-    };
-
     const handleSaveEvent = async (newEvent: CalendarEventCreate, id?: string) => {
         try {
             if (!accessToken) {
