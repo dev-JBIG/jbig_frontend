@@ -1,4 +1,3 @@
-// PostList.tsx (수정 버전)
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
@@ -161,9 +160,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 setTotalPages(response.totalPages);
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
-                console.error("게시물 로딩 중 오류:", e);
-                setPosts([]);
-                setTotalPages(1);
+                setTotalPages(0);
+                console.error(e);
             }
         };
 
