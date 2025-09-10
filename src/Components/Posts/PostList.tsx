@@ -116,8 +116,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     );
                 }
 
-                console.log(response); //debug
-
                 // 여기서 마지막 요청만 반영
                 if (seq !== reqSeqRef.current) return;
                 setPosts(response.posts);
