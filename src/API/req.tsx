@@ -277,6 +277,8 @@ export const fetchBoardPosts = async (
 
     const res = await axios.get(url, config);
 
+    console.log(res);//debug
+
     const rawResults = Array.isArray(res.data?.results)
         ? res.data.results
         : Array.isArray(res.data)
