@@ -58,6 +58,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
 
+    // 광클(중복 제출) 방지
+    const inFlightRef = useRef(false);
+    const [submitting, setSubmitting] = useState(false);
+
     const { signOutLocal, accessToken } = useUser();
     const { staffAuth } = useStaffAuth();
 
@@ -305,6 +309,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
 
+        if (submitting) return;
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
+        setSubmitting(true);
+
         if (!accessToken) {
             signOutLocal();
             alert("로그인이 필요합니다.");
@@ -368,6 +377,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         ? err
                         : "저장 중 오류가 발생했습니다.";
             alert(msg);
+        } finally {
+            setSubmitting(false);
+            inFlightRef.current = false;
         }
     };
 
@@ -611,7 +623,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     (최대 {MAX_FILES}개, 파일당 20MB 제한)
                 </div>
             </div>
-            <button className="postwrite-submit" type="submit">
+            <button className="postwrite-submit" type="submit" disabled={submitting} aria-busy={submitting}>
                 등록하기
             </button>
         </form>
