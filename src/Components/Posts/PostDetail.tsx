@@ -78,7 +78,12 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     useEffect(() => {
         if (!authReady || !postId) return;
 
-        if (!accessToken) return;
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
 
         const key = `${postId}:${accessToken}`;
         if (fetchedKeyRef.current === key) return;
@@ -86,6 +91,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
         const loadPost = async () => {
             try {
+
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
                 if (raw.unauthorized === true) {
