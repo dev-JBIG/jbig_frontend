@@ -1,4 +1,3 @@
-// PostList.tsx
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
@@ -54,7 +53,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         }
     }, [isSearchPage, perPageFromUrl]);
 
-
     // boards 전개해서 id→존재 여부 판단
     const allBoardIds = useMemo(
         () => new Set((boards ?? []).flatMap(s => s.boards.map(b => b.id))),
@@ -73,12 +71,51 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     const reqSeqRef = useRef(0);
 
+    // 날짜 포맷팅 함수 추가
+    const formatDate = (dateString: string): string => {
+        if (!dateString) return "";
+        
+        try {
+            // ISO 8601 형식의 날짜를 Date 객체로 변환
+            const date = new Date(dateString);
+            
+            // 유효한 날짜인지 확인
+            if (isNaN(date.getTime())) {
+                console.warn(`Invalid date string: ${dateString}`);
+                return "";
+            }
+            
+            // YYYY-MM-DD 형식으로 변환
+            return date.toISOString().split('T')[0];
+        } catch (error) {
+            console.warn(`Error parsing date: ${dateString}`, error);
+            return "";
+        }
+    };
+
+    // API 응답 데이터를 클라이언트 형식으로 변환하는 함수
+    const transformPostData = (apiPost: any): PostItem => {
+        console.log('API Post Data:', apiPost); // 디버깅용
+        console.log('created_at:', apiPost.created_at); // 디버깅용
+        
+        return {
+            id: apiPost.id,
+            title: apiPost.title,
+            user_id: apiPost.user_id,
+            author: apiPost.author,
+            author_semester: apiPost.author_semester,
+            date: apiPost.created_at ? apiPost.created_at.split('T')[0] : "",
+            views: Number(apiPost.views) || 0,
+            likes: Number(apiPost.likes_count) || 0
+        };
+    };
+
     useEffect(() => {
         const seq = ++reqSeqRef.current;
 
         const getPosts = async () => {
             try {
-                let response: { posts: PostItem[]; totalPages: number };
+                let response: { posts: any[]; totalPages: number; count?: number };
 
                 if (isSearchPage) { // 검색 페이지용
                     if (!q.trim()) {
@@ -215,7 +252,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     </>
                 )}
             </div>
-
             {/* 리스트 영역 */}
             {isSearchPage ? (
                 // 검색 페이지
