@@ -71,9 +71,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         if (redirectedRef.current) return;
         redirectedRef.current = true;
 
-        alert("로그인이 필요합니다.");
-        signOutLocal();
-        navigate("/signin", { replace: true });
+        alert("접근 권한이 없습니다.");
+        navigate(-1);
     };
 
     useEffect(() => {
@@ -89,7 +88,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized === true || raw.isTokenValid === false) {
+                if (raw.unauthorized === true) {
                     safeAuthRedirect();
                     return;
                 }
