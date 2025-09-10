@@ -369,6 +369,7 @@ export const fetchSearchPosts = async (
 
     const posts: PostItem[] = rawResults.map((item: any) => ({
         id: item.id,
+        board_post_id: item.board_post_id,
         title: item.title,
         author: item.author,
         user_id: item.user_id,
@@ -409,6 +410,7 @@ export const fetchBoardSearchPosts = async (
 
     const posts: PostItem[] = rawResults.map((item: any) => ({
         id: item.id,
+        board_post_id: item.board_post_id,
         title: item.title,
         author: item.author,
         user_id: item.user_id,
