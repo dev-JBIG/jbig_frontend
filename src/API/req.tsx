@@ -17,6 +17,40 @@ const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
 const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
+// 날짜 포맷팅 유틸리티 함수들
+const formatDateToYMD = (dateString: string): string => {
+    if (!dateString) return "";
+    
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            console.warn(`Invalid date string: ${dateString}`);
+            return "";
+        }
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    } catch (error) {
+        console.warn(`Error parsing date: ${dateString}`, error);
+        return "";
+    }
+};
+
+const formatDateTimeToLocal = (dateString: string): string => {
+    if (!dateString) return "";
+    
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            console.warn(`Invalid date string: ${dateString}`);
+            return "";
+        }
+        // YYYY-MM-DD HH:mm 형식으로 변환
+        return date.toISOString().slice(0, 16).replace('T', ' ');
+    } catch (error) {
+        console.warn(`Error parsing date: ${dateString}`, error);
+        return "";
+    }
+};
+
 // 이메일 인증코드 인증
 export const verifyAuthEmail = async (email: string, code: string) => {
     try {
@@ -249,7 +283,6 @@ export const resetPassword = async (email: string, new_password1: string, new_pa
     }
 };
 
-
 // 게시판 게시글 리스트 반환 api
 export const fetchBoardPosts = async (
     boardId: string | undefined,
@@ -361,11 +394,14 @@ export const fetchSearchPosts = async (
         params: { page, page_size: pageSize, q: query },
     });
 
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
+    // API 응답 구조에 맞게 수정
+    const rawResults = Array.isArray(res.data?.posts)
+        ? res.data.posts
+        : Array.isArray(res.data?.results)
+            ? res.data.results
+            : Array.isArray(res.data)
+                ? res.data
+                : [];
 
     const posts: PostItem[] = rawResults.map((item: any) => ({
         id: item.id,
@@ -373,7 +409,7 @@ export const fetchSearchPosts = async (
         author: item.author,
         user_id: item.user_id,
         author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        date: formatDateToYMD(item.created_at), // 통일된 날짜 처리
         views: item.views,
         likes: item.likes_count,
     }));
@@ -400,12 +436,14 @@ export const fetchBoardSearchPosts = async (
         params: { page, page_size: pageSize, q: query },
     });
 
-    // DRF pagination 대응 (+ 배열 직접 반환 대응)
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
+    // API 응답 구조에 맞게 수정
+    const rawResults = Array.isArray(res.data?.posts)
+        ? res.data.posts
+        : Array.isArray(res.data?.results)
+            ? res.data.results
+            : Array.isArray(res.data)
+                ? res.data
+                : [];
 
     const posts: PostItem[] = rawResults.map((item: any) => ({
         id: item.id,
@@ -413,7 +451,7 @@ export const fetchBoardSearchPosts = async (
         author: item.author,
         user_id: item.user_id,
         author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        date: formatDateToYMD(item.created_at), // 통일된 날짜 처리
         views: item.views,
         likes: item.likes_count,
     }));
@@ -505,7 +543,7 @@ export const fetchUserPosts = async (
         author: item.author,
         user_id: item.user_id,
         author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
+        date: formatDateToYMD(item.created_at), // 통일된 날짜 처리
         views: item.views,
         likes: item.likes_count,
     }));
@@ -517,7 +555,6 @@ export const fetchUserPosts = async (
         totalPages: Math.ceil(count / pageSize),
     };
 };
-
 
 // 첨부파일 업로드
 export const uploadAttachment = async (file: File, token: String) => {
@@ -712,7 +749,6 @@ export const modifyPost = async (
     return res.data;
 };
 
-
 // 댓글 삭제
 export const deleteComment = async (commentId: number, token: string): Promise<void> => {
     const url = `${BASE_URL}/api/comments/${commentId}/`;
@@ -751,7 +787,7 @@ export const createComment = async (
         is_deleted: boolean;
     };
 
-    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
+    const date = formatDateTimeToLocal(d.created_at); // 통일된 날짜 처리
     const isReply = (payload.parent !== null && payload.parent !== 0) ||
         (d.parent !== null && d.parent !== 0);
 
@@ -812,7 +848,7 @@ export const updateComment = async (
         is_deleted?: boolean;
     };
 
-    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
+    const date = formatDateTimeToLocal(d.created_at); // 통일된 날짜 처리
     const isReply = (payload.parent !== null && payload.parent !== 0) ||
         (d.parent !== null && d.parent !== 0);
     const isDeleted = !!d.is_deleted;
@@ -902,11 +938,14 @@ export const fetchUserComments = async (
         responseType: "json",
     });
 
+    // API 응답 구조에 맞게 수정 (댓글은 results 구조일 가능성이 높음)
     const rawResults = Array.isArray(res.data?.results)
         ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
+        : Array.isArray(res.data?.comments)
+            ? res.data.comments
+            : Array.isArray(res.data)
+                ? res.data
+                : [];
 
     const comments: UserComment[] = rawResults
         .filter((c: any) => !c.is_deleted)
@@ -918,7 +957,7 @@ export const fetchUserComments = async (
             author: c.author,
             content: c.content,
             post_title: c.post_title,
-            created_at: c.created_at.replace("T", " ").slice(0, 19),
+            created_at: formatDateTimeToLocal(c.created_at), // 통일된 날짜 처리
             parent: c.parent,
             children: c.children,
             is_owner: c.is_owner,
