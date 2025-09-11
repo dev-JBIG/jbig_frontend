@@ -71,15 +71,19 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         if (redirectedRef.current) return;
         redirectedRef.current = true;
 
-        alert("로그인이 필요합니다.");
-        signOutLocal();
-        navigate("/signin", { replace: true });
+        alert("접근 권한이 없습니다.");
+        navigate(-1);
     };
 
     useEffect(() => {
         if (!authReady || !postId) return;
 
-        if (!accessToken) return;
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            signOutLocal();
+            navigate("/signin");
+            return;
+        }
 
         const key = `${postId}:${accessToken}`;
         if (fetchedKeyRef.current === key) return;
@@ -87,9 +91,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
         const loadPost = async () => {
             try {
+
                 const raw = await fetchPostDetail(Number(postId), accessToken);
 
-                if (raw.unauthorized === true || raw.isTokenValid === false) {
+                if (raw.unauthorized === true) {
                     safeAuthRedirect();
                     return;
                 }
