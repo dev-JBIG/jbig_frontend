@@ -22,10 +22,10 @@
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
 
-            if (!isValidEmailDomain(userId.trim())) {
-                alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
-                return;
-            }
+            // if (!isValidEmailDomain(userId.trim())) {
+            //     alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
+            //     return;
+            // }
             if (!isValidPassword(password.trim())) {
                 alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
                 return;

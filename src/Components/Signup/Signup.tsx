@@ -54,10 +54,10 @@ const Signup: React.FC = () => {
         const trimmedPwd = password.trim();
 
         // 검증
-        if (!isValidEmailDomain(trimmedEmail)) {
-            alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
-            return;
-        }
+        // if (!isValidEmailDomain(trimmedEmail)) {
+        //     alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
+        //     return;
+        // }
         if (!trimmedUserId) {
             alert("아이디(유저명)를 입력해주세요.");
             return;
