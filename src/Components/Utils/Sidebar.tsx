@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import "../Home/Home.css"
 import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import {useStaffAuth} from "./StaffAuthContext";
 
 // 좌측에 나오는 게시판 목록 등 관리 페이지
@@ -102,6 +105,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 
             <div className="sidebar-top-divider"/>
+
+            {/* 좌측 하단 디스코드 소모임 버튼 */}
+            <a
+                href="https://discord.gg/knpBCvvfGa"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-discord-button"
+            >
+                <FontAwesomeIcon icon={faDiscord as IconProp} className="sidebar-discord-icon" />
+                비밀 게임 소모임
+            </a>
         </aside>
     );
 };

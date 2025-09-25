@@ -284,3 +284,31 @@
     color: #274bb5;
     text-decoration: underline;
 }
+
+/* 좌측 하단 디스코드 초대 버튼 */
+.sidebar-discord-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background-color: #5865F2; /* Discord blurple */
+    color: #fff;
+    border-radius: 6px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.sidebar-discord-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+}
+
+.sidebar-discord-button:hover {
+    background-color: #4752C4;
+}

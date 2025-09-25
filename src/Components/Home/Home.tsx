@@ -183,9 +183,21 @@ const Home: React.FC = () => {
             }
 
             setModalOpen(false);
-        } catch (err) {
+        } catch (err: any) {
             console.error("이벤트 저장 실패:", err);
-            alert("이벤트 저장 중 오류가 발생했습니다.");
+            let message = "이벤트 저장 중 오류가 발생했습니다.";
+            if (err?.response?.data) {
+                const d = err.response.data;
+                if (typeof d === 'string') message = d;
+                else if (typeof d?.detail === 'string') message = d.detail;
+                else if (typeof d?.message === 'string') message = d.message;
+                else if (typeof d === 'object') {
+                    const firstKey = Object.keys(d)[0];
+                    const firstVal = d[firstKey];
+                    if (Array.isArray(firstVal) && firstVal.length > 0) message = firstVal[0];
+                }
+            }
+            alert(message);
         }
     };
 

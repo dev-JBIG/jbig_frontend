@@ -132,7 +132,7 @@ const EventModal: React.FC<EventModalProps> = ({ mode, initial, onClose, onSave 
                         id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        maxLength={50}
+                        maxLength={20}
                     />
                     <p style={{ textAlign: "right" }}>{description.length} / 20</p>
 
