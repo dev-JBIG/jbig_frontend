@@ -106,6 +106,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="sidebar-top-divider"/>
 
+            {/* GPU 인스턴스 대여 버튼 */}
+            <button
+                type="button"
+                className="sidebar-discord-button sidebar-gpu-button"
+                onClick={() => {
+                    window.dispatchEvent(new CustomEvent('OPEN_VAST_MODAL'));
+                }}
+            >
+                <FontAwesomeIcon icon={faDiscord as IconProp} className="sidebar-discord-icon" style={{display:'none'}} />
+                GPU 인스턴스 대여
+            </button>
+
             {/* 좌측 하단 디스코드 소모임 버튼 */}
             <a
                 href="https://discord.gg/knpBCvvfGa"

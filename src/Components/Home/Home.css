@@ -296,6 +296,7 @@
     padding: 10px 12px;
     background-color: #5865F2; /* Discord blurple */
     color: #fff;
+    border: none;
     border-radius: 6px;
     text-align: center;
     text-decoration: none;
@@ -311,4 +312,13 @@
 
 .sidebar-discord-button:hover {
     background-color: #4752C4;
+}
+
+/* GPU 버튼은 같은 스타일 재사용, 색만 변경 */
+.sidebar-gpu-button {
+    background-color: #2ecc71;
+    border: none;
+}
+.sidebar-gpu-button:hover {
+    background-color: #27ae60;
 }

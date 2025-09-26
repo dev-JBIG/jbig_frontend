@@ -22,6 +22,7 @@ import {AwardsSection} from "../Utils/Awards";
 import {encryptUserId} from "../Utils/Encryption";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
+import VastModal from "../Utils/Vast/VastModal";
 import $ from "jquery";
 
 const Home: React.FC = () => {
@@ -36,6 +37,7 @@ const Home: React.FC = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
     const [initialEvent, setInitialEvent] = useState<any>(null);
+    const [isVastOpen, setVastOpen] = useState(false);
 
     // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
@@ -63,7 +65,12 @@ const Home: React.FC = () => {
             setModalOpen(true);
         };
         window.addEventListener('OPEN_EVENT_MODAL', openHandler);
-        return () => window.removeEventListener('OPEN_EVENT_MODAL', openHandler);
+        const openVastHandler = () => setVastOpen(true);
+        window.addEventListener('OPEN_VAST_MODAL', openVastHandler);
+        return () => {
+            window.removeEventListener('OPEN_EVENT_MODAL', openHandler);
+            window.removeEventListener('OPEN_VAST_MODAL', openVastHandler);
+        }
     }, []);
 
     // modal 오픈 시 스크롤 차단, 우측 패딩으로 UI 변동 차단
@@ -307,6 +314,9 @@ const Home: React.FC = () => {
                     onClose={handleCloseModal}
                     onSave={handleSaveEvent}
                 />
+            )}
+            {isVastOpen && (
+                <VastModal onClose={() => setVastOpen(false)} />
             )}
         </div>
     );

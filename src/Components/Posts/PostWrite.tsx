@@ -33,8 +33,7 @@ interface PostWriteProps {
 }
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
+const BASE_URL = `${SERVER_HOST}`;
 
 /**
  * 해당 컴포넌트에서는 게시물 작성과, 게시물 수정을 담당합니다.

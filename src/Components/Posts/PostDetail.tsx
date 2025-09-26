@@ -11,7 +11,7 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const BASE_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
+const BASE_URL = `${SERVER_HOST}`;
 
 interface Props {
     username: string;
