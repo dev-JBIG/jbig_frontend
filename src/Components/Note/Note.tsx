@@ -5,8 +5,8 @@ import { useUser } from "../Utils/UserContext";
 import { fetchNotionHtml } from "../../API/req";
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const API_BASE = `http://${SERVER_HOST}:${SERVER_PORT}/api/html/notion/`
+//const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
+const API_BASE = `${SERVER_HOST}/api/html/notion/`
 
 const Note: React.FC = () => {
     const { user, authReady, accessToken, signOutLocal } = useUser();
