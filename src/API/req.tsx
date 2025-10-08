@@ -16,8 +16,8 @@ import {
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
 const BASE_URL = ((): string => {
-    if (SERVER_HOST) {//if (SERVER_HOST && SERVER_PORT) {
-        return `${SERVER_HOST}`;
+    if (SERVER_HOST && SERVER_PORT) {
+        return `http://${SERVER_HOST}:${SERVER_PORT}`;
     }
     // Same-origin fallback for production when env vars are not injected
     if (typeof window !== 'undefined' && window.location?.origin) {
