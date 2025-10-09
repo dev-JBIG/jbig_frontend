@@ -17,7 +17,7 @@ const Calendar: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        $(document).on("show.bs.popover", "[data-toggle='popover']", function () {
+        $(document).on("show.bs.popover", "[data-toggle='popover']", function (this: HTMLElement) {
             // 현재 트리거(this)를 제외한 다른 popover는 모두 닫기
             ($("[data-toggle='popover']").not(this) as any).popover("hide");
         });
