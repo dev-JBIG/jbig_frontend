@@ -2,6 +2,7 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./PostList.css";
+import "./PostList-mobile.css";
 import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 import {encryptUserId} from "../Utils/Encryption";

@@ -1,22 +1,29 @@
 .signin-wrapper {
     width: 100vw;
-    min-width: 350px;
     min-height: 100vh;
-    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: var(--space-md);
+    background-color: var(--color-bg-secondary);
 }
 
 .signin-container {
-    width: 350px;
-    padding: 32px 16px 24px 16px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 4px 0 #ddd;
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-2xl) var(--space-lg) var(--space-xl);
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+@media (min-width: 768px) {
+    .signin-container {
+        padding: var(--space-3xl) var(--space-2xl) var(--space-2xl);
+    }
 }
 
 .signin-title {

@@ -1,0 +1,110 @@
+/* 모든 컴포넌트에 적용되는 적응형 글로벌 스타일 */
+
+/* 버튼 공통 스타일 */
+button:not(.custom-button) {
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+
+/* 입력 필드 공통 스타일 */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+    font-family: inherit;
+    transition: border-color var(--transition-fast);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* 링크 공통 스타일 */
+a:not(.custom-link) {
+    transition: color var(--transition-fast);
+}
+
+/* 카드 공통 스타일 */
+.card {
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* 적응형 컨테이너 */
+.adaptive-container {
+    padding: var(--space-md);
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+    .adaptive-container {
+        padding: var(--space-xl);
+        max-width: 820px;
+        margin: 0 auto;
+    }
+}
+
+/* 적응형 그리드 */
+.adaptive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+    .adaptive-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-lg);
+    }
+}
+
+/* 적응형 텍스트 */
+.text-responsive {
+    font-size: var(--font-size-sm);
+}
+
+@media (min-width: 768px) {
+    .text-responsive {
+        font-size: var(--font-size-base);
+    }
+}
+
+/* 적응형 간격 */
+.gap-adaptive {
+    gap: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+    .gap-adaptive {
+        gap: var(--space-md);
+    }
+}
+
+/* 모바일에서만 표시 */
+.mobile-only {
+    display: block;
+}
+
+.desktop-only {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .mobile-only {
+        display: none;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+}

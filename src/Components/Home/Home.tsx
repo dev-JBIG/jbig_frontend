@@ -1,7 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import "./Home.css"
+import "./Home-mobile.css"
 import MainLayout from "../Utils/MainLayout";
+import MobileNav from "../Utils/MobileNav";
 import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
@@ -23,6 +25,7 @@ import {encryptUserId} from "../Utils/Encryption";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 import $ from "jquery";
 
 const Home: React.FC = () => {
@@ -41,6 +44,7 @@ const Home: React.FC = () => {
 
     // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -218,6 +222,14 @@ const Home: React.FC = () => {
     return (
         <div className="home-wrapper">
             <header className="home-header">
+                <MobileNav
+                    boards={boards}
+                    isLogin={isLogin}
+                    quizURL={quizURL}
+                    totalCount={totalCount}
+                    navigate={navigate}
+                    staffAuth={staffAuth}
+                />
                 <div className="logo" onClick={() => navigate('/')}>JBIG</div>
                 <div className="user-info-wrapper" ref={dropdownRef}>
                     {userName ? (

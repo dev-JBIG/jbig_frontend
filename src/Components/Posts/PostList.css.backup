@@ -1,0 +1,236 @@
+.postlist-container {
+    position: relative;
+}
+
+.postlist-header {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.postlist-header h2 {
+    margin: 0;
+    font-size: 20px;
+    padding: 10px 0 20px 0;
+    font-weight: bold;
+}
+
+.postlist-header h2:not(.home) {
+    padding: 10px 0 40px 0;
+}
+
+.list-search-form {
+    position: absolute;
+    right: 90px;
+    top: 80%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+}
+
+.list-search-input {
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-right: none; /* 버튼과 맞닿는 부분은 제거 */
+    border-radius: 4px 0 0 4px;
+    outline: none;
+    width: 160px;
+}
+
+.list-search-button {
+    padding: 4px 14px;
+    font-size: 14px;
+    border: 1px solid #3563e9;
+    border-radius: 0 4px 4px 0;
+    background: #3563e9;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.list-search-button:hover {
+    background: #264bcc;
+}
+
+
+.perpage-select {
+    position: absolute;
+    right: 0;
+    top: 80%;
+    transform: translateY(-50%);
+    padding: 5px 8px;
+    font-size: 14px;
+}
+
+.postlist-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 2px solid #000;
+    table-layout: fixed;
+}
+
+.postlist-table .th-id { width: 40px; }
+.postlist-table .th-title { width: 50%; }
+.postlist-table .th-author { width: 80px; }
+.postlist-table .th-date { width: 60px; }
+.postlist-table .th-views { width: 40px; }
+.postlist-table .th-likes { width: 40px; }
+
+.postlist-table th,
+.postlist-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.postlist-table th {
+    font-weight: bold;
+}
+
+/* 리스트 정렬 */
+.th-id {
+    width: 60px;
+}
+.th-title {
+    width: 35%;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.th-author {
+    width: 150px;
+}
+.th-date {
+    width: 100px;
+    white-space: nowrap;
+}
+.th-views {
+    width: 90px;
+}
+.th-likes {
+    width: 90px;
+}
+
+
+.postlist-table tbody tr {
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.postlist-table tbody tr:hover {
+    background-color: #f4f8ff;
+}
+
+.postlist-table .title-cell {
+    text-align: left;
+}
+
+.write-button-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.write-button {
+    padding: 6px 24px;
+    background: #3A75FF;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.write-button:hover {
+    background: #194fa6;
+}
+
+.author-cell{
+    color: #000 !important;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.author-cell:hover,
+.author-cell:focus {
+    text-decoration: underline;
+    outline: none;
+}
+
+
+.author-cell .author-text {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
+.author-text:hover {
+    text-decoration: underline;
+}
+
+/* 페이지네이션 */
+.pagination-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 6px 10px;
+    min-width: 32px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f0f0f0;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    font-weight: bold;
+    background-color: #3563e9;
+    color: white;
+    border-color: #3563e9;
+}
+
+.pagination-btn.active:hover {
+    background-color: #2a4dcc;
+    border-color: #2a4dcc;
+}
+
+.more-link {
+    position: absolute;
+    right: 0;
+    top: 80%;
+    transform: translateY(-50%);
+    color: #3563e9;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    user-select: none;
+}
+.more-link:hover {
+    text-decoration: underline;
+}
