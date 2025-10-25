@@ -73,8 +73,8 @@
 
     .postlist-table tbody tr {
         display: block !important;
-        margin-bottom: var(--space-md);
-        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        padding: var(--space-lg) var(--space-lg) var(--space-md);
         background-color: var(--color-bg-primary);
         border: 1px solid var(--color-border-light);
         border-radius: var(--radius-lg);
@@ -101,14 +101,9 @@
         text-align: left !important;
     }
 
-    /* 게시글 번호 (작게, 우측 상단) */
+    /* 게시글 번호 숨김 */
     .postlist-table td.th-id {
-        position: absolute;
-        top: var(--space-lg);
-        right: var(--space-lg);
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        font-weight: var(--font-weight-medium);
+        display: none !important;
     }
 
     .postlist-table tbody tr {
@@ -120,42 +115,55 @@
         font-size: var(--font-size-lg);
         font-weight: var(--font-weight-bold);
         color: var(--color-text-primary);
-        line-height: var(--line-height-tight);
-        margin-bottom: var(--space-md);
-        padding-right: var(--space-2xl);
+        line-height: 1.4;
+        margin-bottom: var(--space-sm);
         word-break: break-word;
         overflow-wrap: break-word;
     }
 
     /* 작성자 */
     .postlist-table tbody .author-cell {
-        display: inline-block !important;
+        display: block !important;
         font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        font-weight: var(--font-weight-medium);
+        color: var(--color-primary);
+        font-weight: var(--font-weight-semibold);
         margin-bottom: var(--space-sm);
     }
 
-    /* 메타 정보 그룹 */
-    .postlist-table td.th-date,
+    /* 날짜 숨김 */
+    .postlist-table td.th-date {
+        display: none !important;
+    }
+
+    /* 메타 정보 컨테이너 */
+    .postlist-table tbody tr::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    /* 메타 정보 그룹 (조회수, 좋아요) */
     .postlist-table td.th-views,
     .postlist-table td.th-likes {
         display: inline-block !important;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        margin-right: var(--space-md);
-    }
-
-    .postlist-table td.th-date::before {
-        content: "📅 ";
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-right: var(--space-lg);
+        font-weight: var(--font-weight-regular);
     }
 
     .postlist-table td.th-views::before {
-        content: "👁 ";
+        content: "조회수 ";
+        color: var(--color-text-tertiary);
     }
 
     .postlist-table td.th-likes::before {
-        content: "❤️ ";
+        content: "좋아요 ";
+        color: var(--color-text-tertiary);
+    }
+
+    .postlist-table td.th-likes {
+        margin-right: 0;
     }
 
     /* 더보기 링크 */

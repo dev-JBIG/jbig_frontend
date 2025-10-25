@@ -41,8 +41,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         return Number.isFinite(v) ? v : 10;
     }, [location.search]);
 
-    // 기본 perPage는: 유저페이지=30, 그 외 10. (검색페이지는 URL 우선)
-    const [perPage, setPerPage] = useState(isUserPage ? 30 : 10);
+    // 페이지당 항목 수 10개로 고정
+    const perPage = 10;
 
     // 검색 페이지와의 공통 per page 관리
     const effectivePerPage = isSearchPage ? perPageFromUrl : perPage;
@@ -161,48 +161,28 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             {activeBoard ? activeBoard.name : (isHome ? "전체 글 보기" : "전체 글 보기")}
                         </h2>
 
-                        {/* 검색/셀렉트: 검색페이지가 아니고, 홈도 아니고, 게시글이 '있는' 경우에만 표시 */}
-                        {!isHome && !isSearchPage && displayPosts.length > 0 && (
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                {/* 검색란 (조건: 검색페이지/유저페이지/홈이 아닐 때만) */}
-                                {!isHome && !isSearchPage && !isUserPage && (
-                                    <form
-                                        className="list-search-form"
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            if (searchKeyword.trim()) {
-                                                navigate(
-                                                    `/search/${activeBoardID || "all"}?q=${encodeURIComponent(searchKeyword)}&page_size=${perPage}`
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        <input
-                                            className="list-search-input"
-                                            type="text"
-                                            placeholder="검색어 입력"
-                                            value={searchKeyword}
-                                            onChange={(e) => setSearchKeyword(e.target.value)}
-                                        />
-                                        <button type="submit" className="list-search-button">검색</button>
-                                    </form>
-                                )}
-
-                                <select
-                                    className="perpage-select"
-                                    value={perPage}
-                                    onChange={(e) => {
-                                        setPage(1);
-                                        setPerPage(Number(e.target.value));
-                                    }}
-                                >
-                                    {[5, 10, 15, 20, 30].map((n) => (
-                                        <option key={n} value={n}>
-                                            {n}개씩
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                        {/* 검색란: 검색페이지가 아니고, 홈도 아니고, 유저페이지도 아니고, 게시글이 '있는' 경우에만 표시 */}
+                        {!isHome && !isSearchPage && !isUserPage && displayPosts.length > 0 && (
+                            <form
+                                className="list-search-form"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (searchKeyword.trim()) {
+                                        navigate(
+                                            `/search/${activeBoardID || "all"}?q=${encodeURIComponent(searchKeyword)}&page_size=10`
+                                        );
+                                    }
+                                }}
+                            >
+                                <input
+                                    className="list-search-input"
+                                    type="text"
+                                    placeholder="검색어 입력"
+                                    value={searchKeyword}
+                                    onChange={(e) => setSearchKeyword(e.target.value)}
+                                />
+                                <button type="submit" className="list-search-button">검색</button>
+                            </form>
                         )}
 
                         {isHome && (
