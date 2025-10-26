@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./ChangePWD.css";
 import { Link, useNavigate } from "react-router-dom";
 import { requestVerificationCode, verifyCode, resetPassword } from "../../API/req";
+import { useUser } from "../Utils/UserContext";
+import { useStaffAuth } from "../Utils/StaffAuthContext";
 
 // 이메일 도메인 유효성 검사
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -21,6 +23,8 @@ const ChangePWD: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
+    const { signOutLocal } = useUser();
+    const { setStaffAuth } = useStaffAuth();
 
     // 타이머 로직
     useEffect(() => {
@@ -107,6 +111,9 @@ const ChangePWD: React.FC = () => {
         try {
             const result = await resetPassword(email, newPassword, confirmPassword);
             if (result.success) {
+                // 비밀번호 변경 성공 시 로그아웃 처리
+                signOutLocal();
+                setStaffAuth(false);
                 alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
                 navigate("/signin");
             } else {
