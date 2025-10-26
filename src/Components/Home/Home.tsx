@@ -230,16 +230,18 @@ const Home: React.FC = () => {
                 return;
             }
 
+            const $calendar = ($("#calendar") as any);
+
             if (modalMode === "edit" && id) {
                 // 1) 서버 반영
                 const updated = await updateCalendarEvent(id, newEvent, accessToken);
 
-                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더)
-                ($("#calendar") as any).fullCalendar("removeEvents", id);
-                ($("#calendar") as any).fullCalendar("renderEvent", updated);
+                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더함)
+                $calendar.fullCalendar("removeEvents", id);
+                $calendar.fullCalendar("renderEvent", updated);
             } else {
                 const created = await createCalendarEvent(newEvent, accessToken);
-                ($("#calendar") as any).fullCalendar("renderEvent", created);
+                $calendar.fullCalendar("renderEvent", created);
             }
 
             setModalOpen(false);
@@ -335,10 +337,12 @@ const Home: React.FC = () => {
                                 <AwardsSection/>
                             </div>
                             <div className="calendar-section-wrapper">
-                                <Calendar/>
-                                <span className="add-event-text-home" onClick={handleAddEvent}>
-                                    일정 추가
-                                </span>
+                                <Calendar staffAuth={staffAuth}/>
+                                {staffAuth && (
+                                    <span className="add-event-text-home" onClick={handleAddEvent}>
+                                        일정 추가
+                                    </span>
+                                )}
                             </div>
                             <PostList boards={boards} isHome={true}/>
                         </MainLayout>

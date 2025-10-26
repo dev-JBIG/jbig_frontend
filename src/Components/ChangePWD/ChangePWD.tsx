@@ -111,7 +111,7 @@ const ChangePWD: React.FC = () => {
         try {
             const result = await resetPassword(email, newPassword, confirmPassword);
             if (result.success) {
-                // 비밀번호 변경 성공 시 로그아웃 처리
+                // 비밀번호 변경 성공 시 로그아웃 처리함
                 signOutLocal();
                 setStaffAuth(false);
                 alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");

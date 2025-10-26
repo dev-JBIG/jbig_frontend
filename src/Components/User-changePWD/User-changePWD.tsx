@@ -45,7 +45,7 @@ const UserChangePWD: React.FC = () => {
 
         if (result.success) {
             alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
-            // 백엔드에서 토큰 블랙리스트 처리됨, 프론트엔드도 로그아웃 처리
+            // 백엔드에서 토큰 블랙리스트 처리됨, 프론트엔드도 로그아웃 처리함
             if (accessToken && refreshToken) {
                 await signout(accessToken, refreshToken);
             }
