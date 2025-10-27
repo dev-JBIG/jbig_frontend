@@ -442,6 +442,74 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }
     };
 
+    // 좌측 정렬 커맨드
+    const alignLeftCommand: ICommand = {
+        name: 'align-left',
+        keyCommand: 'align-left',
+        buttonProps: { 'aria-label': 'Align left' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm0 4h10v2H2V7zm0 4h16v2H2v-2zm0 4h10v2H2v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: left">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 가운데 정렬 커맨드
+    const alignCenterCommand: ICommand = {
+        name: 'align-center',
+        keyCommand: 'align-center',
+        buttonProps: { 'aria-label': 'Align center' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm3 4h10v2H5V7zm-3 4h16v2H2v-2zm3 4h10v2H5v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: center">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 우측 정렬 커맨드
+    const alignRightCommand: ICommand = {
+        name: 'align-right',
+        keyCommand: 'align-right',
+        buttonProps: { 'aria-label': 'Align right' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm6 4h10v2H8V7zm-6 4h16v2H2v-2zm6 4h10v2H8v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: right">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 글자 색 지정 커맨드
+    const textColorCommand: ICommand = {
+        name: 'text-color',
+        keyCommand: 'text-color',
+        buttonProps: { 'aria-label': 'Text color' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M10 2L3 18h3l1.5-4h5l1.5 4h3L10 2zm0 4.5L12.5 12h-5L10 6.5z"/>
+                <rect x="2" y="16" width="16" height="2" fill="red"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '색상을 변경할 텍스트';
+            const color = prompt('색상 코드를 입력하세요 (예: #FF0000, red):', '#FF0000');
+            if (color) {
+                api.replaceSelection(`<span style="color: ${color}">${text}</span>`);
+            }
+        }
+    };
+
     return (
         <form className="postwrite-form" onSubmit={handleSubmit} style={{ overflow: "hidden" }}>
             <div className="postwrite-row">
@@ -504,6 +572,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                             commands.unorderedListCommand,
                             commands.orderedListCommand,
                             commands.checkedListCommand,
+                            commands.divider,
+                            alignLeftCommand,
+                            alignCenterCommand,
+                            alignRightCommand,
+                            textColorCommand,
                         ]}
                     />
                     {/* Hidden input for image upload */}

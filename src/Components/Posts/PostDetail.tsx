@@ -7,6 +7,8 @@ import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
@@ -28,9 +30,25 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
     // 본문
-    
+
     const { accessToken, authReady, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
+
+    // Sanitize 스키마: style 속성 허용 (text-align, color만)
+    const sanitizeSchema = {
+        ...defaultSchema,
+        attributes: {
+            ...defaultSchema.attributes,
+            div: [
+                ...(defaultSchema.attributes?.div || []),
+                ['style', /^text-align:\s*(left|center|right);?$/i]
+            ],
+            span: [
+                ...(defaultSchema.attributes?.span || []),
+                ['style', /^color:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)|[a-zA-Z]+);?$/i]
+            ]
+        }
+    };
 
     type OpenMenu =
         | { type: "comment"; id: number }
@@ -532,8 +550,12 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             {/* 본문 */}
                 <div className="content-body">
                     <div className="postdetail-content">
-                        <ReactMarkdown 
+                        <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[
+                                rehypeRaw,
+                                [rehypeSanitize, sanitizeSchema]
+                            ]}
                         >
                             {post.content_md}
                         </ReactMarkdown>
