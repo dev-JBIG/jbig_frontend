@@ -16,6 +16,7 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
  * */
 function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boolean, userId?: string })  {
     const [posts, setPosts] = useState<PostItem[] | null>(null);
+    const [announcementPosts, setAnnouncementPosts] = useState<PostItem[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [page, setPage] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState("");
@@ -74,6 +75,45 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     const reqSeqRef = useRef(0);
 
+    // 공지사항 최신 3개 가져오기 (전체 글 보기일 때만)
+    useEffect(() => {
+        // 전체 글 보기가 아니거나, 검색 페이지이거나, 유저 페이지면 공지사항 가져오지 않음
+        if (activeBoardID !== 0 || isSearchPage || isUserPage) {
+            setAnnouncementPosts([]);
+            return;
+        }
+
+        const getAnnouncements = async () => {
+            try {
+                // boards에서 "공지사항" 게시판 찾기
+                const announcementBoard = boards
+                    ?.flatMap(section => section.boards)
+                    .find(board => board.name === "공지사항");
+
+                if (!announcementBoard) {
+                    setAnnouncementPosts([]);
+                    return;
+                }
+
+                // 공지사항 게시판의 최신 글 3개 가져오기
+                const response = await fetchBoardPosts(
+                    String(announcementBoard.id),
+                    3,
+                    1,
+                    false,
+                    accessToken ?? undefined
+                );
+
+                setAnnouncementPosts(response.posts);
+            } catch (e) {
+                console.error("Failed to fetch announcements:", e);
+                setAnnouncementPosts([]);
+            }
+        };
+
+        getAnnouncements();
+    }, [boards, activeBoardID, isSearchPage, isUserPage, accessToken]);
+
     useEffect(() => {
         const seq = ++reqSeqRef.current;
 
@@ -112,7 +152,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         isHome ? undefined : (activeBoardID !== 0 ? String(activeBoardID) : undefined),
                         isHome ? 10 : effectivePerPage,
                         isHome ? 1 : page,
-                        !!isHome,
+                        isHome,
                         accessToken ?? undefined
                     );
                 }
@@ -145,6 +185,12 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     ]);
 
     const displayPosts = posts ?? [];
+
+    // 공지사항이 있는 경우, 전체 글 보기에서는 공지사항을 제외한 일반 게시글 필터링
+    // (공지사항은 별도로 상단에 표시하므로 중복 방지)
+    const filteredPosts = (activeBoardID === 0 && !isSearchPage && !isUserPage && announcementPosts.length > 0)
+        ? displayPosts.filter(post => !announcementPosts.some(ann => ann.id === post.id))
+        : displayPosts;
 
     const handleWrite = () => {
         navigate(`/board/${boardIdRaw ?? 0}/write`);
@@ -303,7 +349,48 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         </tr>
                         </thead>
                         <tbody>
-                        {displayPosts.map((p) => (
+                        {/* 공지사항 표시 (전체 글 보기일 때만) */}
+                        {activeBoardID === 0 && !isSearchPage && !isUserPage && announcementPosts.map((p) => (
+                            <tr
+                                key={`announcement-${p.id}`}
+                                className="announcement-row"
+                                onClick={() => {
+                                    navigate(`/board/${activeBoardID}/${p.id}`);
+                                }}
+                            >
+                                <td className="th-id">
+                                    <span className="announcement-badge">공지</span>
+                                </td>
+                                <td className="title-cell th-title">
+                                    <span className="announcement-badge mobile-only">공지</span>
+                                    <span className="announcement-title">{p.title}</span>
+                                </td>
+                                <td
+                                    className="author-cell th-author"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!accessToken) {
+                                            alert("로그인이 필요합니다.");
+                                            navigate("/signin");
+                                            return;
+                                        }
+                                        const encrypted = await encryptUserId(String(p.user_id));
+                                        navigate(`/user/${encrypted}`);
+                                    }}
+                                    style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
+                                    title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
+                                >
+                  <span className="author-text">
+                    {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
+                  </span>
+                                </td>
+                                <td className="th-date">{p.date}</td>
+                                <td className="th-views">{p.views.toLocaleString()}</td>
+                                {!isUserPage && <td className="th-likes">{p.likes}</td>}
+                            </tr>
+                        ))}
+                        {/* 일반 게시글 표시 */}
+                        {filteredPosts.map((p) => (
                             <tr
                                 key={p.id}
                                 onClick={() => {

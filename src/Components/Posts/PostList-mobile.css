@@ -93,6 +93,39 @@
         box-shadow: var(--shadow-md);
     }
 
+    /* 공지사항 스타일 (모바일) */
+    .postlist-table tbody tr.announcement-row {
+        background-color: #fffbf0 !important;
+        border: 2px solid #ffd700 !important;
+        box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2) !important;
+    }
+
+    .postlist-table tbody tr.announcement-row:hover {
+        background-color: #fff8e1 !important;
+        border-color: #ffd700 !important;
+    }
+
+    .announcement-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        background-color: #ff6b6b;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 4px;
+        margin-bottom: var(--space-sm);
+    }
+
+    .announcement-badge.mobile-only {
+        display: inline-block !important;
+        margin-right: var(--space-sm);
+    }
+
+    .announcement-title {
+        font-weight: 700;
+        color: #000;
+    }
+
     /* 모든 td를 블록으로 */
     .postlist-table td {
         display: block !important;
@@ -149,7 +182,7 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         margin-right: var(--space-lg);
-        font-weight: var(--font-weight-regular);
+        font-weight: 400;
     }
 
     .postlist-table td.th-views::before {
