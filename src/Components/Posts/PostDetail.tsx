@@ -581,15 +581,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 </div>
             )}
 
-            <div className="postdetail-btn-row">
-                <button
-                    className="postdetail-btn"
-                    onClick={() => navigate(`/board/${boardId ?? 0}`)}
-                >
-                    목록으로
-                </button>
-            </div>
-
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">
                 <div className="postdetail-comment-header">
