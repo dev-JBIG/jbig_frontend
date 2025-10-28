@@ -4,6 +4,9 @@ import {useNavigate, useParams} from "react-router-dom";
 import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
@@ -555,6 +558,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         data-color-mode="light"
                         height={400}
                         preview="edit"
+                        previewOptions={{
+                            remarkPlugins: [remarkMath],
+                            rehypePlugins: [rehypeKatex],
+                        }}
                         commands={[
                             commands.bold,
                             commands.italic,

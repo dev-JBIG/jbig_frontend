@@ -7,8 +7,11 @@ import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
@@ -556,10 +559,11 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <div className="content-body">
                     <div className="postdetail-content">
                         <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
+                            remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[
                                 rehypeRaw,
-                                [rehypeSanitize, sanitizeSchema]
+                                [rehypeSanitize, sanitizeSchema],
+                                rehypeKatex
                             ]}
                         >
                             {post.content_md}

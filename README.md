@@ -17,7 +17,7 @@
 ---
 
 ## 기술 스택
-- **Frontend:** React, TypeScript, React Router, React Quill 등
+- **Frontend:** React, TypeScript, React Router, React-md-editor 등
 - **Backend:** Django (REST API) 등
 - **Database:** PostgreSQL
 - **Auth:** JWT (Access Token / Refresh Token)
