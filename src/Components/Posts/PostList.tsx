@@ -275,9 +275,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             >
                                 <td className="th-id">{p.id}</td>
                                 <td className="title-cell th-title">{p.title}</td>
-                                <td
-                                    className="author-cell th-author"
-                                    onClick={async (e) => {
+                                <td className="author-cell th-author">
+                  <span
+                    className="author-text"
+                    onClick={async (e) => {
                                         e.stopPropagation();
                                         if (!accessToken) {
                                             alert("로그인이 필요합니다.");
@@ -289,8 +290,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     }}
                                     style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
-                                >
-                  <span className="author-text">
+                  >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
                   </span>
                                 </td>
@@ -365,9 +365,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     <span className="announcement-badge mobile-only">공지</span>
                                     <span className="announcement-title">{p.title}</span>
                                 </td>
-                                <td
-                                    className="author-cell th-author"
-                                    onClick={async (e) => {
+                                <td className="author-cell th-author">
+                  <span
+                    className="author-text"
+                    onClick={async (e) => {
                                         e.stopPropagation();
                                         if (!accessToken) {
                                             alert("로그인이 필요합니다.");
@@ -379,8 +380,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
-                                >
-                  <span className="author-text">
+                  >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
                   </span>
                                 </td>
@@ -401,9 +401,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     {activeBoardID === 0 || isHome ? p.id : p.board_post_id}
                                 </td>
                                 <td className="title-cell th-title">{p.title}</td>
-                                <td
-                                    className="author-cell th-author"
-                                    onClick={async (e) => {
+                                <td className="author-cell th-author">
+                  <span
+                    className="author-text"
+                    onClick={async (e) => {
                                         e.stopPropagation();
                                         if (!accessToken) {
                                             alert("로그인이 필요합니다.");
@@ -415,8 +416,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
-                                >
-                  <span className="author-text">
+                  >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
                   </span>
                                 </td>
