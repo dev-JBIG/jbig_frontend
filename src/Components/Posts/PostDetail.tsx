@@ -72,6 +72,11 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 동일 키로 중복 조회 안되도록
     const fetchedKeyRef = useRef<string | null>(null);
 
+    // 페이지 진입 시 스크롤 최상단으로 이동
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [postId]);
+
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
             const el = ev.target as Element | null;
