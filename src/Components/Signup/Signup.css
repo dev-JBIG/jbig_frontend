@@ -1,115 +1,106 @@
+/* 적응형 Signup - 미니멀리즘 */
+
 .signup-wrapper {
     width: 100vw;
-    height: 100vh;
-    min-width: 350px;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: var(--space-md);
+    background-color: var(--color-bg-secondary);
 }
 
 .signup-container {
-    width: 350px;
-    padding: 32px 16px 24px 16px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 4px 0 #ddd;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    padding: var(--space-2xl) var(--space-lg) var(--space-xl);
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 768px) {
+    .signup-container {
+        padding: var(--space-3xl) var(--space-2xl) var(--space-2xl);
+    }
 }
 
 .signup-title {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
     text-align: center;
-    margin-bottom: 24px;
-    letter-spacing: -2px;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+    .signup-title {
+        font-size: var(--font-size-3xl);
+    }
 }
 
 .signup-form {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--space-lg);
 }
 
 .signup-label {
-    font-size: 1rem;
-    margin-bottom: 3px;
-    font-weight: 400;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-xs);
 }
 
 .signup-input {
     width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 1rem;
-    background: #fafafa;
-    box-sizing: border-box;
+    padding: var(--space-md);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    background-color: var(--color-bg-secondary);
+    transition: all var(--transition-fast);
 }
 
 .signup-input:focus {
-    border-color: #666;
-    outline: none;
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-primary);
 }
 
 .signup-button {
     width: 100%;
-    padding: 11px 0;
-    margin-top: 8px;
-    background: #000;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 700;
+    padding: var(--space-lg);
+    margin-top: var(--space-md);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     border: none;
-    border-radius: 3px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color var(--transition-fast);
 }
 
 .signup-button:hover {
-    background: #222;
+    background-color: var(--color-primary-hover);
 }
 
-.signup-desc {
-    font-size: 1rem;
-    color: #444;
-    margin-bottom: 7px;
-    text-align: left;
-}
-
-
-/* 로딩 화면 */
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(2px);
-    z-index: 9999;
+.signup-links {
+    width: 100%;
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
 }
 
-.loading-spinner {
-    width: 42px;
-    height: 42px;
-    border: 4px solid rgba(0,0,0,0.15);
-    border-top-color: #3563e9;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    margin-bottom: 10px;
+.signup-link {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: color var(--transition-fast);
 }
 
-.loading-text {
-    font-size: 14px;
-    color: #333;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.signup-link:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
 }

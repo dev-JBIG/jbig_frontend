@@ -3,15 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
 import "./PostDetail.css";
-import {FitHTML} from "../Utils/FitHTML";
+import "./PostDetail-mobile.css";
+import "./PostDetail-comments.css";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
-
-const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const BASE_URL = `${SERVER_HOST}`;
 
 interface Props {
     username: string;
@@ -21,8 +25,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
 
-    // 현재 로그인된 사용자 이름
-    const [userName, setUserName] = useState("");
+    const [, setUserName] = useState("");
     const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
     // 답글 입력 대상 댓글 id (하나만)
@@ -30,10 +33,25 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
     // 본문
-    const [htmlContent, setHtmlContent] = useState("");
 
     const { accessToken, authReady, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
+
+    // Sanitize 스키마: style 속성 허용 (text-align, color만)
+    const sanitizeSchema = {
+        ...defaultSchema,
+        attributes: {
+            ...defaultSchema.attributes,
+            div: [
+                ...(defaultSchema.attributes?.div || []),
+                ['style', /^text-align:\s*(left|center|right);?$/i]
+            ],
+            span: [
+                ...(defaultSchema.attributes?.span || []),
+                ['style', /^color:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)|[a-zA-Z]+);?$/i]
+            ]
+        }
+    };
 
     type OpenMenu =
         | { type: "comment"; id: number }
@@ -56,6 +74,11 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
     // 동일 키로 중복 조회 안되도록
     const fetchedKeyRef = useRef<string | null>(null);
+
+    // 페이지 진입 시 스크롤 최상단으로 이동
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [postId]);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -116,7 +139,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     board: src.board?.name || "",
                     author_semester: src.author_semester,
                     title: src.title || "",
-                    content_html_url: src.content_html_url || "",
+                    content_html: src.content_html || "",
+                    content_md: src.content_md || "",
                     author: src.author || "",
                     date: toDate(src.created_at),
                     updatedAt: toDate(src.updated_at),
@@ -126,12 +150,27 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     isLiked: src.is_liked ?? false,
                     is_owner: !!src.is_owner,
                     post_type: src.post_type,
-                    attachments: (src.attachments || []).map((a: any) => ({
-                        id: a.id,
-                        fileUrl: a.file,
-                        fileName: a.filename,
-                        fileType: ext(a.filename),
-                    })),
+                    attachments: (src.attachment_paths || []).map((item: any, index: number) => {
+                        // 객체 형태인지 문자열 형태인지 확인
+                        if (typeof item === 'string') {
+                            // 기존 문자열 형태인 경우
+                            const filename = item.split('/').pop() || `file_${index}`;
+                            return {
+                                id: index,
+                                fileUrl: item,
+                                fileName: filename,
+                                fileType: ext(filename),
+                            };
+                        } else {
+                            // 새로운 객체 형태인 경우
+                            return {
+                                id: index,
+                                fileUrl: item.url,
+                                fileName: item.name,
+                                fileType: ext(item.name),
+                            };
+                        }
+                    }),
                     comments: (src.comments || []).slice().reverse().map((c: any) => ({
                         id: c.id,
                         user_id: c.user_id,
@@ -178,16 +217,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         loadPost();
     }, [authReady, accessToken, postId]);
 
-    useEffect(() => {
-        if (!post || post === "not-found") return;
-
-        const absoluteUrl = `${BASE_URL}${post.content_html_url}`;
-
-        fetch(absoluteUrl)
-            .then(res => res.text())
-            .then(html => setHtmlContent(html))
-            .catch(() => console.error("본문 로드 실패"));
-    }, [post]);
+   
 
     // 게시글 삭제
     const handleDeletePost = async () => {
@@ -526,9 +556,20 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             <div className="postdetail-divider"/>
 
             {/* 본문 */}
-            <div className="content-body ql-editor">
-                <FitHTML html={htmlContent} className="postdetail-content ql-editor"/>
-            </div>
+                <div className="content-body">
+                    <div className="postdetail-content">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[
+                                rehypeRaw,
+                                [rehypeSanitize, sanitizeSchema],
+                                rehypeKatex
+                            ]}
+                        >
+                            {post.content_md}
+                        </ReactMarkdown>
+                    </div>
+                </div>
 
             {/* 첨부파일 */}
             {post.attachments && post.attachments.length > 0 && (
@@ -548,15 +589,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     </ul>
                 </div>
             )}
-
-            <div className="postdetail-btn-row">
-                <button
-                    className="postdetail-btn"
-                    onClick={() => navigate(`/board/${boardId ?? 0}`)}
-                >
-                    목록으로
-                </button>
-            </div>
 
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">

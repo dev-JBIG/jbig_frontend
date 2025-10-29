@@ -1,24 +1,16 @@
-import React, {useEffect, useRef, useState, useLayoutEffect, useMemo} from "react";
+import React, {useEffect, useRef, useState, useMemo} from "react";
 import "./PostWrite.css";
 import {useNavigate, useParams} from "react-router-dom";
-import Quill from "quill";
-import "react-quill/dist/quill.snow.css";
-import ReactQuill from "react-quill";
+import MDEditor, { commands, ICommand } from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
-
-import { ImageFormats } from '@xeger/quill-image-formats';
-import { ImageResize } from 'quill-image-resize-module-ts';
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
-
-Quill.register('modules/imageResize', ImageResize);
-Quill.register('modules/imageFormats', ImageFormats);
-Quill.register(ImageFormats, true);
-
-const SizeStyle = Quill.import('attributors/style/size');
-SizeStyle.whitelist = ['14px', '16px', '18px', '24px', '32px', '48px'];
-Quill.register(SizeStyle, true);
 
 // 업로드 제한 파일 확장자, 필요 시 추가
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
@@ -33,7 +25,16 @@ interface PostWriteProps {
 }
 
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const BASE_URL = `${SERVER_HOST}`;
+const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
+const BASE_URL = ((): string => {
+    if (SERVER_HOST && SERVER_PORT) {
+        return `http://${SERVER_HOST}:${SERVER_PORT}`;
+    }
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+    }
+    return "";
+})();
 
 /**
  * 해당 컴포넌트에서는 게시물 작성과, 게시물 수정을 담당합니다.
@@ -44,15 +45,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [files, setFiles] = useState<UploadFile[]>([]);
-    const [attachmentIds, setAttachmentIds] = useState<number[]>([]);
+    const [attachments, setAttachments] = useState<{ url: string; name: string; }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const { category, id: postId } = useParams(); // :category => boardId로 수정. 이게 board id 입니다
     const isEdit = !!postId;
     const postIdNumber = postId ? Number(postId) : null;
 
     const [existingAttachments, setExistingAttachments] = useState<
-        { id: number; filename: string; url: string; sizeBytes?: number }[]
+        { filename: string; url: string; sizeBytes?: number }[]
     >([]);
 
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
@@ -69,13 +71,13 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     const toAbsUrl = (u: string) => /^https?:\/\//i.test(u) ? u : `${BASE_URL}${u}`;
 
-    const handleRemoveExistingAttachment = (id: number) => {
-        setAttachmentIds(prev => prev.filter(x => x !== id));
+    const handleRemoveExistingAttachment = (url: string) => {
+        setAttachments(prev => prev.filter(x => x.url !== url));
     };
 
     const keptExistingCount = React.useMemo(
-        () => existingAttachments.filter(a => attachmentIds.includes(a.id)).length,
-        [existingAttachments, attachmentIds]
+        () => existingAttachments.filter(a => attachments.some(att => att.url === a.url)).length,
+        [existingAttachments, attachments]
     );
     const totalAttached = keptExistingCount + files.length;
     const remainingSlots = Math.max(0, MAX_FILES - totalAttached);
@@ -126,11 +128,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             navigate("/signin")
             return;
         }
-
-        const quill = document.querySelector('.ql-editor');
-        if (quill && quill.innerHTML === '<p><br></p>') {
-            quill.innerHTML = '<p><span style="font-size:16px;"><br></span></p>';
-        }
     }, [accessToken, navigate]);
 
     useEffect(() => {
@@ -160,31 +157,33 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
                 setSelectedBoard({ id: boardIdFromData, name: boardNameFromData } as Board);
 
-                type RawAttachment = { id: number; filename: string; file: string };
-
-                // 안전하게 타입 지정 후 매핑
-                const rawAtts: RawAttachment[] = Array.isArray(src.attachments)
-                    ? (src.attachments as RawAttachment[])
+                // attachment_paths 배열에서 첨부파일 정보 처리
+                const attachmentPaths = Array.isArray(src.attachment_paths)
+                    ? src.attachment_paths
                     : [];
 
-                const atts = rawAtts.map(({ id, filename, file }) => ({
-                    id,
-                    filename,
-                    url: file,
+                // 객체 배열인지 문자열 배열인지 확인
+                const processedAttachments = attachmentPaths.map((item: { url: string; name: string; } | string, index: number) => {
+                    if (typeof item === 'string') {
+                        // 기존 문자열 형태인 경우
+                        const filename = item.split('/').pop() || `file_${index}`;
+                        return { url: item, name: filename };
+                    } else {
+                        // 새로운 객체 형태인 경우
+                        return { url: item.url, name: item.name };
+                    }
+                });
+
+                const atts = processedAttachments.map((att: { url: string; name: string; }) => ({
+                    filename: att.name,
+                    url: att.url,
                 }));
                 const attsWithSize = await enrichWithSizes(atts);
                 setExistingAttachments(attsWithSize);
-                setAttachmentIds(atts.map(a => a.id));
+                setAttachments(processedAttachments);
 
-                // 본문 HTML 로드 → ReactQuill로
-                const htmlUrl = `${BASE_URL}${src.content_html_url}`;
-                const htmlText = await fetch(htmlUrl).then((r) => r.text());
-
-                // 전체 문서가 와도 안전하게 body만 추출 (문서 조각이면 그대로 사용)
-                const doc = new DOMParser().parseFromString(htmlText, "text/html");
-                const bodyHtml = doc?.body ? doc.body.innerHTML : htmlText;
-
-                setContent(bodyHtml); // ReactQuill value로 그대로 주입
+                // 본문 마크다운 로드
+                setContent(src.content_md || "");
             } catch (e) {
                 console.error(e);
                 alert("게시글 정보를 불러오지 못했습니다.");
@@ -194,27 +193,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEdit, postId, accessToken]);
 
-    // 링크 작성, 오픈 시 툴팁 화면 나가는 것 방지
-    useLayoutEffect(() => {
-        const observer = new MutationObserver(() => {
-            const tooltip = document.querySelector('.ql-tooltip') as HTMLElement;
-            if (tooltip) {
-                const rawLeft = parseInt(tooltip.style.left, 10);
-                if (!isNaN(rawLeft)) {
-                    const clampedLeft = Math.min(Math.max(rawLeft, 0), 644); // 여기서 조정
-                    tooltip.style.left = `${clampedLeft}px`;
-                }
-            }
-        });
-
-        observer.observe(document.body, {
-            attributes: true,
-            subtree: true,
-            attributeFilter: ['style', 'class'],
-        });
-
-        return () => observer.disconnect();
-    }, []);
 
     // 첨부파일 업로드
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,7 +200,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (!selected) return;
 
         // 현재 남은 칸 계산
-        const keptExistingCount = existingAttachments.filter(a => attachmentIds.includes(a.id)).length;
+        const keptExistingCount = existingAttachments.filter(a => attachments.some(att => att.url === a.url)).length;
         let remaining = MAX_FILES - (keptExistingCount + files.length);
 
         if (remaining <= 0) {
@@ -256,10 +234,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     return;
                 }
 
-                const res = await uploadAttachment(file, accessToken); // { id, url }
+                const res = await uploadAttachment(file, accessToken); // { id, file_url, filename }
 
                 // 서버가 절대 URL을 주지만, 혹시 상대경로면 보정
-                const serverUrlRaw: string | undefined = res.file;
+                const serverUrlRaw: string | undefined = res.file_url || res.file;
                 const serverUrl = serverUrlRaw
                     ? (/^https?:\/\//i.test(serverUrlRaw) ? serverUrlRaw : `${BASE_URL}${serverUrlRaw}`)
                     : "";
@@ -270,7 +248,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     : serverUrl;
 
                 setFiles(prev => [...prev, { file, url: previewUrl, id: res.id }]);
-                setAttachmentIds(prev => [...prev, res.id]);
+                setAttachments(prev => [...prev, { url: serverUrl, name: res.filename || file.name }]);
 
                 remaining--;
                 if (remaining <= 0) break;
@@ -297,9 +275,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         setFiles(prev => {
             const copy = [...prev];
             const removed = copy.splice(idx, 1)[0];
-            // 업로드 id가 있으면 attachmentIds에서도 제거
-            if (removed?.id) {
-                setAttachmentIds(ids => ids.filter(id => id !== removed.id));
+            // 업로드된 파일 URL이 있으면 attachments에서도 제거
+            if (removed?.url && !removed.url.startsWith('blob:')) {
+                setAttachments(attachments => attachments.filter(att => att.url !== removed.url));
             }
             return copy;
         });
@@ -329,24 +307,17 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return;
         }
 
-        if (isHtmlEmpty(content)) {
+        if (!content.trim()) {
             alert("본문을 입력하세요.");
             return;
         }
 
-        const fixedContent = ensureDefaultFontSize(content);
-
         try {
             if (isEdit && postIdNumber) {
-                const toDelete = existingAttachments
-                    .map(a => a.id)
-                    .filter(id => !attachmentIds.includes(id));
-
                 const payload = {
                     title,
-                    content_html: fixedContent,
-                    attachment_ids: attachmentIds,
-                    attachment_ids_to_delete: toDelete,
+                    content_md: content,
+                    attachment_paths: attachments,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
                 };
 
@@ -357,7 +328,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
             const res = await createPost(
                 selectedBoard!.id,
-                { title, content_html: fixedContent, attachment_ids: attachmentIds },
+                { title, content_md: content, attachment_paths: attachments },
                 accessToken
             );
 
@@ -382,43 +353,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }
     };
 
-    // 게시글 내용이 비었는지 확인하는 함수
-    const isHtmlEmpty = (html: string): boolean => {
-        if (!html) return true;
-        const div = document.createElement("div");
-        div.innerHTML = html;
-
-        // 미디어가 하나라도 있으면 빈 본문이 아님
-        if (div.querySelector("img,video,iframe,embed,object,canvas,svg,figure")) {
-            return false;
-        }
-
-        // 텍스트만 추출해서 zero-width/nbsp 제거 후 판단
-        const text = (div.textContent || "")
-            .replace(/\u200B/g, "")   // zero-width space
-            .replace(/\u00A0/g, " ")  // &nbsp;
-            .trim();
-
-        return text.length === 0;
-    };
-
-    // 링크 상대경로 제거 후 절대경로 지원
-    const normalizeLinks = (html: string): string => {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-
-        const anchors = div.querySelectorAll('a');
-        anchors.forEach(anchor => {
-            const href = anchor.getAttribute('href') || '';
-
-            // 절대 경로로 보정
-            if (!href.startsWith('http') && !href.startsWith('mailto:')) {
-                anchor.setAttribute('href', 'https://' + href.replace(/^\/+/, ''));
-            }
-        });
-
-        return div.innerHTML;
-    };
 
     // 수정 시, 기존 첨부파일의 사이즈 가져오기
     const fetchSize = async (url: string): Promise<number | undefined> => {
@@ -431,7 +365,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }
     };
 
-    const enrichWithSizes = async (atts: {id:number; filename:string; url:string}[]) => {
+    const enrichWithSizes = async (atts: {filename:string; url:string}[]) => {
         return Promise.all(
             atts.map(async a => {
                 const size = await fetchSize(toAbsUrl(a.url));
@@ -446,67 +380,137 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         return `${mb.toFixed(2)} MB`;
     };
 
-    const formats = useMemo(
-        () => [
-            "font",
-            "size",
-            "header",
-            "bold",
-            "italic",
-            "underline",
-            "color",
-            "background",
-            "align",
-            "code-block",
-            "link",
-            "image",
-            "float"
-        ],
-        []
-    );
-
-    const modules = useMemo(
-        () => ({
-            toolbar: [
-                [
-                    { font: [] },
-                    { size: ["14px", "16px", "18px", "24px", "32px", "48px"] },
-                ],
-                ["bold", "italic", "underline"],
-                [{ color: [] }, { background: [] }],
-                [{ align: [] }],
-                ["code-block"],
-                ["link", "image"],
-                ["clean"],
-            ],
-            imageFormats: {},
-            imageResize: {
-                modules: ['Resize', 'DisplaySize'],
-            },
-            clipboard: { matchVisual: false },
-        }),
-        []
-    );
-
-    // 폰트 기본 사이즈
-    const ensureDefaultFontSize = (html: string): string => {
-        const div = document.createElement("div");
-        div.innerHTML = html;
-
-        // 폰트 크기 없는 텍스트 노드 래핑
-        div.querySelectorAll("p, span, li, div").forEach(el => {
-            const style = el.getAttribute("style") || "";
-            if (!/font-size/i.test(style)) {
-                el.setAttribute("style", (style + "; font-size:16px;").trim());
-            }
-        });
-
-        return div.innerHTML;
+    const handleChange = (value: string | undefined) => {
+        setContent(value || "");
     };
 
-    const handleChange = (html: string) => {
-        const fixedHtml = normalizeLinks(html);
-        setContent(fixedHtml);
+    // 에디터 내부에 이미지 삽입
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selected = e.target.files;
+        if (!selected || selected.length === 0) return;
+
+        const file = selected[0];
+
+        // 이미지 파일인지 확인
+        if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 삽입할 수 있습니다.');
+            if (imageInputRef.current) imageInputRef.current.value = "";
+            return;
+        }
+
+        // 파일 크기 체크
+        if (file.size > MAX_FILE_SIZE) {
+            alert(`${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 파일은 업로드할 수 없습니다.`);
+            if (imageInputRef.current) imageInputRef.current.value = "";
+            return;
+        }
+
+        try {
+            if (!accessToken) {
+                alert("로그인이 필요합니다.");
+                navigate("/signin");
+                return;
+            }
+
+            const res = await uploadAttachment(file, accessToken);
+
+            const serverUrlRaw: string | undefined = res.file_url || res.file;
+            const serverUrl = serverUrlRaw
+                ? (/^https?:\/\//i.test(serverUrlRaw) ? serverUrlRaw : `${BASE_URL}${serverUrlRaw}`)
+                : "";
+
+            // 마크다운 이미지 문법으로 삽입
+            const imageMarkdown = `\n![${res.filename || file.name}](${serverUrl})\n`;
+            setContent(prev => prev + imageMarkdown);
+
+        } catch (error) {
+            alert(`이미지 업로드 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        } finally {
+            if (imageInputRef.current) imageInputRef.current.value = "";
+        }
+    };
+
+    // MDEditor 커스텀 command: 이미지 삽입 버튼
+    const addImageCommand: ICommand = {
+        name: 'add-image',
+        keyCommand: 'add-image',
+        buttonProps: { 'aria-label': 'Add image' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M19 2H1c-.55 0-1 .45-1 1v14c0 .55.45 1 1 1h18c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zM6 5c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm12 11H2v-3l4-3 4 3 6-5 2 2v6z"/>
+            </svg>
+        ),
+        execute: () => {
+            imageInputRef.current?.click();
+        }
+    };
+
+    // 좌측 정렬 커맨드
+    const alignLeftCommand: ICommand = {
+        name: 'align-left',
+        keyCommand: 'align-left',
+        buttonProps: { 'aria-label': 'Align left' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm0 4h10v2H2V7zm0 4h16v2H2v-2zm0 4h10v2H2v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: left">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 가운데 정렬 커맨드
+    const alignCenterCommand: ICommand = {
+        name: 'align-center',
+        keyCommand: 'align-center',
+        buttonProps: { 'aria-label': 'Align center' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm3 4h10v2H5V7zm-3 4h16v2H2v-2zm3 4h10v2H5v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: center">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 우측 정렬 커맨드
+    const alignRightCommand: ICommand = {
+        name: 'align-right',
+        keyCommand: 'align-right',
+        buttonProps: { 'aria-label': 'Align right' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M2 3h16v2H2V3zm6 4h10v2H8V7zm-6 4h16v2H2v-2zm6 4h10v2H8v-2z"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '텍스트를 입력하세요';
+            api.replaceSelection(`<div style="text-align: right">\n\n${text}\n\n</div>`);
+        }
+    };
+
+    // 글자 색 지정 커맨드
+    const textColorCommand: ICommand = {
+        name: 'text-color',
+        keyCommand: 'text-color',
+        buttonProps: { 'aria-label': 'Text color' },
+        icon: (
+            <svg width="12" height="12" viewBox="0 0 20 20">
+                <path fill="currentColor" d="M10 2L3 18h3l1.5-4h5l1.5 4h3L10 2zm0 4.5L12.5 12h-5L10 6.5z"/>
+                <rect x="2" y="16" width="16" height="2" fill="red"/>
+            </svg>
+        ),
+        execute: (state, api) => {
+            const text = state?.selectedText || '색상을 변경할 텍스트';
+            const color = prompt('색상 코드를 입력하세요 (예: #FF0000, red):', '#FF0000');
+            if (color) {
+                api.replaceSelection(`<span style="color: ${color}">${text}</span>`);
+            }
+        }
     };
 
     return (
@@ -548,13 +552,47 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             <div className="postwrite-row">
                 <label>본문</label>
                 <div className="content-body">
-                    <ReactQuill
+                    <MDEditor
                         value={content}
                         onChange={handleChange}
-                        theme="snow"
-                        modules={modules}
-                        formats={formats}
-                        style={{ marginBottom: "16px" }}
+                        data-color-mode="light"
+                        height={400}
+                        preview="edit"
+                        previewOptions={{
+                            remarkPlugins: [remarkMath],
+                            rehypePlugins: [rehypeKatex],
+                        }}
+                        commands={[
+                            commands.bold,
+                            commands.italic,
+                            commands.strikethrough,
+                            commands.hr,
+                            commands.divider,
+                            commands.title,
+                            commands.link,
+                            addImageCommand,
+                            commands.divider,
+                            commands.quote,
+                            commands.code,
+                            commands.codeBlock,
+                            commands.divider,
+                            commands.unorderedListCommand,
+                            commands.orderedListCommand,
+                            commands.checkedListCommand,
+                            commands.divider,
+                            alignLeftCommand,
+                            alignCenterCommand,
+                            alignRightCommand,
+                            textColorCommand,
+                        ]}
+                    />
+                    {/* Hidden input for image upload */}
+                    <input
+                        type="file"
+                        ref={imageInputRef}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleImageUpload}
                     />
                 </div>
             </div>
@@ -570,9 +608,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 />
                 <div className="postwrite-files">
                     {existingAttachments
-                        .filter(a => attachmentIds.includes(a.id))
-                        .map(a => (
-                            <div className="postwrite-file-preview" key={`ex-${a.id}`}>
+                        .filter(a => attachments.some(att => att.url === a.url))
+                        .map((a, index) => (
+                            <div className="postwrite-file-preview" key={`ex-${index}`}>
                                 {isImageFileName(a.filename) ? (
                                     <img
                                         src={a.url}
@@ -588,7 +626,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => handleRemoveExistingAttachment(a.id)}
+                                    onClick={() => handleRemoveExistingAttachment(a.url)}
                                     style={{marginLeft: 8}}
                                 >
                                     삭제

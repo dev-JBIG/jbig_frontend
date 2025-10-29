@@ -1,7 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./Home.css"
+import "./Home-mobile.css"
 import MainLayout from "../Utils/MainLayout";
+import MobileNav from "../Utils/MobileNav";
 import PostList from "../Posts/PostList";
 import PostDetail from "../Posts/PostDetail";
 import PostWrite from "../Posts/PostWrite";
@@ -23,6 +25,7 @@ import {encryptUserId} from "../Utils/Encryption";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
+import {useStaffAuth} from "../Utils/StaffAuthContext";
 import $ from "jquery";
 
 const Home: React.FC = () => {
@@ -41,9 +44,11 @@ const Home: React.FC = () => {
 
     // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
+    const { staffAuth } = useStaffAuth();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         (async () => {
@@ -56,6 +61,54 @@ const Home: React.FC = () => {
             }
         })();
     }, []);
+
+    // Minnit 채팅 - 모바일에서는 메인 페이지(/)에서만, 데스크탑에서는 모든 페이지에서 로드
+    useEffect(() => {
+        const isHomePage = location.pathname === '/';
+        const isMobile = window.innerWidth <= 767;
+        const container = document.getElementById('minnit-chat-container');
+
+        if (!container) return;
+
+        const shouldShowChat = isHomePage || !isMobile;
+
+        if (shouldShowChat) {
+            // 이미 로드되어 있으면 다시 로드하지 않음
+            if (document.getElementById('minnit-chat-script')) return;
+
+            // 스크립트 로드
+            const script = document.createElement('script');
+            script.src = 'https://minnit.chat/js/chaticon.js';
+            script.defer = true;
+            script.id = 'minnit-chat-script';
+
+            // 아이콘 span 생성
+            const span = document.createElement('span');
+            span.setAttribute('data-icon-pixel-size', '80');
+            span.setAttribute('data-chat-small-medium-or-large', 'small');
+            span.setAttribute('data-circle-or-square', 'circle');
+            span.setAttribute('data-left-or-right', 'right');
+            span.setAttribute('data-chaturl', 'https://organizations.minnit.chat/515270226603216/c/Main');
+            span.setAttribute('data-hex-color-code', '000000');
+            span.setAttribute('data-icon-url', '');
+            span.className = 'minnit-chat-icon-sembed';
+            span.style.display = 'block';
+            span.id = 'minnit-chat-icon';
+
+            container.appendChild(script);
+            container.appendChild(span);
+        } else {
+            // 모바일에서 메인 페이지가 아니면 제거
+            container.innerHTML = '';
+        }
+
+        return () => {
+            // 클린업 - 모바일에서만
+            if (isMobile && container) {
+                container.innerHTML = '';
+            }
+        };
+    }, [location.pathname]);
 
     useEffect(() => {
         const openHandler = (e: any) => {
@@ -177,16 +230,18 @@ const Home: React.FC = () => {
                 return;
             }
 
+            const $calendar = ($("#calendar") as any);
+
             if (modalMode === "edit" && id) {
                 // 1) 서버 반영
                 const updated = await updateCalendarEvent(id, newEvent, accessToken);
 
-                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더)
-                ($("#calendar") as any).fullCalendar("removeEvents", id);
-                ($("#calendar") as any).fullCalendar("renderEvent", updated);
+                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더함)
+                $calendar.fullCalendar("removeEvents", id);
+                $calendar.fullCalendar("renderEvent", updated);
             } else {
                 const created = await createCalendarEvent(newEvent, accessToken);
-                ($("#calendar") as any).fullCalendar("renderEvent", created);
+                $calendar.fullCalendar("renderEvent", created);
             }
 
             setModalOpen(false);
@@ -218,6 +273,14 @@ const Home: React.FC = () => {
     return (
         <div className="home-wrapper">
             <header className="home-header">
+                <MobileNav
+                    boards={boards}
+                    isLogin={isLogin}
+                    quizURL={quizURL}
+                    totalCount={totalCount}
+                    navigate={navigate}
+                    staffAuth={staffAuth}
+                />
                 <div className="logo" onClick={() => navigate('/')}>JBIG</div>
                 <div className="user-info-wrapper" ref={dropdownRef}>
                     {userName ? (
@@ -274,10 +337,12 @@ const Home: React.FC = () => {
                                 <AwardsSection/>
                             </div>
                             <div className="calendar-section-wrapper">
-                                <Calendar/>
-                                <span className="add-event-text-home" onClick={handleAddEvent}>
-                                    일정 추가
-                                </span>
+                                <Calendar staffAuth={staffAuth}/>
+                                {staffAuth && (
+                                    <span className="add-event-text-home" onClick={handleAddEvent}>
+                                        일정 추가
+                                    </span>
+                                )}
                             </div>
                             <PostList boards={boards} isHome={true}/>
                         </MainLayout>

@@ -11,18 +11,22 @@ import {deleteCalendarEvent, fetchCalendarEvents} from "../../../API/req";
 import {useUser} from "../UserContext";
 import {useNavigate} from "react-router-dom";
 
-const Calendar: React.FC = () => {
+interface CalendarProps {
+    staffAuth: boolean;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
     const { signOutLocal, accessToken } = useUser();
 
     const navigate = useNavigate();
 
     useEffect(() => {
         $(document).on("show.bs.popover", "[data-toggle='popover']", function (this: HTMLElement) {
-            // 현재 트리거(this)를 제외한 다른 popover는 모두 닫기
+            // 현재 트리거(this)를 제외한 다른 popover는 모두 닫음
             ($("[data-toggle='popover']").not(this) as any).popover("hide");
         });
 
-        // 바깥 클릭 시 닫기
+        // 바깥 클릭 시 닫음
         const handler = (e: any) => {
             if (
                 !$(e.target).closest(".popover").length &&
@@ -62,63 +66,90 @@ const Calendar: React.FC = () => {
                     eventClick: function (calEvent: any, jsEvent: MouseEvent) {
                         jsEvent.preventDefault();
 
-                        Swal.fire({
-                            title: `${calEvent.title}`,
-                            text: "무엇을 하시겠습니까?",
-                            icon: "question",
-                            showCancelButton: true,
-                            showDenyButton: true,
-                            confirmButtonText: "수정",
-                            denyButtonText: "삭제",
-                            cancelButtonText: "취소",
-                            customClass: {
-                                confirmButton: "btn btn-primary",
-                                denyButton: "btn btn-danger",
-                                cancelButton: "btn btn-secondary"
-                            },
-                            buttonsStyling: true
-                        }).then(async (result: SweetAlertResult) => {
-                            if (result.isConfirmed) {
-                                const payload = {
-                                    id: calEvent.id,
-                                    title: calEvent.title,
-                                    description: calEvent.description || '',
-                                    color: calEvent.color || '#3788d8',
-                                    allDay: !!calEvent.allDay,
-                                    start: calEvent.start ? calEvent.start.toDate() : null,
-                                    end: calEvent.end ? calEvent.end.toDate() : null,
-                                };
+                        // 시간 포맷 (시작 ~ 종료)
+                        const start = calEvent.start ? moment(calEvent.start).format("YYYY-MM-DD HH:mm") : "";
+                        const end = calEvent.end ? moment(calEvent.end).format("YYYY-MM-DD HH:mm") : "";
+                        const timeText = start && end ? `${start} ~ ${end}` : start || end;
 
-                                window.dispatchEvent(new CustomEvent('OPEN_EVENT_MODAL', {
-                                    detail: {mode: 'edit', event: payload}
-                                }));
-                                // 팝오버 닫기
-                                ($("[data-toggle='popover']") as any).popover("hide");
-                            } else if (result.isDenied) {
-                                const removeKey = calEvent.id ?? calEvent._id;
-
-                                if (!accessToken) {
-                                    alert("로그인이 필요합니다.");
-                                    signOutLocal();
-                                    navigate("/signin");
-                                    return;
+                        if (!staffAuth) {
+                            // 일반 사용자: 일정 내용만 보여줌
+                            Swal.fire({
+                                title: calEvent.title,
+                                html: `
+                                    <div style="text-align: left; margin-top: 10px;">
+                                        <strong>시간:</strong> ${timeText}<br/>
+                                        <strong>설명:</strong> ${calEvent.description || "없음"}
+                                    </div>
+                                `,
+                                confirmButtonText: "확인",
+                                customClass: {
+                                    confirmButton: "btn btn-primary"
                                 }
+                            });
+                        } else {
+                            // 스태프: 수정/삭제 버튼 제공
+                            Swal.fire({
+                                title: calEvent.title,
+                                html: `
+                                    <div style="text-align: left; margin-top: 10px;">
+                                        <strong>시간:</strong> ${timeText}<br/>
+                                        <strong>설명:</strong> ${calEvent.description || "없음"}
+                                    </div>
+                                `,
+                                showCancelButton: true,
+                                showDenyButton: true,
+                                confirmButtonText: "수정",
+                                denyButtonText: "삭제",
+                                cancelButtonText: "취소",
+                                customClass: {
+                                    confirmButton: "btn btn-primary",
+                                    denyButton: "btn btn-danger",
+                                    cancelButton: "btn btn-secondary"
+                                },
+                                buttonsStyling: true
+                            }).then(async (result: SweetAlertResult) => {
+                                if (result.isConfirmed) {
+                                    const payload = {
+                                        id: calEvent.id,
+                                        title: calEvent.title,
+                                        description: calEvent.description || '',
+                                        color: calEvent.color || '#3788d8',
+                                        allDay: !!calEvent.allDay,
+                                        start: calEvent.start ? calEvent.start.toDate() : null,
+                                        end: calEvent.end ? calEvent.end.toDate() : null,
+                                    };
 
-                                try {
-                                    await deleteCalendarEvent(removeKey, accessToken);
-                                    ($("#calendar") as any).fullCalendar("removeEvents", removeKey); // UI 반영
+                                    window.dispatchEvent(new CustomEvent('OPEN_EVENT_MODAL', {
+                                        detail: {mode: 'edit', event: payload}
+                                    }));
+                                    // 팝오버 닫음
                                     ($("[data-toggle='popover']") as any).popover("hide");
-                                } catch (err) {
-                                    console.error("이벤트 삭제 실패:", err);
-                                    alert("이벤트 삭제 중 오류가 발생했습니다.");
+                                } else if (result.isDenied) {
+                                    const removeKey = calEvent.id ?? calEvent._id;
+
+                                    if (!accessToken) {
+                                        alert("로그인이 필요합니다.");
+                                        signOutLocal();
+                                        navigate("/signin");
+                                        return;
+                                    }
+
+                                    try {
+                                        await deleteCalendarEvent(removeKey, accessToken);
+                                        ($("#calendar") as any).fullCalendar("removeEvents", removeKey); // UI 반영함
+                                        ($("[data-toggle='popover']") as any).popover("hide");
+                                    } catch (err) {
+                                        console.error("이벤트 삭제 실패:", err);
+                                        alert("이벤트 삭제 중 오류가 발생했습니다.");
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     },
                     eventRender: function (event: any, element: any) {
                         element.attr("data-toggle", "popover");
 
-                        // 기본 시간/타이틀 제거
+                        // 기본 시간/타이틀 제거함
                         element.find(".fc-time").remove();
                         element.find(".fc-title").html("");
 
@@ -152,7 +183,7 @@ const Calendar: React.FC = () => {
                             setTimeout(() => { ($(this) as any).popover("toggle"); }, 0);
                         });
 
-                        // 캘린더 셀 내부에는 title만 표시
+                        // 캘린더 셀 내부에는 title만 표시함
                         element.find(".fc-title").append(`
                             <div class="fc-event-title">${event.title}</div>
                         `);
@@ -164,7 +195,7 @@ const Calendar: React.FC = () => {
         };
 
         loadEvents();
-    }, []);
+    }, [staffAuth, accessToken, signOutLocal, navigate]);
 
     return (
         <div style={{ padding: "30px 0 0 0", width: "100%" }}>

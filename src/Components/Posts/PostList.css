@@ -1,181 +1,147 @@
+/* 적응형 PostList 스타일 - 미니멀리즘 */
+
 .postlist-container {
-    position: relative;
+    width: 100%;
 }
 
+/* 헤더 */
 .postlist-header {
     position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: var(--space-lg);
 }
 
 .postlist-header h2 {
     margin: 0;
-    font-size: 20px;
-    padding: 10px 0 20px 0;
-    font-weight: bold;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    padding: var(--space-md) 0;
+    text-align: center;
 }
 
 .postlist-header h2:not(.home) {
-    padding: 10px 0 40px 0;
+    padding: var(--space-md) 0 var(--space-xl) 0;
 }
 
+/* 검색 폼 - 모바일에서는 하단 배치 */
 .list-search-form {
-    position: absolute;
-    right: 90px;
-    top: 80%;
-    transform: translateY(-50%);
     display: flex;
-    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);
 }
 
 .list-search-input {
-    padding: 6px 10px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-right: none; /* 버튼과 맞닿는 부분은 제거 */
-    border-radius: 4px 0 0 4px;
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    font-size: var(--font-size-sm);
     outline: none;
-    width: 160px;
+    transition: border-color var(--transition-fast);
+}
+
+.list-search-input:focus {
+    border-color: var(--color-primary);
 }
 
 .list-search-button {
-    padding: 4px 14px;
-    font-size: 14px;
-    border: 1px solid #3563e9;
-    border-radius: 0 4px 4px 0;
-    background: #3563e9;
-    color: #fff;
+    padding: var(--space-sm) var(--space-lg);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    border: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color var(--transition-fast);
 }
 
 .list-search-button:hover {
-    background: #264bcc;
+    background-color: var(--color-primary-hover);
 }
 
-
+/* 페이지당 항목 수 선택 */
 .perpage-select {
-    position: absolute;
-    right: 0;
-    top: 80%;
-    transform: translateY(-50%);
-    padding: 5px 8px;
-    font-size: 14px;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    outline: none;
+    margin-bottom: var(--space-md);
 }
 
-.postlist-table {
-    width: 100%;
-    border-collapse: collapse;
-    border-top: 2px solid #000;
-    table-layout: fixed;
-}
+/* 모바일 스타일은 PostList-mobile.css에서 import */
 
-.postlist-table .th-id { width: 40px; }
-.postlist-table .th-title { width: 50%; }
-.postlist-table .th-author { width: 80px; }
-.postlist-table .th-date { width: 60px; }
-.postlist-table .th-views { width: 40px; }
-.postlist-table .th-likes { width: 40px; }
-
-.postlist-table th,
-.postlist-table td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.postlist-table th {
-    font-weight: bold;
-}
-
-/* 리스트 정렬 */
-.th-id {
-    width: 60px;
-}
-.th-title {
-    width: 35%;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.th-author {
-    width: 150px;
-}
-.th-date {
-    width: 100px;
-    white-space: nowrap;
-}
-.th-views {
-    width: 90px;
-}
-.th-likes {
-    width: 90px;
-}
-
-
-.postlist-table tbody tr {
-    background-color: #fafafa;
+/* 더보기 링크 */
+.more-link {
+    display: block;
+    text-align: right;
+    margin-top: var(--space-md);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: color var(--transition-fast);
 }
 
-.postlist-table tbody tr:hover {
-    background-color: #f4f8ff;
+.more-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
 }
 
-.postlist-table .title-cell {
-    text-align: left;
-}
-
+/* 글쓰기 버튼 */
 .write-button-row {
-    width: 100%;
     display: flex;
     justify-content: flex-end;
+    margin-top: var(--space-lg);
 }
 
 .write-button {
-    padding: 6px 24px;
-    background: #3A75FF;
-    color: #fff;
+    padding: var(--space-md) var(--space-xl);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
     border: none;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
-    font-size: 16px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
-    transition: background 0.15s;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
 }
+
 .write-button:hover {
-    background: #194fa6;
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-lg);
 }
 
-.author-cell{
-    color: #000 !important;
-    text-decoration: none;
-    font-weight: 500;
+/* 공지사항 스타일 */
+.announcement-row {
+    background-color: #fffbf0 !important;
+    border-top: 1px solid #ffd700 !important;
+    border-bottom: 1px solid #ffd700 !important;
 }
 
-.author-cell:hover,
-.author-cell:focus {
-    text-decoration: underline;
-    outline: none;
+.announcement-row:hover {
+    background-color: #fff8e1 !important;
 }
 
-
-.author-cell .author-text {
+.announcement-badge {
     display: inline-block;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: bottom;
+    padding: 2px 8px;
+    background-color: #ff6b6b;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
 }
 
-.author-text:hover {
-    text-decoration: underline;
+.announcement-badge.mobile-only {
+    display: none;
+}
+
+.announcement-title {
+    font-weight: 600;
+    color: #000;
 }
 
 /* 페이지네이션 */
@@ -183,54 +149,184 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 6px;
-    margin-top: 16px;
+    gap: var(--space-xs);
+    margin-top: var(--space-xl);
     flex-wrap: wrap;
 }
 
 .pagination-btn {
-    padding: 6px 10px;
-    min-width: 32px;
-    background-color: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 var(--space-sm);
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
     cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .pagination-btn:hover:not(:disabled) {
-    background-color: #f0f0f0;
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-primary);
 }
 
 .pagination-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 .pagination-btn.active {
-    font-weight: bold;
-    background-color: #3563e9;
-    color: white;
-    border-color: #3563e9;
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
 }
 
-.pagination-btn.active:hover {
-    background-color: #2a4dcc;
-    border-color: #2a4dcc;
-}
+/* PC 스타일 (768px 이상) */
+@media (min-width: 768px) {
+    .postlist-header h2 {
+        font-size: var(--font-size-2xl);
+    }
 
-.more-link {
-    position: absolute;
-    right: 0;
-    top: 80%;
-    transform: translateY(-50%);
-    color: #3563e9;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 14px;
-    user-select: none;
-}
-.more-link:hover {
-    text-decoration: underline;
+    /* 검색 폼 - PC에서는 우측 상단 */
+    .list-search-form {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-bottom: 0;
+        width: auto;
+    }
+
+    .list-search-input {
+        width: 180px;
+    }
+
+    /* PC에서 페이지당 항목 수 선택 숨김 */
+    .perpage-select {
+        display: none;
+    }
+
+    .more-link {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    /* PC 테이블 레이아웃 */
+    .postlist-table {
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+        border-top: 2px solid var(--color-border-dark);
+    }
+
+    .postlist-table thead {
+        display: table-header-group;
+    }
+
+    .postlist-table tbody {
+        display: table-row-group;
+        gap: 0;
+    }
+
+    .postlist-table tbody tr {
+        display: table-row;
+        padding: 0;
+        background-color: var(--color-bg-secondary);
+        border: none;
+        border-radius: 0;
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .postlist-table tbody tr:hover {
+        background-color: var(--color-bg-tertiary);
+        border-color: var(--color-border-light);
+        box-shadow: none;
+    }
+
+    .postlist-table th,
+    .postlist-table td {
+        display: table-cell !important;
+        padding: var(--space-md);
+        text-align: center;
+        vertical-align: middle;
+        border: none;
+    }
+
+    .postlist-table th {
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background-color: transparent;
+    }
+
+    .th-id {
+        width: 60px;
+    }
+
+    .th-title {
+        width: 35%;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .th-author {
+        width: 150px;
+    }
+
+    .th-date {
+        width: 100px;
+        white-space: nowrap;
+    }
+
+    .th-views,
+    .th-likes {
+        width: 90px;
+    }
+
+    .postlist-table tbody .title-cell {
+        text-align: left !important;
+        font-size: var(--font-size-base);
+        margin-bottom: 0;
+        word-break: normal;
+        display: table-cell !important;
+        padding: var(--space-md) !important;
+    }
+
+    .postlist-table tbody .author-cell {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        display: table-cell !important;
+        padding: var(--space-md) !important;
+    }
+
+    .author-text {
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* 페이지네이션과 글쓰기 버튼 레이아웃 */
+    .pagination-row {
+        position: relative;
+    }
+
+    .write-button-row {
+        position: absolute;
+        right: 0;
+        top: 0;
+        margin-top: 0;
+    }
+
+    .pagination-btn {
+        min-width: 40px;
+        height: 40px;
+    }
 }

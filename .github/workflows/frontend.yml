@@ -6,16 +6,32 @@ on:
   pull_request:
     branches: ["main"]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: frontend-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
+  ci:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: build
   deploy:
     name: Deploy to Server
     needs: ci
@@ -27,7 +43,6 @@ jobs:
         with:
           name: frontend-build
           path: build
-
       - name: Create build archive
         run: |
           tar czf frontend_build.tar.gz -C build .
@@ -39,7 +54,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "frontend_build.tar.gz"
-          target: $HOME/releases/
+          target: $HOME/${{ secrets.DEPLOY_PATH }}/releases/
 
       - name: Deploy new release on server
         uses: appleboy/ssh-action@master
@@ -52,10 +67,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            APP_BASE="$HOME/${DEPLOY_PATH}/frontend"
-            APP_CURRENT="$HOME/${DEPLOY_PATH}/frontend_current"
-            RELEASES_DIR=$HOME/releases"
-            TIMESTAMP=${date +%Y%m%d%H%M%S)
+            APP_BASE="${DEPLOY_PATH}"
+            APP_CURRENT="${DEPLOY_PATH}_current"
+            RELEASES_DIR="${DEPLOY_PATH}/releases"
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
             NEW_RELEASE="$APP_BASE/$TIMESTAMP"
 
             mkdir -p "$NEW_RELEASE"

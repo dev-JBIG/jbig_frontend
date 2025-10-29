@@ -20,6 +20,12 @@ export interface Attachment {
     fileSize?: number;
 }
 
+// API에서 받는 첨부파일 객체 타입
+export interface AttachmentData {
+    url: string;
+    name: string;
+}
+
 export interface Comment {
     id: number;
     user_id: string;
@@ -50,7 +56,8 @@ export interface PostDetailData {
     author_semester: number;
     board: string;
     title: string;
-    content_html_url: string;
+    content_html: string;
+    content_md: string;
     author: string;
     date: string;
     updatedAt: string;

@@ -548,7 +548,18 @@ export const uploadAttachment = async (file: File, token: String) => {
             }
         );
 
-        return response.data; // 서버에서 반환하는 데이터 (업로드된 파일 경로 및 첨부파일 ID 등)
+        // 서버에서 반환하는 데이터에 file_url 필드 추가 (file 필드와 동일한 값)
+        const data = response.data;
+        if (data.file && !data.file_url) {
+            data.file_url = data.file;
+        }
+        
+        // filename 필드가 없으면 원본 파일명으로 설정
+        if (!data.filename) {
+            data.filename = file.name;
+        }
+        
+        return data; // 서버에서 반환하는 데이터 (업로드된 파일 경로 및 첨부파일 ID 등)
     } catch (error: any) {
         console.error(error);
 
@@ -649,8 +660,8 @@ export const createPost = async (
     boardId: number,
     postData: {
         title: string;
-        content_html: string;
-        attachment_ids: number[];
+        content_md: string;
+        attachment_paths: { url: string; name: string; }[];
     },
     token: string
 ) => {
@@ -721,9 +732,8 @@ export const modifyPost = async (
     postId: number,
     payload: {
         title: string;
-        content_html: string;
-        attachment_ids: number[];
-        attachment_ids_to_delete: number[];
+        content_md: string;
+        attachment_paths: { url: string; name: string; }[];
         board_id?: number;
     },
     token: string
