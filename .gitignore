@@ -1,2 +1,6 @@
 .*/
 
+# Allow GitHub Actions workflows
+!/.github/
+!/.github/workflows/
+

@@ -1,0 +1,105 @@
+name: Django CI
+
+on:
+  push:
+    paths:
+      - "jbig_backend/**"
+      - ".github/workflows/django.yml"
+  pull_request:
+    paths:
+      - "jbig_backend/**"
+      - ".github/workflows/django.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: django
+          POSTGRES_PASSWORD: django
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U django -d testdb"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+
+    env:
+      SERVER_HOST: 133.223.28.75
+      SERVER_PORT: 3001
+      DJANGO_SETTINGS_MODULE: config.settings.ci
+      DATABASE_URL: postgres://django:django@localhost:5432/testdb
+      PYTHONUTF8: "1"
+      SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY || 'insecure-ci-key' }}
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('jbig_backend/**/requirements*.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Install dependencies
+        working-directory: jbig_backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff black isort mypy bandit pip-audit coverage pytest
+
+      - name: Lint (ruff, black, isort)
+        working-directory: jbig_backend
+        run: |
+          ruff check .
+          black --check .
+          isort --check-only .
+
+      - name: Type check (mypy)
+        working-directory: jbig_backend
+        run: |
+          mypy --install-types --non-interactive .
+
+      - name: Security (pip-audit, bandit)
+        working-directory: jbig_backend
+        run: |
+          pip-audit -r requirements.txt
+          bandit -r . -x tests
+
+      - name: Django checks
+        working-directory: jbig_backend
+        run: |
+          python manage.py check --deploy
+          python manage.py makemigrations --check --dry-run
+
+      - name: Migrate and collectstatic
+        working-directory: jbig_backend
+        env:
+          AWS_ACCESS_KEY_ID: dummy
+          AWS_SECRET_ACCESS_KEY: dummy
+        run: |
+          python manage.py migrate --noinput
+          python manage.py collectstatic --noinput
+
+      - name: Run tests with coverage
+        working-directory: jbig_backend
+        run: |
+          coverage run -m pytest -q
+          coverage xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: jbig_backend/coverage.xml

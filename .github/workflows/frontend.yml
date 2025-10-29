@@ -1,0 +1,72 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: build
+
+      - name: Create build archive
+        run: |
+          tar czf frontend_build.tar.gz -C build .
+
+      - name: Upload build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "frontend_build.tar.gz"
+          target: $HOME/releases/
+
+      - name: Deploy new release on server
+        uses: appleboy/ssh-action@master
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          FRONTEND_SERVICE: ${{ secrets.FRONTEND_SERVICE }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            APP_BASE="$HOME/${DEPLOY_PATH}/frontend"
+            APP_CURRENT="$HOME/${DEPLOY_PATH}/frontend_current"
+            RELEASES_DIR=$HOME/releases"
+            TIMESTAMP=${date +%Y%m%d%H%M%S)
+            NEW_RELEASE="$APP_BASE/$TIMESTAMP"
+
+            mkdir -p "$NEW_RELEASE"
+            tar xzf "$RELEASES_DIR/frontend_build.tar.gz" -C "$NEW_RELEASE"
+
+            ln -sfn "$NEW_RELEASE" "$APP_CURRENT"
+
+            if [ -n "$FRONTEND_SERVICE" ]; then
+              sudo systemctl restart "$FRONTEND_SERVICE"
+            fi
+
+            sudo systemctl reload nginx
+
+            echo "Deployed new frontend version: $TIMESTAMP"
