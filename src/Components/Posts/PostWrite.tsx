@@ -128,7 +128,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             navigate("/signin")
             return;
         }
-    }, [accessToken, navigate]);
+    }, [accessToken, navigate, signOutLocal]);
 
     useEffect(() => {
         if (!isEdit) return;

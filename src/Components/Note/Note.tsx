@@ -111,7 +111,7 @@ const Note: React.FC = () => {
         let pid = params.get("pageId");
         try { if (pid) pid = decodeURIComponent(pid); } catch {}
         loadNotionPage(pid ?? null, true);
-    }, [authReady, user, accessToken, navigate, loadNotionPage]);
+    }, [authReady, user, accessToken, navigate, loadNotionPage, signOutLocal]);
 
     // 내부 링크 클릭 처리
     useEffect(() => {

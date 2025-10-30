@@ -74,7 +74,7 @@ const User: React.FC = () => {
             setLoading(false);
         };
         run();
-    }, [userId, accessToken]);
+    }, [userId, accessToken, navigate]);
 
     // 내 계정이 아니면 비밀번호 변경 탭 숨김
     useEffect(() => {

@@ -45,7 +45,8 @@ jobs:
           path: build
       - name: Create build archive
         run: |
-          tar czf frontend_build.tar.gz -C build .
+          tar czf /tmp/build.tar.gz -C build .
+          mv /tmp/build.tar.gz build.tar.gz
 
       - name: Upload build to server
         uses: appleboy/scp-action@master
@@ -53,28 +54,28 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend_build.tar.gz"
-          target: $HOME/${{ secrets.DEPLOY_PATH }}/releases/
+          source: "build.tar.gz"
+          target: $HOME/releases/
 
       - name: Deploy new release on server
         uses: appleboy/ssh-action@master
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          FRONTEND_SERVICE: ${{ secrets.FRONTEND_SERVICE }}
+          FRONTEND_SERVICE: nginx
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            APP_BASE="${DEPLOY_PATH}"
-            APP_CURRENT="${DEPLOY_PATH}_current"
-            RELEASES_DIR="${DEPLOY_PATH}/releases"
+            APP_BASE="$HOME/${DEPLOY_PATH}"
+            APP_CURRENT="$HOME/${DEPLOY_PATH}/current"
+            RELEASES_DIR="$HOME/releases"
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
             NEW_RELEASE="$APP_BASE/$TIMESTAMP"
 
             mkdir -p "$NEW_RELEASE"
-            tar xzf "$RELEASES_DIR/frontend_build.tar.gz" -C "$NEW_RELEASE"
+            tar xzf "$RELEASES_DIR/build.tar.gz" -C "$NEW_RELEASE"
 
             ln -sfn "$NEW_RELEASE" "$APP_CURRENT"
 

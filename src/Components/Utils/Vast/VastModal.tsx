@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import './VastModal.css';
 import { vastCreateInstance, vastDeleteInstance, vastGetInstance, vastListOffers, VastOfferFilter } from '../../../API/vast';
@@ -120,7 +120,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
         setExpiresAt(Date.now() + 30 * 60 * 1000);
     };
 
-    const handleTerminate = async () => {
+    const handleTerminate = useCallback(async () => {
         if (!instanceId) { onClose(); return; }
         try {
             setLoading(true);
@@ -131,13 +131,13 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [instanceId, onClose]);
 
     useEffect(() => {
         if (expiresAt && remainingSeconds === 0) {
             handleTerminate();
         }
-    }, [remainingSeconds, expiresAt]);
+    }, [remainingSeconds, expiresAt, handleTerminate]);
 
     return ReactDOM.createPortal(
         <div className="vast-modal-backdrop">
