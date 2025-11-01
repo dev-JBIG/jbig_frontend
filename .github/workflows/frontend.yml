@@ -33,7 +33,6 @@ jobs:
   deploy:
     name: Deploy to Server
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
