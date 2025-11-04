@@ -24,17 +24,17 @@ interface PostWriteProps {
     boards?: Section[];
 }
 
-const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const BASE_URL = ((): string => {
-    if (SERVER_HOST && SERVER_PORT) {
-        return `http://${SERVER_HOST}:${SERVER_PORT}`;
-    }
-    if (typeof window !== 'undefined' && window.location?.origin) {
-        return window.location.origin;
-    }
-    return "";
-})();
+//const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
+//const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
+//const BASE_URL = ((): string => {
+//    if (SERVER_HOST && SERVER_PORT) {
+//        return `http://${SERVER_HOST}:${SERVER_PORT}`;
+//    }
+//    if (typeof window !== 'undefined' && window.location?.origin) {
+//        return window.location.origin;
+//    }
+//    return "";
+//})();
 
 /**
  * 해당 컴포넌트에서는 게시물 작성과, 게시물 수정을 담당합니다.
@@ -45,7 +45,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [files, setFiles] = useState<UploadFile[]>([]);
-    const [attachments, setAttachments] = useState<{ url: string; name: string; }[]>([]);
+    const [attachments, setAttachments] = useState<{ path: string; name: string; }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,14 +69,32 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isImageFileName = (name: string) =>
         /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
 
-    const toAbsUrl = (u: string) => /^https?:\/\//i.test(u) ? u : `${BASE_URL}${u}`;
+   // const toAbsUrl = (u: string) => /^https?:\/\//i.test(u) ? u : `${BASE_URL}${u}`;
 
-    const handleRemoveExistingAttachment = (url: string) => {
-        setAttachments(prev => prev.filter(x => x.url !== url));
+
+
+    const handleRemoveExistingAttachment = (urlToRemove: string) => {
+        // urlToRemove 에 해당하는 path 찾기
+        const attachmentToRemove = existingAttachments.find(a => a.url === urlToRemove);
+        if (!attachmentToRemove) return; // 해당 URL 없음
+
+        // URL에서 path(Key) 추출 (useEffect와 동일 로직)
+        let keyToRemove = "";
+        try {
+            const urlObj = new URL(urlToRemove);
+            keyToRemove = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
+        } catch (e) {
+            console.error("Error parsing URL to remove:", urlToRemove, e);
+            return; // 파싱 실패 시 중단
+        }
+
+        // 찾은 path 기준으로 attachments 상태에서 제거
+        setAttachments(prev => prev.filter(att => att.path !== keyToRemove));
     };
 
+
     const keptExistingCount = React.useMemo(
-        () => existingAttachments.filter(a => attachments.some(att => att.url === a.url)).length,
+        () => existingAttachments.filter(a => attachments.some(att => att.name === a.filename)).length,
         [existingAttachments, attachments]
     );
     const totalAttached = keptExistingCount + files.length;
@@ -128,7 +146,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             navigate("/signin")
             return;
         }
-    }, [accessToken, navigate]);
+    }, [accessToken, navigate, signOutLocal]);
 
     useEffect(() => {
         if (!isEdit) return;
@@ -157,30 +175,42 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
                 setSelectedBoard({ id: boardIdFromData, name: boardNameFromData } as Board);
 
-                // attachment_paths 배열에서 첨부파일 정보 처리
-                const attachmentPaths = Array.isArray(src.attachment_paths)
+
+                // attachment_paths 배열에서 첨부파일 정보 처리 (백엔드에서 {url, name}으로 옴)
+                const attachmentPathsFromAPI = Array.isArray(src.attachment_paths)
                     ? src.attachment_paths
                     : [];
 
-                // 객체 배열인지 문자열 배열인지 확인
-                const processedAttachments = attachmentPaths.map((item: { url: string; name: string; } | string, index: number) => {
-                    if (typeof item === 'string') {
-                        // 기존 문자열 형태인 경우
-                        const filename = item.split('/').pop() || `file_${index}`;
-                        return { url: item, name: filename };
-                    } else {
-                        // 새로운 객체 형태인 경우
-                        return { url: item.url, name: item.name };
-                    }
+                // API 응답({url, name})을 우리 상태({path, name}) 형식으로 변환
+                const attachmentsForState = attachmentPathsFromAPI.map((item: { url: string; name: string; }, index: number) => {
+                    // 중요: Presigned URL에서 'Key'(path)를 추출해야 함.
+                    // URL 형식: https://.../버킷이름/Key?파라미터들
+                    let key = "";
+                    try {
+                        const urlObj = new URL(item.url);
+                        // 첫 번째 '/' 이후부터 '?' 전까지가 Key
+                        key = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
+                     } catch (e) {
+                         console.error("Error parsing attachment URL:", item.url, e);
+                        key = `error_parsing_${index}`; // 파싱 실패 시 임시값
+                     }
+                    return { path: key, name: item.name };
                 });
 
-                const atts = processedAttachments.map((att: { url: string; name: string; }) => ({
+                // 기존 첨부파일 목록 (미리보기 및 삭제용) 상태 설정
+                const existingAttsForDisplay = attachmentPathsFromAPI.map((att: { url: string; name: string; size:number | null }) => ({
                     filename: att.name,
-                    url: att.url,
+                    url: att.url, // 이건 표시용이므로 URL 그대로 사용
+                    sizeBytes: att.size || undefined // 백엔드가 준 size 사용
                 }));
-                const attsWithSize = await enrichWithSizes(atts);
-                setExistingAttachments(attsWithSize);
-                setAttachments(processedAttachments);
+               // const attsWithSize = await enrichWithSizes(existingAttsForDisplay); // 사이즈 가져오기
+                setExistingAttachments(existingAttsForDisplay);
+
+                // DB 저장용 상태 설정 ({ path, name } 형식)
+                setAttachments(attachmentsForState);
+
+
+
 
                 // 본문 마크다운 로드
                 setContent(src.content_md || "");
@@ -200,7 +230,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (!selected) return;
 
         // 현재 남은 칸 계산
-        const keptExistingCount = existingAttachments.filter(a => attachments.some(att => att.url === a.url)).length;
+        const keptExistingCount = existingAttachments.filter(a => attachments.some(att => att.name === a.filename)).length;
         let remaining = MAX_FILES - (keptExistingCount + files.length);
 
         if (remaining <= 0) {
@@ -234,21 +264,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     return;
                 }
 
-                const res = await uploadAttachment(file, accessToken); // { id, file_url, filename }
+////
+                const res = await uploadAttachment(file, accessToken); // 이제 { path, name, message? } 반환
 
-                // 서버가 절대 URL을 주지만, 혹시 상대경로면 보정
-                const serverUrlRaw: string | undefined = res.file_url || res.file;
-                const serverUrl = serverUrlRaw
-                    ? (/^https?:\/\//i.test(serverUrlRaw) ? serverUrlRaw : `${BASE_URL}${serverUrlRaw}`)
-                    : "";
+                // 업로드 실패 시 메시지 확인 (예: 용량 초과 등 서버 측 검증)
+                if (res.message || !res.path) {
+                    alert(`"${file.name}" 업로드 실패: ${res.message || '알 수 없는 오류'}`);
+                    continue; // 다음 파일로 넘어감
+                }
 
-                // 미리보기는 이미지면 blob URL 우선
-                const previewUrl = file.type.startsWith("image/")
-                    ? URL.createObjectURL(file)
-                    : serverUrl;
+                // 미리보기 URL 생성 (이미지 파일인 경우)
+                const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
 
-                setFiles(prev => [...prev, { file, url: previewUrl, id: res.id }]);
-                setAttachments(prev => [...prev, { url: serverUrl, name: res.filename || file.name }]);
+                // setFiles 상태 업데이트 (미리보기용) - res.id 대신 file.name 또는 임의의 키 사용
+                setFiles(prev => [...prev, { file, url: previewUrl || "", id: Date.now() }]); // << 이렇게 수정
+
+                // setAttachments 상태 업데이트 (DB 저장용) - path와 name 사용
+                setAttachments(prev => [...prev, { path: res.path, name: res.name }]); 
 
                 remaining--;
                 if (remaining <= 0) break;
@@ -272,16 +304,28 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
 
     const handleRemoveFile = (idx: number) => {
+        let removedFileName = "";
+        // files 상태에서 제거하고 제거된 파일명 저장
         setFiles(prev => {
             const copy = [...prev];
-            const removed = copy.splice(idx, 1)[0];
-            // 업로드된 파일 URL이 있으면 attachments에서도 제거
-            if (removed?.url && !removed.url.startsWith('blob:')) {
-                setAttachments(attachments => attachments.filter(att => att.url !== removed.url));
+            const removedItem = copy.splice(idx, 1)[0];
+            if (removedItem) {
+                removedFileName = removedItem.file.name; // 파일명 저장
+                // Blob URL 해제 (메모리 누수 방지)
+                if (removedItem.url && removedItem.url.startsWith('blob:')) {
+                     URL.revokeObjectURL(removedItem.url);
+                }
             }
             return copy;
         });
+
+        // attachments 상태에서도 해당 파일명(name)을 가진 항목 제거
+        if (removedFileName) {
+            setAttachments(prev => prev.filter(att => att.name !== removedFileName));
+        }
     };
+
+
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -354,25 +398,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     };
 
 
-    // 수정 시, 기존 첨부파일의 사이즈 가져오기
-    const fetchSize = async (url: string): Promise<number | undefined> => {
-        try {
-            const res = await fetch(url, { method: "HEAD" });
-            const len = res.headers.get("content-length");
-            return len ? Number(len) : undefined;
-        } catch {
-            return undefined;
-        }
-    };
-
-    const enrichWithSizes = async (atts: {filename:string; url:string}[]) => {
-        return Promise.all(
-            atts.map(async a => {
-                const size = await fetchSize(toAbsUrl(a.url));
-                return { ...a, sizeBytes: size };
-            })
-        );
-    };
+    // 수정 시, 기존 첨부파일의 사이즈 가져오기 -> 백엔드가 처리하도록 변경
+  
 
     const formatBytes = (n?: number) => {
         if (!n && n !== 0) return "";
@@ -411,17 +438,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 navigate("/signin");
                 return;
             }
+//////////////////
+            const res = await uploadAttachment(file, accessToken); // { path, name, download_url,  message? } 반환
 
-            const res = await uploadAttachment(file, accessToken);
+            if (res.message || !res.path || !res.download_url) {
+                alert(`이미지 업로드 실패: ${res.message || '알 수 없는 오류'}`);
+                return; // 함수 종료
+            }
 
-            const serverUrlRaw: string | undefined = res.file_url || res.file;
-            const serverUrl = serverUrlRaw
-                ? (/^https?:\/\//i.test(serverUrlRaw) ? serverUrlRaw : `${BASE_URL}${serverUrlRaw}`)
-                : "";
+            // 수정 //
+            // NCP 공개 URL 대신, 백엔드가 준 Presigned Download URL 사용
+            // => DB에 임시 URL 대신 영구적인 'Key'를 저장하도록 특수 태그 사용
+            const serverUrl = `ncp-key://${res.path}`; // 예: ncp-key://uploads/2025/10/31...png
 
-            // 마크다운 이미지 문법으로 삽입
-            const imageMarkdown = `\n![${res.filename || file.name}](${serverUrl})\n`;
+            // 마크다운 이미지 문법으로 삽입 (res.filename 대신 res.name 사용)
+            const imageMarkdown = `\n![${res.name}](${serverUrl})\n`;
             setContent(prev => prev + imageMarkdown);
+
 
         } catch (error) {
             alert(`이미지 업로드 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
@@ -608,7 +641,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 />
                 <div className="postwrite-files">
                     {existingAttachments
-                        .filter(a => attachments.some(att => att.url === a.url))
+                        .filter(a => attachments.some(att => att.name === a.filename))
                         .map((a, index) => (
                             <div className="postwrite-file-preview" key={`ex-${index}`}>
                                 {isImageFileName(a.filename) ? (

@@ -530,49 +530,62 @@ export const fetchUserPosts = async (
 
 
 // 첨부파일 업로드
-export const uploadAttachment = async (file: File, token: String) => {
-    const formData = new FormData();
-    formData.append("file", file);
 
+// 첨부파일 업로드 (NCP Presigned URL 방식으로 변경)
+export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; download_url?: string; message?: string }> => {
+
+    // 1. Django 서버에 '업로드용 URL' 요청
+    let generateUrlResponse;
     try {
-        const response = await axios.post(
-            `${BASE_URL}/api/attachment/`,
-            formData,
+        generateUrlResponse = await axios.post(
+            `${BASE_URL}/api/boards/files/generate-upload-url/`, // 우리가 만든 새 API
+            { filename: file.name }, // 원본 파일명 전송
             {
                 headers: {
-                    Accept: "*/*",
-                    "Content-Type": "multipart/form-data",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, // 인증 토큰
                 },
-                withCredentials: true,
             }
         );
-
-        // 서버에서 반환하는 데이터에 file_url 필드 추가 (file 필드와 동일한 값)
-        const data = response.data;
-        if (data.file && !data.file_url) {
-            data.file_url = data.file;
-        }
-        
-        // filename 필드가 없으면 원본 파일명으로 설정
-        if (!data.filename) {
-            data.filename = file.name;
-        }
-        
-        return data; // 서버에서 반환하는 데이터 (업로드된 파일 경로 및 첨부파일 ID 등)
     } catch (error: any) {
-        console.error(error);
-
-        if (error.response && error.response.data) {
-            return {
-                message: error.response.data.detail || "파일 업로드 실패",
-            };
-        }
-
-        return {
-            message: "네트워크 오류 또는 서버 응답 없음",
+        console.error("Error getting upload URL:", error);
+        return { 
+            path: "", 
+            name: file.name,
+            download_url: "", 
+            message: error.response?.data?.error || "업로드 URL 요청에 실패했습니다." 
         };
     }
+
+    const { upload_url, file_key, download_url } = generateUrlResponse.data;
+
+    if (!upload_url || !file_key || !download_url) {
+        return { path: "", name: file.name, download_url: "", message: "서버에서 유효한 업로드 URL을 받지 못했습니다." };
+    }
+
+    // 2. 받은 'upload_url'로 NCP(S3)에 파일 직접 업로드 (PUT)
+    try {
+        await axios.put(
+            upload_url, // Django가 발급해준 임시 URL
+            file,       // 파일 객체 본문
+            {
+                headers: {
+                    "Content-Type": file.type || "application/octet-stream",
+                    // Presigned URL에는 별도 인증 헤더(Bearer)가 필요 없습니다.
+                },
+            }
+        );
+    } catch (error: any) {
+        console.error("Error uploading file to NCP:", error);
+        return { path: "", name: file.name, download_url: "", message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
+    }
+
+    // 3. 성공 시, 'createPost'가 필요한 { path: ..., name: ... } 객체 반환
+    return {
+        path: file_key,
+        name: file.name,
+        download_url: download_url
+    };
 };
 
 // 수상경력 html 불러오기
@@ -641,7 +654,7 @@ export const createPost = async (
     postData: {
         title: string;
         content_md: string;
-        attachment_paths: { url: string; name: string; }[];
+        attachment_paths: { path: string; name: string; }[];
     },
     token: string
 ) => {
@@ -713,7 +726,7 @@ export const modifyPost = async (
     payload: {
         title: string;
         content_md: string;
-        attachment_paths: { url: string; name: string; }[];
+        attachment_paths: { path: string; name: string; }[];
         board_id?: number;
     },
     token: string
