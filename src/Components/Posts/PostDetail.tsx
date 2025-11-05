@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
@@ -90,13 +90,13 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     }, []);
 
     const redirectedRef = useRef(false);
-    const safeAuthRedirect = () => {
+    const safeAuthRedirect = useCallback(() => {
         if (redirectedRef.current) return;
         redirectedRef.current = true;
 
         alert("접근 권한이 없습니다.");
         navigate(-1);
-    };
+    }, [navigate]);
 
     useEffect(() => {
         if (!authReady || !postId) return;
@@ -215,7 +215,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         };
 
         loadPost();
-    }, [authReady, accessToken, postId]);
+    }, [authReady, accessToken, postId, navigate, signOutLocal, staffAuth, username, safeAuthRedirect]);
 
    
 

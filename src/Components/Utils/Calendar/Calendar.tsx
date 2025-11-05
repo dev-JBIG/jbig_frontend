@@ -21,9 +21,9 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        $(document).on("show.bs.popover", "[data-toggle='popover']", function () {
+        $(document).on("show.bs.popover", "[data-toggle='popover']", function (this: HTMLElement) {
             // 현재 트리거(this)를 제외한 다른 popover는 모두 닫음
-            ($("[data-toggle='popover']").not(this) as any).popover("hide");
+            ($("[data-toggle='popover']").not(this as any) as any).popover("hide");
         });
 
         // 바깥 클릭 시 닫음

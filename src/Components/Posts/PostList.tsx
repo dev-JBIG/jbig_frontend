@@ -181,7 +181,12 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         q,
         page,
         effectivePerPage,
-        allBoardIds
+        allBoardIds,
+        accessToken,
+        signOutLocal,
+        navigate,
+        activeBoardID,
+        userId
     ]);
 
     const displayPosts = posts ?? [];

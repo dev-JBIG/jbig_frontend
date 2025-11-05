@@ -37,7 +37,7 @@ const EventModal: React.FC<EventModalProps> = ({ mode, initial, onClose, onSave 
                 setEnd(new Date(start.getTime() + 60 * 60 * 1000));
             }
         }
-    }, [start]);
+    }, [start, end, endManuallySet]);
 
     const handleAllDayChange = (isChecked: boolean) => {
         setAllDay(isChecked);

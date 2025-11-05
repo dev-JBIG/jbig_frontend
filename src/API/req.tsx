@@ -618,6 +618,26 @@ export async function fetchNotionHtml(fileName: string | null, accessToken: stri
     return res.text();
 }
 
+// Notion block map 불러오기 (react-notion용)
+// - 기본적으로 splitbee의 공개 워커 엔드포인트를 사용합니다
+// - 필요 시 환경변수로 베이스 URL을 오버라이드할 수 있습니다
+export async function fetchNotionBlockMap(pageId: string): Promise<any> {
+    const base = process.env.REACT_APP_NOTION_API_BASE || "https://notion-api.splitbee.io/v1/page";
+    const baseTrimmed = base.replace(/\/$/, "");
+    const url = `${baseTrimmed}/${pageId}`;
+
+    const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        credentials: "omit",
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to load Notion block map: ${res.status}`);
+    }
+
+    return res.json();
+}
+
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
     try {
