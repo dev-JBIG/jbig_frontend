@@ -1,0 +1,88 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  ci:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: build
+  deploy:
+    name: Deploy to Server
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: build
+      - name: Create build archive
+        run: |
+          tar czf /tmp/build.tar.gz -C build .
+          mv /tmp/build.tar.gz build.tar.gz
+
+      - name: Upload build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build.tar.gz"
+          target: $HOME/releases/
+
+      - name: Deploy new release on server
+        uses: appleboy/ssh-action@master
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          FRONTEND_SERVICE: nginx
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            APP_BASE="$HOME/${DEPLOY_PATH}"
+            APP_CURRENT="$HOME/${DEPLOY_PATH}/current"
+            RELEASES_DIR="$HOME/releases"
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            NEW_RELEASE="$APP_BASE/$TIMESTAMP"
+
+            mkdir -p "$NEW_RELEASE"
+            tar xzf "$RELEASES_DIR/build.tar.gz" -C "$NEW_RELEASE"
+
+            ln -sfn "$NEW_RELEASE" "$APP_CURRENT"
+
+            if [ -n "$FRONTEND_SERVICE" ]; then
+              sudo systemctl restart "$FRONTEND_SERVICE"
+            fi
+
+            sudo systemctl reload nginx
+
+            echo "Deployed new frontend version: $TIMESTAMP"
+
