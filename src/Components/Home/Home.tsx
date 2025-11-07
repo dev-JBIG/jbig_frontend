@@ -84,6 +84,7 @@ const Home: React.FC = () => {
 
             // 아이콘 span 생성
             const span = document.createElement('span');
+            span.setAttribute('data-icon-pixel-size', isMobile ? '20' : '80');
             span.setAttribute('data-icon-pixel-size', '80');
             span.setAttribute('data-chat-small-medium-or-large', 'small');
             span.setAttribute('data-circle-or-square', 'circle');
