@@ -84,9 +84,6 @@ const Home: React.FC = () => {
 
             // 아이콘 span 생성
             const span = document.createElement('span');
-            // 모바일에서 채팅아이콘 사이즈 조정
-            span.setAttribute('data-icon-pixel-size', isMobile ? '20' : '80');
-            span.setAttribute('data-chat-small-medium-or-large', 'small');
             span.setAttribute('data-circle-or-square', 'circle');
             span.setAttribute('data-left-or-right', 'right');
             span.setAttribute('data-chaturl', 'https://organizations.minnit.chat/515270226603216/c/Main');
