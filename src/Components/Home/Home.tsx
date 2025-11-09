@@ -87,8 +87,7 @@ const Home: React.FC = () => {
             span.setAttribute('data-circle-or-square', 'circle');
             span.setAttribute('data-left-or-right', 'right');
             span.setAttribute('data-chaturl', 'https://organizations.minnit.chat/515270226603216/c/Main');
-            // for github action test
-            span.setAttribute('data-hex-color-code', 'ff0000');
+            span.setAttribute('data-hex-color-code', '000000');
             span.setAttribute('data-icon-url', '');
             span.className = 'minnit-chat-icon-sembed';
             span.style.display = 'block';
