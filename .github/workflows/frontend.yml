@@ -68,6 +68,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
+            set -x
             APP_BASE="$HOME/${DEPLOY_PATH}"
             APP_CURRENT="$HOME/${DEPLOY_PATH}/current"
             RELEASES_DIR="$HOME/releases"
