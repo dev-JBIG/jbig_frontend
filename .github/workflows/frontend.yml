@@ -59,9 +59,6 @@ jobs:
 
       - name: Deploy new release on server
         uses: appleboy/ssh-action@master
-        env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          FRONTEND_SERVICE: nginx
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -69,8 +66,12 @@ jobs:
           script: |
             set -e
             set -x
-            APP_BASE="$HOME/${DEPLOY_PATH}"
-            APP_CURRENT="$HOME/${DEPLOY_PATH}/current"
+
+            DEPLOY_PATH_VALUE="${{ secrets.DEPLOY_PATH }}"
+            FRONTEND_SERVICE_VALUE="nginx"
+
+            APP_BASE="$HOME/${DEPLOY_PATH_VALUE}"
+            APP_CURRENT="$HOME/${DEPLOY_PATH_VALUE}/current"
             RELEASES_DIR="$HOME/releases"
             TIMESTAMP=$(date +%Y%m%d%H%M%S)
             NEW_RELEASE="$APP_BASE/$TIMESTAMP"
@@ -80,11 +81,10 @@ jobs:
 
             ln -sfn "$NEW_RELEASE" "$APP_CURRENT"
 
-            if [ -n "$FRONTEND_SERVICE" ]; then
-              sudo systemctl restart "$FRONTEND_SERVICE"
+            if [ -n "$FRONTEND_SERVICE_VALUE" ]; then
+              sudo systemctl restart "$FRONTEND_SERVICE_VALUE"
             fi
 
             sudo systemctl reload nginx
 
             echo "Deployed new frontend version: $TIMESTAMP"
-
