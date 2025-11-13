@@ -161,10 +161,23 @@ const Note: React.FC = () => {
                 return;
             }
 
-            // 내부 파일 네비게이션
-            e.preventDefault();
-            const fileName = rawHref.split("/").pop() || rawHref;
-            loadHtml(fileName);
+            // 이미지 파일이나 /media/로 시작하는 링크는 그대로 열기
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
+            const isImage = imageExtensions.some(ext => rawHref.toLowerCase().endsWith(ext));
+            if (isImage || rawHref.startsWith('/media/')) {
+                // 이미지나 미디어 파일은 기본 동작 허용 (새 탭에서 열림)
+                return;
+            }
+
+            // .html 파일만 노션 HTML로 로드
+            if (rawHref.toLowerCase().endsWith('.html')) {
+                e.preventDefault();
+                const fileName = rawHref.split("/").pop() || rawHref;
+                loadHtml(fileName);
+                return;
+            }
+
+            // 기타 링크는 기본 동작 허용
         };
 
 
@@ -199,10 +212,23 @@ const Note: React.FC = () => {
                 return;
             }
 
-            // 내부 파일 네비게이션
-            e.preventDefault();
-            const fileName = rawHref.split("/").pop() || rawHref;
-            loadHtml(fileName);
+            // 이미지 파일이나 /media/로 시작하는 링크는 그대로 열기
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
+            const isImage = imageExtensions.some(ext => rawHref.toLowerCase().endsWith(ext));
+            if (isImage || rawHref.startsWith('/media/')) {
+                // 이미지나 미디어 파일은 기본 동작 허용 (새 탭에서 열림)
+                return;
+            }
+
+            // .html 파일만 노션 HTML로 로드
+            if (rawHref.toLowerCase().endsWith('.html')) {
+                e.preventDefault();
+                const fileName = rawHref.split("/").pop() || rawHref;
+                loadHtml(fileName);
+                return;
+            }
+
+            // 기타 링크는 기본 동작 허용
         };
 
 
