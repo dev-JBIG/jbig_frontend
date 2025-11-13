@@ -137,3 +137,64 @@
 .postdetail-back-btn:hover {
     background-color: var(--color-text-secondary);
 }
+
+
+/* --- 사유서 테이블 스타일 --- */
+.postdetail-content table {
+  width: 100%;
+  
+  /* 테두리를 분리해야 radius가 모든 모서리에 적용됩니다 */
+  border-collapse: separate;
+  border-spacing: 0; /* 셀 사이 간격 제거 */
+  
+  margin-top: 24px;
+  margin-bottom: 24px;
+  font-size: 15px;
+
+  /* table 요소 자체에 4면 테두리를 줍니다 (이게 맨 윗줄이 됩니다) */
+  border: 1px solid var(--color-border-light);
+  
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  /* 모든 모서리를 둥글게 */
+  border-radius: var(--radius-md);
+  overflow: hidden; /* 둥근 모서리 적용을 위해 필수 */
+}
+
+.postdetail-content thead {
+  display: none; /* 헤더는 계속 숨김 */
+}
+
+/* td의 개별 테두리는 모두 제거합니다 (table의 테두리를 쓸 것임) */
+.postdetail-content td {
+  /* border: 1px solid var(--color-border-light); <-- 이 줄이 삭제됨 */
+  padding: 12px 15px;
+  text-align: left;
+  line-height: 1.6;
+}
+
+/* tr(가로줄)에 bottom-border를 주어 가로 구분선 생성 */
+.postdetail-content tr {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+/* 마지막 tr의 bottom-border는 제거 (테이블 외곽선과 겹치므로) */
+.postdetail-content tr:last-child {
+  border-bottom: none;
+}
+
+/* 테이블의 첫 번째 열 (항목) 스타일 */
+.postdetail-content td:first-child {
+  width: 140px; 
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-bg-secondary);
+  text-align: center;
+  /* 항목/내용을 구분하는 세로줄 추가 */
+  border-right: 1px solid var(--color-border-light); 
+}
+
+/* 테이블의 두 번째 열 (내용) */
+.postdetail-content td:last-child {
+  white-space: pre-wrap; /* 줄바꿈(<br>) 적용 */
+  word-break: break-all;
+}

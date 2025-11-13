@@ -11,6 +11,10 @@ import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../A
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import AbsenceForm from "./AbsenceForm"; // 결석사유서 추가
+
+
+
 
 // 업로드 제한 파일 확장자, 필요 시 추가
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
@@ -63,7 +67,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const inFlightRef = useRef(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const { signOutLocal, accessToken } = useUser();
+    const { signOutLocal, accessToken, user } = useUser();
     const { staffAuth } = useStaffAuth();
 
     const isImageFileName = (name: string) =>
@@ -346,15 +350,49 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             alert("게시판을 선택하세요.");
             return;
         }
+
+
+
         if (!title.trim()) {
-            alert("제목을 입력하세요.");
-            return;
+            alert("제목을 입력하세요.");
+            inFlightRef.current = false; // 중복 제출 방지 리셋
+            setSubmitting(false);      // 중복 제출 방지 리셋
+            return;
         }
 
-        if (!content.trim()) {
-            alert("본문을 입력하세요.");
-            return;
+        // 본문 유효성 검사 수정
+        if (category === '4') {
+            // '사유서 제출' 게시판일 경우, 폼 데이터 기반 유효성 검사
+            
+            // content (마크다운)에서 핵심 필드가 비어있는지 확인
+            if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) {
+                alert("결석 날짜를 입력하세요.");
+                inFlightRef.current = false;
+                setSubmitting(false);
+                return;
+            }
+
+            // '결석 사유'가 비어있으면 | **결석 사유** |  | 또는 | **결석 사유** | <br /> |
+            if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) {
+                alert("결석 사유를 입력하세요.");
+                inFlightRef.current = false;
+                setSubmitting(false);
+                return;
+            }
+        } else {
+            // 다른 게시판은 기존 '본문' 비어있는지 검사
+            if (!content.trim()) {
+                alert("본문을 입력하세요.");
+                inFlightRef.current = false;
+                setSubmitting(false);
+                return;
+            }
         }
+        // 본문 유효성 검사 끝
+
+
+
+
 
         try {
             if (isEdit && postIdNumber) {
@@ -548,29 +586,33 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     return (
         <form className="postwrite-form" onSubmit={handleSubmit} style={{ overflow: "hidden" }}>
-            <div className="postwrite-row">
-                <label>게시판</label>
-                <select
-                    className="board-select"
-                    value={selectedBoard?.id ?? ""}
-                    onChange={(e) => {
-                        const v = Number(e.target.value);
-                        const found = filteredBoardList.find((b) => b.id === v) || null;
-                        setSelectedBoard(found);
-                    }}
-                >
-                    <option value="" hidden>
-                        게시판 선택
-                    </option>
-                    {filteredBoardList.map((b) => (
-                        <option key={b.id} value={b.id}>
-                            {b.name}
+            {/* category가 4가 아닐 때만 보이게 수정*/}
+            {category !== '4' && (
+                <div className="postwrite-row">
+                    <label>게시판</label>
+                    <select
+                        className="board-select"
+                        value={selectedBoard?.id ?? ""}
+                        onChange={(e) => {
+                            const v = Number(e.target.value);
+                            const found = filteredBoardList.find((b) => b.id === v) || null;
+                            setSelectedBoard(found);
+                        }}
+                    >
+                        <option value="" hidden>
+                            게시판 선택
                         </option>
-                    ))}
-                </select>
-            </div>
+                        {filteredBoardList.map((b) => (
+                            <option key={b.id} value={b.id}>
+                                {b.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            {/* 조건부 렌더링 끝 */}
             <div className="postwrite-row">
-                <label>제목</label>
+                <label style={{ fontWeight: 'bold' }}>제목</label>
                 <input
                     className="postwrite-title-input"
                     type="text"
@@ -578,56 +620,68 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     onChange={e => setTitle(e.target.value)}
                     maxLength={120}
                     required
-                    placeholder="제목을 입력하세요"
+                    placeholder={category === '4' ? "[X주차] 결석사유서 OOO" : "제목을 입력하세요"}
                 />
             </div>
             {/* 본문 */}
             <div className="postwrite-row">
-                <label>본문</label>
-                <div className="content-body">
-                    <MDEditor
-                        value={content}
-                        onChange={handleChange}
-                        data-color-mode="light"
-                        height={400}
-                        preview="edit"
-                        previewOptions={{
-                            remarkPlugins: [remarkMath],
-                            rehypePlugins: [rehypeKatex],
-                        }}
-                        commands={[
-                            commands.bold,
-                            commands.italic,
-                            commands.strikethrough,
-                            commands.hr,
-                            commands.divider,
-                            commands.title,
-                            commands.link,
-                            addImageCommand,
-                            commands.divider,
-                            commands.quote,
-                            commands.code,
-                            commands.codeBlock,
-                            commands.divider,
-                            commands.unorderedListCommand,
-                            commands.orderedListCommand,
-                            commands.checkedListCommand,
-                            commands.divider,
-                            alignLeftCommand,
-                            alignCenterCommand,
-                            alignRightCommand,
-                            textColorCommand,
-                        ]}
-                    />
-                    {/* Hidden input for image upload */}
-                    <input
-                        type="file"
-                        ref={imageInputRef}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handleImageUpload}
-                    />
-                </div>
+                <label style={{ fontWeight: 'bold' }}>본문</label>
+		{/* 조건부 렌더링 시작 */}
+		{category === '4' ? (
+		    // 게시판 ID가 4면 폼 렌더링
+		    <AbsenceForm
+		        setContent={setContent}
+			initialContent={content}
+		    />
+		) : (
+		    // 그 외 모든 게시판은 기존 마크다운 에디터 렌더링
+		
+                    <div className="content-body">
+                        <MDEditor
+                            value={content}
+                            onChange={handleChange}
+                            data-color-mode="light"
+                            height={400}
+                            preview="edit"
+                            previewOptions={{
+                                remarkPlugins: [remarkMath],
+                                rehypePlugins: [rehypeKatex],
+                            }}
+                            commands={[
+                                commands.bold,
+                                commands.italic,
+                                commands.strikethrough,
+                                commands.hr,
+                                commands.divider,
+                                commands.title,
+                                commands.link,
+                                addImageCommand,
+                                commands.divider,
+                                commands.quote,
+                                commands.code,
+                                commands.codeBlock,
+                                commands.divider,
+                                commands.unorderedListCommand,
+                                commands.orderedListCommand,
+                                commands.checkedListCommand,
+                                commands.divider,
+                                alignLeftCommand,
+                                alignCenterCommand,
+                                alignRightCommand,
+                                textColorCommand,
+                            ]}
+                        />
+                        {/* Hidden input for image upload */}
+                        <input
+                            type="file"
+                            ref={imageInputRef}
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleImageUpload}
+                        />
+                    </div>
+                )}
+                {/*조건부 렌더링 끝*/} 
             </div>
             <div className="postwrite-row">
                 <label className="attachments-top">첨부 파일</label>

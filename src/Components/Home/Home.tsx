@@ -183,7 +183,7 @@ const Home: React.FC = () => {
         };
 
         run();
-    }, [authReady, user]);
+    }, [authReady, user, accessToken, navigate, signOutLocal]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
