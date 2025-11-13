@@ -15,7 +15,7 @@ export const AwardsSection: React.FC = () => {
                 const htmlString = await fetchAwardsHtml();
                 if (stop || !hostRef.current) return;
 
-                // 2) HTML 파싱해서 상대 경로 → 절대 경로 변환
+                // 2) HTML 파싱해서 리소스 상대 경로 → 절대 경로 변환
                 const tmpDoc = document.implementation.createHTMLDocument("awards");
                 tmpDoc.body.innerHTML = htmlString;
 
@@ -31,12 +31,8 @@ export const AwardsSection: React.FC = () => {
                     }
                 };
 
-                tmpDoc.querySelectorAll<HTMLElement>("[src]").forEach((el) =>
-                    absolutizeAttr(el, "src")
-                );
-                tmpDoc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((el) =>
-                    absolutizeAttr(el, "href")
-                );
+                // 이미지/미디어/스타일시트만 절대 경로로 변환 (a[href]는 원본 유지)
+                tmpDoc.querySelectorAll<HTMLElement>("[src]").forEach((el) => absolutizeAttr(el, "src"));
                 tmpDoc
                     .querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]')
                     .forEach((el) => absolutizeAttr(el, "href"));
@@ -95,7 +91,7 @@ export const AwardsSection: React.FC = () => {
           </style>
         `;
 
-                // 링크 새 탭에서 열리도록 보정
+                // 링크 새 탭에서 열리도록 보정 + data-href 보정
                 const upgradeLinks = (root: ParentNode) => {
                     root.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
                         const href = (a.getAttribute("href") || "").trim();
@@ -106,8 +102,38 @@ export const AwardsSection: React.FC = () => {
                         const set = new Set(rel.split(/\s+/).filter(Boolean).concat(wants));
                         a.setAttribute("rel", Array.from(set).join(" "));
                     });
+
+                    // Notion export에서 간혹 data-href만 있는 경우를 대비
+                    root.querySelectorAll<HTMLAnchorElement>('a:not([href])[data-href]').forEach((a) => {
+                        const dh = (a.getAttribute('data-href') || '').trim();
+                        if (!dh) return;
+                        a.setAttribute('href', dh);
+                        a.setAttribute('target', '_blank');
+                        const rel = a.getAttribute('rel') || '';
+                        const wants = ["noopener", "noreferrer"];
+                        const set = new Set(rel.split(/\s+/).filter(Boolean).concat(wants));
+                        a.setAttribute('rel', Array.from(set).join(' '));
+                    });
                 };
                 upgradeLinks(shadow);
+
+                // 섀도우 루트 클릭 핸들러로 링크 열기 안정화 (팝업 차단 회피)
+                const clickHandler = (e: Event) => {
+                    const target = e.target as Element | null;
+                    const anchor = target?.closest?.('a') as HTMLAnchorElement | null;
+                    if (!anchor) return;
+                    const raw = (anchor.getAttribute('href') || anchor.getAttribute('data-href') || '').trim();
+                    if (!raw || /^javascript:/i.test(raw)) return;
+
+                    // 외부 링크는 새 탭으로 강제
+                    if (/^https?:\/\//i.test(raw)) {
+                        e.preventDefault();
+                        window.open(raw, '_blank', 'noopener,noreferrer');
+                        return;
+                    }
+                };
+                (shadow as any).addEventListener('click', clickHandler);
+                // 컴포넌트 언마운트/재주입 시 정리되도록 잠시 핸들러를 저장하지 않고, 재렌더 시 기존 shadow가 교체되면 GC됨
             } catch (e) {
                 console.error("수상경력 불러오기 실패:", e);
             }

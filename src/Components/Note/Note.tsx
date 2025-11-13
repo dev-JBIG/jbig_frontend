@@ -4,9 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { fetchNotionHtml } from "../../API/req";
 
+
 const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
 const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-const API_BASE = `http://${SERVER_HOST}:${SERVER_PORT}/api/html/notion/`
+const API_BASE = ((): string => {
+    if (SERVER_HOST && SERVER_PORT) {
+        return `http://${SERVER_HOST}:${SERVER_PORT}/api/html/notion/`;
+    }
+    // Same-origin fallback for production when env vars are not injected
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return `${window.location.origin}/api/html/notion/`;
+    }
+    // Node/test fallback
+    return "/api/html/notion/";
+})();
 
 const Note: React.FC = () => {
     const { user, authReady, accessToken, signOutLocal } = useUser();
@@ -21,17 +32,59 @@ const Note: React.FC = () => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlString, "text/html");
 
+        // src 속성 처리 (img, iframe, embed 등)
         doc.querySelectorAll<HTMLElement>("[src]").forEach(el => {
             const raw = el.getAttribute("src");
             if (raw && !/^https?:/i.test(raw)) {
-                el.setAttribute("src", new URL(raw, API_BASE).toString());
+                try {
+                    el.setAttribute("src", new URL(raw, API_BASE).toString());
+                } catch (err) {
+                    console.warn("Failed to rewrite src URL:", raw, err);
+                    // 상대 경로인 경우 API_BASE와 결합
+                    if (raw.startsWith("/")) {
+                        const baseUrl = API_BASE.replace(/\/api\/html\/notion\/?$/, "");
+                        el.setAttribute("src", baseUrl + raw);
+                    } else {
+                        el.setAttribute("src", API_BASE + raw);
+                    }
+                }
             }
         });
 
+        // link[href] 처리
         doc.querySelectorAll<HTMLLinkElement>("link[href]").forEach(el => {
             const raw = el.getAttribute("href");
             if (raw && !/^https?:/i.test(raw)) {
-                el.setAttribute("href", new URL(raw, API_BASE).toString());
+                try {
+                    el.setAttribute("href", new URL(raw, API_BASE).toString());
+                } catch (err) {
+                    console.warn("Failed to rewrite href URL:", raw, err);
+                    if (raw.startsWith("/")) {
+                        const baseUrl = API_BASE.replace(/\/api\/html\/notion\/?$/, "");
+                        el.setAttribute("href", baseUrl + raw);
+                    } else {
+                        el.setAttribute("href", API_BASE + raw);
+                    }
+                }
+            }
+        });
+
+        // 노션 임베딩 링크 처리 (a 태그의 href 중 노션 링크)
+        doc.querySelectorAll<HTMLAnchorElement>("a[href]").forEach(el => {
+            const href = el.getAttribute("href");
+            if (href && /notion\.so/i.test(href)) {
+                // 노션 링크는 그대로 유지하되, target="_blank" 추가
+                el.setAttribute("target", "_blank");
+                el.setAttribute("rel", "noopener noreferrer");
+            }
+        });
+
+        // iframe 임베딩 처리 (노션 임베딩이 iframe으로 올 수 있음)
+        doc.querySelectorAll<HTMLIFrameElement>("iframe").forEach(el => {
+            const src = el.getAttribute("src");
+            if (src && /notion\.so/i.test(src)) {
+                // 노션 iframe은 그대로 유지
+                el.setAttribute("allowfullscreen", "true");
             }
         });
 
@@ -108,10 +161,23 @@ const Note: React.FC = () => {
                 return;
             }
 
-            // 내부 파일 네비게이션
-            e.preventDefault();
-            const fileName = rawHref.split("/").pop() || rawHref;
-            loadHtml(fileName);
+            // 이미지 파일이나 /media/로 시작하는 링크는 그대로 열기
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
+            const isImage = imageExtensions.some(ext => rawHref.toLowerCase().endsWith(ext));
+            if (isImage || rawHref.startsWith('/media/')) {
+                // 이미지나 미디어 파일은 기본 동작 허용 (새 탭에서 열림)
+                return;
+            }
+
+            // .html 파일만 노션 HTML로 로드
+            if (rawHref.toLowerCase().endsWith('.html')) {
+                e.preventDefault();
+                const fileName = rawHref.split("/").pop() || rawHref;
+                loadHtml(fileName);
+                return;
+            }
+
+            // 기타 링크는 기본 동작 허용
         };
 
 
@@ -146,10 +212,23 @@ const Note: React.FC = () => {
                 return;
             }
 
-            // 내부 파일 네비게이션
-            e.preventDefault();
-            const fileName = rawHref.split("/").pop() || rawHref;
-            loadHtml(fileName);
+            // 이미지 파일이나 /media/로 시작하는 링크는 그대로 열기
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
+            const isImage = imageExtensions.some(ext => rawHref.toLowerCase().endsWith(ext));
+            if (isImage || rawHref.startsWith('/media/')) {
+                // 이미지나 미디어 파일은 기본 동작 허용 (새 탭에서 열림)
+                return;
+            }
+
+            // .html 파일만 노션 HTML로 로드
+            if (rawHref.toLowerCase().endsWith('.html')) {
+                e.preventDefault();
+                const fileName = rawHref.split("/").pop() || rawHref;
+                loadHtml(fileName);
+                return;
+            }
+
+            // 기타 링크는 기본 동작 허용
         };
 
 
