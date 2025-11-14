@@ -107,16 +107,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 );
 
                 setAnnouncementPosts(response.posts);
-                // 공지사항의 post_type 정보도 저장
-                if (response.postTypes) {
-                    setPostTypes(prev => {
-                        const newMap = new Map(prev);
-                        response.postTypes!.forEach((value, key) => {
-                            newMap.set(key, value);
-                        });
-                        return newMap;
-                    });
-                }
             } catch (e) {
                 console.error("Failed to fetch announcements:", e);
                 setAnnouncementPosts([]);
@@ -174,18 +164,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 setPosts(response.posts);
                 setPostPermission(response.postPermission ?? false);
                 setTotalPages(response.totalPages);
-                // post_type 정보 저장 (기존 값과 병합)
-                if (response.postTypes && response.postTypes.size > 0) {
-                    setPostTypes(prev => {
-                        const newMap = new Map(prev);
-                        response.postTypes!.forEach((value, key) => {
-                            newMap.set(key, value);
-                        });
-                        return newMap;
-                    });
-                } else {
-                    // postTypes가 없으면 빈 Map으로 초기화하지 않고 유지
-                    // (이전 데이터 보존)
+                // post_type 정보 저장
+                if (response.postTypes) {
+                    setPostTypes(response.postTypes);
                 }
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
@@ -398,17 +379,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="title-cell th-title">
                                     <span className="announcement-badge mobile-only">공지</span>
-                                    <span className="announcement-title">
-                                        {p.title}
-                                        {postTypes.get(p.id) === 3 && (
-                                            <span 
-                                                style={{ color: "#999", marginLeft: "4px" }}
-                                                title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
-                                            >
-                                                (비공개)
-                                            </span>
-                                        )}
-                                    </span>
+                                    <span className="announcement-title">{p.title}</span>
                                 </td>
                                 <td className="author-cell th-author">
                   <span
