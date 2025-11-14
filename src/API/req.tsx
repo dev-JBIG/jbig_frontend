@@ -690,6 +690,7 @@ export const createPost = async (
         title: string;
         content_md: string;
         attachment_paths: { path: string; name: string; }[];
+        post_type?: number;
     },
     token: string
 ) => {

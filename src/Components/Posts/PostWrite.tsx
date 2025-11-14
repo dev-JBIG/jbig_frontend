@@ -410,7 +410,12 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
             const res = await createPost(
                 selectedBoard!.id,
-                { title, content_md: content, attachment_paths: attachments },
+                { 
+                    title, 
+                    content_md: content, 
+                    attachment_paths: attachments,
+                    ...(category === '4' ? { post_type: 3 } : {})
+                },
                 accessToken
             );
 
