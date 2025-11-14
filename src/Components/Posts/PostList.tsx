@@ -21,6 +21,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [page, setPage] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState("");
     const [postPermission, setPostPermission] = useState(false);
+    // 게시글 ID별 post_type 저장 (사유서 게시글 식별용)
+    const [postTypes, setPostTypes] = useState<Map<number, number>>(new Map());
 
     const { accessToken, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
@@ -119,7 +121,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
         const getPosts = async () => {
             try {
-                let response: { posts: PostItem[]; totalPages: number };
+                let response: { posts: PostItem[]; totalPages: number; postPermission?: boolean; postTypes?: Map<number, number> };
 
                 if (isSearchPage) { // 검색 페이지용
                     if (!q.trim()) {
@@ -160,8 +162,12 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 // 여기서 마지막 요청만 반영
                 if (seq !== reqSeqRef.current) return;
                 setPosts(response.posts);
-                setPostPermission((response as any).postPermission ?? false);
+                setPostPermission(response.postPermission ?? false);
                 setTotalPages(response.totalPages);
+                // post_type 정보 저장
+                if (response.postTypes) {
+                    setPostTypes(response.postTypes);
+                }
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
                 setTotalPages(0);
@@ -274,7 +280,17 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 }}
                             >
                                 <td className="th-id">{p.id}</td>
-                                <td className="title-cell th-title">{p.title}</td>
+                                <td className="title-cell th-title">
+                                    {p.title}
+                                    {postTypes.get(p.id) === 3 && (
+                                        <span 
+                                            style={{ color: "#999", marginLeft: "4px" }}
+                                            title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
+                                        >
+                                            (비공개)
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="author-cell th-author">
                   <span
                     className="author-text"
@@ -400,7 +416,17 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="th-id">
                                     {activeBoardID === 0 || isHome ? p.id : p.board_post_id}
                                 </td>
-                                <td className="title-cell th-title">{p.title}</td>
+                                <td className="title-cell th-title">
+                                    {p.title}
+                                    {postTypes.get(p.id) === 3 && (
+                                        <span 
+                                            style={{ color: "#999", marginLeft: "4px" }}
+                                            title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
+                                        >
+                                            (비공개)
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="author-cell th-author">
                   <span
                     className="author-text"

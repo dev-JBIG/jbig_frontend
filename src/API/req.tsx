@@ -267,7 +267,7 @@ export const fetchBoardPosts = async (
     page: number,
     isHome: boolean = false,
     token?: string
-): Promise<{ posts: PostItem[]; totalPages: number; postPermission: boolean }> => {
+): Promise<{ posts: PostItem[]; totalPages: number; postPermission: boolean; postTypes?: Map<number, number> }> => {
     const url = isHome
         ? `${BASE_URL}/api/posts/all`
         : boardId
@@ -307,12 +307,21 @@ export const fetchBoardPosts = async (
         likes: item.likes_count,
     }));
 
+    // post_type 정보 추출
+    const postTypesMap = new Map<number, number>();
+    rawResults.forEach((item: any) => {
+        if (item.id && item.post_type !== undefined) {
+            postTypesMap.set(item.id, item.post_type);
+        }
+    });
+
     const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: isHome ? 1 : Math.ceil(count / pageSize),
         postPermission,
+        postTypes: postTypesMap,
     };
 };
 
@@ -362,7 +371,7 @@ export const fetchSearchPosts = async (
     query: string,
     pageSize: number,
     page: number
-): Promise<{ posts: PostItem[]; totalPages: number }> => {
+): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
     const url = `${BASE_URL}/api/posts/all/search/`;
 
     const res = await axios.get(url, {
@@ -387,12 +396,21 @@ export const fetchSearchPosts = async (
         likes: item.likes_count,
     }));
 
+    // post_type 정보 추출
+    const postTypesMap = new Map<number, number>();
+    rawResults.forEach((item: any) => {
+        if (item.id && item.post_type !== undefined) {
+            postTypesMap.set(item.id, item.post_type);
+        }
+    });
+
     const count =
         typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: Math.max(1, Math.ceil(count / pageSize)),
+        postTypes: postTypesMap,
     };
 };
 
@@ -402,7 +420,7 @@ export const fetchBoardSearchPosts = async (
     query: string,
     pageSize: number,
     page: number
-): Promise<{ posts: PostItem[]; totalPages: number }> => {
+): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
     const url = `${BASE_URL}/api/boards/${boardId}/search/`;
 
     const res = await axios.get(url, {
@@ -428,7 +446,13 @@ export const fetchBoardSearchPosts = async (
         likes: item.likes_count,
     }));
 
-
+    // post_type 정보 추출
+    const postTypesMap = new Map<number, number>();
+    rawResults.forEach((item: any) => {
+        if (item.id && item.post_type !== undefined) {
+            postTypesMap.set(item.id, item.post_type);
+        }
+    });
 
     const count =
         typeof res.data?.count === "number" ? res.data.count : posts.length;
@@ -436,6 +460,7 @@ export const fetchBoardSearchPosts = async (
     return {
         posts,
         totalPages: Math.max(1, Math.ceil(count / pageSize)),
+        postTypes: postTypesMap,
     };
 };
 
@@ -490,7 +515,7 @@ export const fetchUserPosts = async (
     pageSize: number,
     page: number,
     token: string
-): Promise<{ posts: PostItem[]; totalPages: number }> => {
+): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
     const url = `${BASE_URL}/api/users/${userId}/posts/`;
 
     const res = await axios.get(url, {
@@ -511,6 +536,7 @@ export const fetchUserPosts = async (
 
     const posts = rawResults.map((item: any) => ({
         id: item.id,
+        board_post_id: item.board_post_id || item.id,
         title: item.title,
         author: item.author,
         user_id: item.user_id,
@@ -520,11 +546,20 @@ export const fetchUserPosts = async (
         likes: item.likes_count,
     }));
 
+    // post_type 정보 추출
+    const postTypesMap = new Map<number, number>();
+    rawResults.forEach((item: any) => {
+        if (item.id && item.post_type !== undefined) {
+            postTypesMap.set(item.id, item.post_type);
+        }
+    });
+
     const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: Math.ceil(count / pageSize),
+        postTypes: postTypesMap,
     };
 };
 
