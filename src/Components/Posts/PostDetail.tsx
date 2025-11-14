@@ -511,7 +511,17 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         </span>
                     </div>
                 )}
-                <h2 className="postdetail-title">{post.title}</h2>
+                <h2 className="postdetail-title">
+                    {post.title}
+                    {post.post_type === 3 && (
+                        <span 
+                            style={{ color: "#999", marginLeft: "8px", fontSize: "0.9em", fontWeight: "normal" }}
+                            title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
+                        >
+                            (비공개)
+                        </span>
+                    )}
+                </h2>
             </div>
             <div className="postdetail-info-row">
             <span className="postdetail-author"
