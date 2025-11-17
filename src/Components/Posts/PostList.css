@@ -8,6 +8,10 @@
 .postlist-header {
     position: relative;
     margin-bottom: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: center;
 }
 
 .postlist-header h2 {
@@ -28,6 +32,9 @@
     display: flex;
     gap: var(--space-xs);
     margin-bottom: var(--space-md);
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .list-search-input {
@@ -75,6 +82,7 @@
 /* 더보기 링크 */
 .more-link {
     display: block;
+    width: 100%;
     text-align: right;
     margin-top: var(--space-md);
     color: var(--color-primary);
@@ -186,18 +194,25 @@
 
 /* PC 스타일 (768px 이상) */
 @media (min-width: 768px) {
-    .postlist-header h2 {
-        font-size: var(--font-size-2xl);
+    .postlist-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-md);
     }
 
-    /* 검색 폼 - PC에서는 우측 상단 */
+    .postlist-header h2 {
+        font-size: var(--font-size-2xl);
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+    }
+
     .list-search-form {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        margin-bottom: 0;
         width: auto;
+        margin-bottom: 0;
+        flex-shrink: 0;
+        justify-content: flex-end;
     }
 
     .list-search-input {
@@ -210,10 +225,10 @@
     }
 
     .more-link {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
+        width: auto;
+        margin-top: 0;
+        margin-left: var(--space-md);
+        flex-shrink: 0;
     }
 
     /* PC 테이블 레이아웃 */
