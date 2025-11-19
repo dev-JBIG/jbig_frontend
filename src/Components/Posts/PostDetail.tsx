@@ -132,6 +132,21 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
 
                 const src = raw.post_data ?? raw;
+                const rawComments: any[] = Array.isArray(src.comments) ? src.comments : [];
+                const commentIdCounts = rawComments.reduce<Record<number, number>>((acc, comment) => {
+                    const id = typeof comment?.id === "number" ? comment.id : undefined;
+                    if (typeof id === "number") {
+                        acc[id] = (acc[id] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                const filteredTopLevelComments = rawComments.filter(comment => {
+                    const id = typeof comment?.id === "number" ? comment.id : undefined;
+                    if (typeof id !== "number") return true;
+                    const hasDuplicate = (commentIdCounts[id] || 0) > 1;
+                    const isParentNull = comment?.parent === null || comment?.parent === undefined;
+                    return !(hasDuplicate && isParentNull);
+                });
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -171,7 +186,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             };
                         }
                     }),
-                    comments: (src.comments || []).slice().reverse().map((c: any) => ({
+                    comments: filteredTopLevelComments.slice().reverse().map((c: any) => ({
                         id: c.id,
                         user_id: c.user_id,
                         author_semester: c.author_semester,
