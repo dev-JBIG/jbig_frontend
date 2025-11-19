@@ -1,7 +1,6 @@
 import axios from "axios";
 import {
     PostItem,
-    Reply,
     Comment,
     UserProfile,
     UserComment,
@@ -26,6 +25,23 @@ const BASE_URL = ((): string => {
     // Node/test fallback
     return "";
 })();
+
+const normalizeCommentNode = (data: any): Comment => ({
+    id: data.id,
+    user_id: data.user_id,
+    author_semester: data.author_semester,
+    author: data.author,
+    content: data.content,
+    date: data.created_at
+        ? data.created_at.slice(0, 16).replace("T", " ")
+        : data.date || "",
+    is_owner: !!data.is_owner,
+    is_deleted: !!data.is_deleted,
+    parent: data.parent ?? null,
+    children: Array.isArray(data.children)
+        ? data.children.map((child: any) => normalizeCommentNode(child))
+        : [],
+});
 
 // 이메일 인증코드 인증
 export const verifyAuthEmail = async (email: string, code: string) => {
@@ -795,7 +811,7 @@ export const createComment = async (
     postId: number,
     payload: { content: string; parent: number | null },
     token: string
-): Promise<Comment | Reply> => {
+): Promise<Comment> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;
     const res = await axios.post(url, payload, {
         headers: {
@@ -807,48 +823,7 @@ export const createComment = async (
         responseType: "json",
     });
 
-    const d = res.data as {
-        id: number;
-        user_id: string;
-        author_semester: number;
-        author: string;
-        content: string;
-        created_at: string;
-        parent: number | null;
-        is_owner: boolean;
-        is_deleted: boolean;
-    };
-
-    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
-    const isReply = (payload.parent !== null && payload.parent !== 0) ||
-        (d.parent !== null && d.parent !== 0);
-
-    if (isReply) {
-        const reply: Reply = {
-            id: d.id,
-            user_id: d.user_id,
-            author_semester: d.author_semester,
-            author: d.author,
-            content: d.content,
-            date,
-            is_owner: d.is_owner,
-            is_deleted: false,
-        };
-        return reply;
-    } else {
-        const comment: Comment = {
-            id: d.id,
-            user_id: d.user_id,
-            author_semester: d.author_semester,
-            author: d.author,
-            content: d.content,
-            date,
-            is_owner: d.is_owner,
-            is_deleted: false,
-            replies: [] as Reply[],
-        };
-        return comment;
-    }
+    return normalizeCommentNode(res.data);
 };
 
 // 댓글 수정
@@ -856,7 +831,7 @@ export const updateComment = async (
     commentId: number,
     payload: { content: string; parent: number | null },
     token: string
-): Promise<Comment | Reply> => {
+): Promise<Comment> => {
     const url = `${BASE_URL}/api/comments/${commentId}/`;
     const res = await axios.patch(url, payload, {
         headers: {
@@ -868,49 +843,7 @@ export const updateComment = async (
         responseType: "json",
     });
 
-    const d = res.data as {
-        id: number;
-        user_id: string;
-        author_semester: number;
-        author: string;
-        content: string;
-        created_at: string;
-        parent: number | null;
-        is_owner: boolean;
-        is_deleted?: boolean;
-    };
-
-    const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
-    const isReply = (payload.parent !== null && payload.parent !== 0) ||
-        (d.parent !== null && d.parent !== 0);
-    const isDeleted = !!d.is_deleted;
-
-    if (isReply) {
-        const reply: Reply = {
-            id: d.id,
-            user_id: d.user_id,
-            author_semester: d.author_semester,
-            author: d.author,
-            content: d.content,
-            date,
-            is_owner: !!d.is_owner,
-            is_deleted: isDeleted,
-        };
-        return reply;
-    } else {
-        const comment: Comment = {
-            id: d.id,
-            user_id: d.user_id,
-            author_semester: d.author_semester,
-            author: d.author,
-            content: d.content,
-            date,
-            is_owner: !!d.is_owner,
-            is_deleted: isDeleted,
-            replies: [] as Reply[],
-        };
-        return comment;
-    }
+    return normalizeCommentNode(res.data);
 };
 
 // 사용자 정보 조회
