@@ -1,6 +1,6 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData } from "../Utils/interfaces";
+import { PostDetailData, Comment } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
@@ -17,6 +17,61 @@ import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 
+type DraftState = { targetId: number; text: string };
+
+const ensureChildren = (comment: Comment): Comment => ({
+    ...comment,
+    children: Array.isArray(comment.children) ? comment.children : [],
+});
+
+const insertCommentNode = (comments: Comment[], newComment: Comment): Comment[] => {
+    const normalized = ensureChildren(newComment);
+    if (normalized.parent == null) {
+        return [...comments, normalized];
+    }
+    let inserted = false;
+    const next = comments.map(comment => {
+        if (comment.id === normalized.parent) {
+            inserted = true;
+            return {
+                ...comment,
+                children: [...(comment.children || []), normalized],
+            };
+        }
+        return comment;
+    });
+    return inserted ? next : comments;
+};
+
+const mutateCommentNode = (
+    comments: Comment[],
+    targetId: number,
+    mapper: (comment: Comment) => Comment
+): Comment[] => {
+    let changed = false;
+    const next = comments.map(comment => {
+        if (comment.id === targetId) {
+            changed = true;
+            return mapper(comment);
+        }
+        if (comment.children?.length) {
+            const updatedChildren = mutateCommentNode(comment.children, targetId, mapper);
+            if (updatedChildren !== comment.children) {
+                changed = true;
+                return { ...comment, children: updatedChildren };
+            }
+        }
+        return comment;
+    });
+    return changed ? next : comments;
+};
+
+const countComments = (comments: Comment[]): number =>
+    comments.reduce(
+        (sum, comment) => sum + 1 + countComments(comment.children || []),
+        0
+    );
+
 interface Props {
     username: string;
 }
@@ -28,10 +83,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [, setUserName] = useState("");
     const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
-    // 답글 입력 대상 댓글 id (하나만)
-    const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
-    // 답글 입력값 (하나만)
-    const [replyInput, setReplyInput] = useState("");
     // 본문
 
     const { accessToken, authReady, signOutLocal } = useUser();
@@ -53,22 +104,30 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
+    const totalComments = useMemo(() => {
+        if (!post || typeof post === "string" || !Array.isArray(post.comments)) {
+            return 0;
+        }
+        return countComments(post.comments);
+    }, [post]);
+
     type OpenMenu =
         | { type: "comment"; id: number }
-        | { type: "reply"; cId: number; rId: number }
+        | { type: "reply"; parentId: number; id: number }
         | null;
 
     const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
-    const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
-    const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
-    const [editText, setEditText] = useState("");
+    const [replyDraft, setReplyDraft] = useState<DraftState | null>(null);
+    const [editDraft, setEditDraft] = useState<DraftState | null>(null);
 
     const toggleCommentMenu = (id: number) =>
         setOpenMenu(m => (m && m.type === "comment" && m.id === id ? null : { type: "comment", id }));
 
-    const toggleReplyMenu = (cId: number, rId: number) =>
+    const toggleReplyMenu = (parentId: number, id: number) =>
         setOpenMenu(m =>
-            m && m.type === "reply" && m.cId === cId && m.rId === rId ? null : { type: "reply", cId, rId }
+            m && m.type === "reply" && m.id === id && m.parentId === parentId
+                ? null
+                : { type: "reply", parentId, id }
         );
 
 
@@ -132,6 +191,21 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
 
                 const src = raw.post_data ?? raw;
+                const mapComments = (items: any[]): Comment[] => {
+                    if (!Array.isArray(items)) return [];
+                    return items.map((item: any) => ({
+                        id: item.id,
+                        user_id: item.user_id,
+                        author_semester: item.author_semester,
+                        author: item.author,
+                        content: item.content,
+                        date: toDate(item.created_at),
+                        is_owner: !!item.is_owner,
+                        is_deleted: !!item.is_deleted,
+                        parent: item.parent ?? null,
+                        children: mapComments(item.children || []),
+                    }));
+                };
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -171,26 +245,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             };
                         }
                     }),
-                    comments: (src.comments || []).slice().reverse().map((c: any) => ({
-                        id: c.id,
-                        user_id: c.user_id,
-                        author_semester: c.author_semester,
-                        author: c.author,
-                        content: c.content,
-                        date: toDate(c.created_at),
-                        is_owner: c.is_owner,
-                        is_deleted: !!c.is_deleted,
-                        replies: (c.children || []).slice().reverse().map((r: any) => ({
-                            id: r.id,
-                            user_id: r.user_id,
-                            author_semester: r.author_semester,
-                            author: r.author,
-                            content: r.content,
-                            date: toDate(r.created_at),
-                            is_owner: r.is_owner,
-                            is_deleted: !!r.is_deleted,
-                        })),
-                    })),
+                    comments: mapComments(src.comments || []),
                 };
 
                 // 접근 권한 체크
@@ -266,6 +321,17 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
+    const updateCommentsState = (updater: (comments: Comment[]) => Comment[]) => {
+        setPost(prev => {
+            if (!prev || typeof prev === "string") {
+                return prev;
+            }
+            const current = Array.isArray(prev.comments) ? prev.comments : [];
+            const next = updater(current);
+            return { ...prev, comments: next };
+        });
+    };
+
     // 댓글 등록
     const handleAddComment = async () => {
         if (!post || typeof post === "string") return;
@@ -280,10 +346,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
         try {
             const created = await createComment(post.id, { content, parent: null }, accessToken);
-            setPost({
-                ...post,
-                comments: [ ...(post.comments || []), created ],
-            });
+            updateCommentsState(comments => insertCommentNode(comments, created));
             setCommentInput("");
         } catch (e) {
             console.error(e);
@@ -291,81 +354,19 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
     };
 
-    // 댓글 삭제
-    const handleDeleteComment = async (commentId: number) => {
-        if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
-
-        const prev = post;
-        const optimistic = {
-            ...post,
-            comments: (post.comments || []).map(c =>
-                c.id === commentId ? { ...c, content: "삭제 된 댓글입니다", is_deleted: true } : c
-            ),
-        };
-        setPost(optimistic);
-
-        try {
-            const res: any = await deleteComment(commentId, accessToken);
-            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
-            if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
-            // 성공 시 그대로 유지
-        } catch {
-            setPost(prev);
-            alert("댓글 삭제에 실패했습니다.");
-        }
+    const handleReplyToggle = (comment: Comment) => {
+        if (comment.is_deleted) return;
+        setOpenMenu(null);
+        setEditDraft(null);
+        setReplyDraft(prev =>
+            prev && prev.targetId === comment.id ? null : { targetId: comment.id, text: "" }
+        );
     };
 
-    // 답글 삭제
-    const handleDeleteReply = async (commentId: number, replyId: number) => {
+    const handleReplySubmit = async (parentComment: Comment) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
-
-        const prev = post;
-        const optimistic = {
-            ...post,
-            comments: (post.comments || []).map(c =>
-                c.id === commentId
-                    ? {
-                        ...c,
-                        replies: (c.replies || []).map(r =>
-                            r.id === replyId ? { ...r, content: "삭제 된 댓글입니다", is_deleted: true } : r
-                        ),
-                    }
-                    : c
-            ),
-        };
-        setPost(optimistic);
-
-        try {
-            const res: any = await deleteComment(replyId, accessToken); // 답글도 같은 엔드포인트
-            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
-            if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
-        } catch {
-            setPost(prev);
-            alert("답글 삭제에 실패했습니다.");
-        }
-    };
-
-    // 답글쓰기 버튼 클릭
-    const handleReplyWriteClick = (id: number) => {
-        // 이미 다른 답글창이 열려 있고, 입력값이 있다면 confirm
-        if (replyTargetId !== null && replyTargetId !== id && replyInput.trim().length > 0) {
-            if (window.confirm("작성 중인 답글을 취소 하시겠습니까?")) {
-                setReplyTargetId(id);
-                setReplyInput("");
-            }
-            // 취소시 아무 것도 하지 않음 (기존 답글창/입력값 유지)
-        } else {
-            setReplyTargetId(replyTargetId === id ? null : id);
-            setReplyInput("");
-        }
-    };
-
-    // 답글 등록
-    const handleAddReply = async (commentId: number) => {
-        if (!post || typeof post === "string") return;
-        const content = replyInput.trim();
+        if (!replyDraft || replyDraft.targetId !== parentComment.id) return;
+        const content = replyDraft.text.trim();
         if (!content) return;
 
         if (!accessToken) {
@@ -375,97 +376,241 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         }
 
         try {
-            const created = await createComment(post.id, { content, parent: commentId }, accessToken);
-            setPost({
-                ...post,
-                comments: (post.comments || []).map(c =>
-                    c.id === commentId
-                        ? { ...c, replies: [ ...(c.replies || []), created ] }
-                        : c
-                ),
-            });
-            setReplyInput("");
-            setReplyTargetId(null);
+            const created = await createComment(
+                post.id,
+                { content, parent: parentComment.id },
+                accessToken
+            );
+            updateCommentsState(comments => insertCommentNode(comments, created));
+            setReplyDraft(null);
         } catch (e) {
             console.error(e);
             alert("답글 등록에 실패했습니다.");
         }
     };
 
-    const cancelEdit = () => {
-        setEditingCommentId(null);
-        setEditingReplyKey(null);
-        setEditText("");
-    };
-
-    const saveEditComment = async (commentId: number) => {
+    const handleDeleteComment = async (targetComment: Comment) => {
         if (!post || typeof post === "string") return;
         if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
-        const content = editText.trim();
+
+        const prev = post;
+        setPost({
+            ...post,
+            comments: mutateCommentNode(post.comments || [], targetComment.id, comment => ({
+                ...comment,
+                content: "삭제된 댓글입니다.",
+                is_deleted: true,
+                is_owner: false,
+            })),
+        });
+
+        try {
+            const res: any = await deleteComment(targetComment.id, accessToken);
+            if (res && res.status === 401) {
+                setPost(prev);
+                alert("로그인이 필요합니다.");
+                navigate("/signin");
+                return;
+            }
+            if (res && res.deleted === false) {
+                throw new Error(res.message || "삭제 실패");
+            }
+        } catch (error) {
+            console.error(error);
+            setPost(prev);
+            alert("댓글 삭제에 실패했습니다.");
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditDraft(null);
+    };
+
+    const handleEditRequest = (comment: Comment) => {
+        if (comment.is_deleted) return;
+        setReplyDraft(null);
+        setOpenMenu(null);
+        setEditDraft({ targetId: comment.id, text: comment.content });
+    };
+
+    const handleSaveEdit = async (comment: Comment) => {
+        if (!post || typeof post === "string") return;
+        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!editDraft || editDraft.targetId !== comment.id) return;
+        const content = editDraft.text.trim();
         if (!content) return;
 
         try {
-            await updateComment(commentId, { content, parent: null }, accessToken);
-            setPost({
-                ...post,
-                comments: (post.comments || []).map(c => c.id === commentId ? { ...c, content } : c),
-            });
-            cancelEdit();
+            const updated = await updateComment(
+                comment.id,
+                { content, parent: comment.parent ?? null },
+                accessToken
+            );
+            updateCommentsState(comments =>
+                mutateCommentNode(comments, updated.id, () => ensureChildren(updated))
+            );
+            setEditDraft(null);
         } catch (e) {
             console.error(e);
             alert("댓글 수정에 실패했습니다.");
         }
     };
 
-    const saveEditReply = async (cId: number, rId: number) => {
-        if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
-        const content = editText.trim();
-        if (!content) return;
+    const renderCommentNode = (comment: Comment, depth = 0): React.ReactNode => {
+        const isReply = depth > 0;
+        const isEditing = editDraft?.targetId === comment.id;
+        const isReplying = !isReply && replyDraft?.targetId === comment.id;
+        const isMenuOpen =
+            openMenu &&
+            (
+                (!isReply && openMenu.type === "comment" && openMenu.id === comment.id) ||
+                (isReply && openMenu.type === "reply" && openMenu.id === comment.id && openMenu.parentId === (comment.parent ?? 0))
+            );
+        const wrapperClass = isReply ? "reply-item" : "postdetail-comment-item";
+        const authorClass = (isReply ? "reply-author" : "comment-author") + (comment.is_deleted ? " deleted" : "");
+        const dateClass = isReply ? "reply-date" : "comment-date";
+        const contentClass = (isReply ? "reply-content" : "comment-content") + (comment.is_deleted ? " deleted" : "");
 
-        try {
-            await updateComment(rId, { content, parent: cId }, accessToken);
-            setPost({
-                ...post,
-                comments: (post.comments || []).map(c =>
-                    c.id === cId
-                        ? { ...c, replies: (c.replies || []).map(r => r.id === rId ? { ...r, content } : r) }
-                        : c
-                ),
-            });
-            cancelEdit();
-        } catch (e) {
-            console.error(e);
-            alert("답글 수정에 실패했습니다.");
-        }
+        const handleMenuToggle = () => {
+            if (isReply) {
+                toggleReplyMenu(comment.parent ?? 0, comment.id);
+            } else {
+                toggleCommentMenu(comment.id);
+            }
+        };
+
+        return (
+            <li className={wrapperClass} key={`${comment.id}-${depth}`}>
+                <div className={isReply ? "reply-meta" : "comment-item"}>
+                    <div className={isReply ? "reply-meta" : "comment-meta"}>
+                        <span
+                            className={authorClass}
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (comment.is_deleted) return;
+                                const encrypted = await encryptUserId(String(comment.user_id));
+                                navigate(`/user/${encrypted}`);
+                            }}
+                        >
+                            {!comment.is_deleted && `${comment.author_semester}기 ${comment.author}`}
+                            {!comment.is_deleted && comment.is_owner && (
+                                <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                    (나)
+                                </span>
+                            )}
+                        </span>
+                        <span className={dateClass}>{comment.date}</span>
+                        {!comment.is_deleted && !isReply && (
+                            <span
+                                className="reply-write-btn"
+                                onClick={() => handleReplyToggle(comment)}
+                            >
+                                답글쓰기
+                            </span>
+                        )}
+                        {!comment.is_deleted && comment.is_owner && (
+                            <div className="more-wrapper">
+                                <button
+                                    type="button"
+                                    className="more-btn"
+                                    aria-haspopup="menu"
+                                    aria-expanded={!!isMenuOpen}
+                                    onClick={handleMenuToggle}
+                                    title="더보기"
+                                >
+                                    ⋯
+                                </button>
+                                {isMenuOpen && (
+                                    <div className="more-menu" role="menu">
+                                        <div
+                                            className="more-menu-item"
+                                            role="menuitem"
+                                            onClick={() => handleEditRequest(comment)}
+                                        >
+                                            수정
+                                        </div>
+                                        <div
+                                            className="more-menu-item danger"
+                                            role="menuitem"
+                                            onClick={() => handleDeleteComment(comment)}
+                                        >
+                                            삭제
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {isEditing ? (
+                        <div className="reply-input-box">
+                            <textarea
+                                className="reply-input"
+                                rows={2}
+                                value={editDraft?.text || ""}
+                                onChange={e =>
+                                    setEditDraft(prev =>
+                                        prev && prev.targetId === comment.id
+                                            ? { ...prev, text: e.target.value }
+                                            : prev
+                                    )
+                                }
+                                placeholder="내용을 수정하세요"
+                                style={{ resize: "none" }}
+                            />
+                            <div className="reply-action-row">
+                                <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
+                                <span
+                                    className={
+                                        "reply-register-text" + ((editDraft?.text || "").trim() ? " active" : "")
+                                    }
+                                    onClick={() => handleSaveEdit(comment)}
+                                >
+                                    저장
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className={contentClass}>
+                            {comment.content}
+                        </div>
+                    )}
+                </div>
+
+                {!isReply && comment.children?.length ? (
+                    <ul className="reply-list">
+                        {comment.children.map(child => renderCommentNode(child, depth + 1))}
+                    </ul>
+                ) : null}
+
+                {!isReply && isReplying && !comment.is_deleted && (
+                    <div className="reply-input-box">
+                        <textarea
+                            className="reply-input"
+                            rows={1}
+                            placeholder="답글을 입력하세요"
+                            value={replyDraft?.text || ""}
+                            onChange={e => setReplyDraft({ targetId: comment.id, text: e.target.value })}
+                            style={{resize: "none"}}
+                        />
+                        <div className="reply-action-row">
+                            <span className="reply-cancel-text" onClick={() => setReplyDraft(null)}>취소</span>
+                            <span
+                                className={
+                                    "reply-register-text" +
+                                    ((replyDraft?.text || "").trim() ? " active" : "")
+                                }
+                                onClick={() => handleReplySubmit(comment)}
+                            >
+                                등록
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </li>
+        );
     };
 
-    // 댓글 수정 시작
-    const handleEditComment = (commentId: number) => {
-        if (!post || typeof post === "string") return;
-
-        const target = (post.comments || []).find(c => c.id === commentId);
-        if (!target) return;
-
-        setOpenMenu(null);               // 더보기 닫기
-        setEditingReplyKey(null);        // 답글 편집 모드 해제
-        setEditingCommentId(commentId);  // 댓글 편집 모드 진입
-        setEditText(target.content);     // 현재 내용으로 에디터 채우기
-    };
-
-    // 답글 수정 시작
-    const handleEditReply = (commentId: number, replyId: number) => {
-        if (!post || typeof post === "string") return;
-
-        const parent = (post.comments || []).find(c => c.id === commentId);
-        const target = parent?.replies?.find(r => r.id === replyId);
-        if (!parent || !target) return;
-
-        setOpenMenu(null);                     // 더보기 닫기
-        setEditingCommentId(null);             // 댓글 편집 모드 해제
-        setEditingReplyKey({ cId: commentId, rId: replyId }); // 답글 편집 모드 진입
-        setEditText(target.content);           // 현재 내용으로 에디터 채우기
-    };
 
     if (post === "not-found") {
         return (
@@ -603,206 +748,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">
                 <div className="postdetail-comment-header">
-                    댓글 <b>{post.comments?.length || 0}</b>
+                    댓글 <b>{totalComments}</b>
                 </div>
                 <ul className="postdetail-comment-list">
-                    {(post.comments || []).map(c => (
-                        <li className="postdetail-comment-item" key={c.id}>
-                            <div className="comment-item">
-                                <div className="comment-meta">
-                                    <span className={"comment-author" + (c.is_deleted ? " deleted" : "")}
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (c.is_deleted) {
-                                                return;
-                                            }
-                                            const encrypted = await encryptUserId(String(c.user_id));
-                                            navigate(`/user/${encrypted}`);
-                                        }}
-                                    >
-                                        {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
-                                        {!c.is_deleted && c.is_owner && (
-                                            <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
-                                                (나)
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span className="comment-date">{c.date}</span>
-                                    {!c.is_deleted && (
-                                        <span
-                                            className="reply-write-btn"
-                                            onClick={() => handleReplyWriteClick(c.id)}
-                                        >
-                                        답글쓰기
-                                        </span>
-                                    )}
-                                    {!c.is_deleted && c.is_owner && (
-                                        <div className="more-wrapper">
-                                            <button
-                                                type="button"
-                                                className="more-btn"
-                                                aria-haspopup="menu"
-                                                aria-expanded={openMenu?.type === "comment" && openMenu.id === c.id}
-                                                onClick={() => toggleCommentMenu(c.id)}
-                                                title="더보기"
-                                            >
-                                                ⋯
-                                            </button>
-                                            {openMenu?.type === "comment" && openMenu.id === c.id && (
-                                                <div className="more-menu" role="menu">
-                                                    <div className="more-menu-item" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleEditComment(c.id); }}>
-                                                        수정
-                                                    </div>
-                                                    <div className="more-menu-item danger" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleDeleteComment(c.id); }}>
-                                                        삭제
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {editingCommentId === c.id ? (
-                                    <div className="reply-input-box">
-                                    <textarea
-                                        className="reply-input"
-                                        rows={2}
-                                        value={editText}
-                                        onChange={e => setEditText(e.target.value)}
-                                        placeholder="내용을 수정하세요"
-                                        style={{ resize: "none" }}
-                                    />
-                                        <div className="reply-action-row">
-                                            <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
-                                            <span
-                                                className={"reply-register-text" + (editText.trim() ? " active" : "")}
-                                                onClick={() => editText.trim() && saveEditComment(c.id)}
-                                            >저장</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={"comment-content" + (c.is_deleted ? " deleted" : "")}>
-                                        {c.content}
-                                    </div>
-                                )}
-                            </div>
-                            {/* 답글 리스트 */}
-                            <ul className="reply-list">
-                                {(c.replies || []).map(r => (
-                                    <li className="reply-item" key={r.id}>
-                                        <div className="reply-meta">
-                                <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
-                                      onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (r.is_deleted) {
-                                              return;
-                                          }
-                                          const encrypted = await encryptUserId(String(r.user_id));
-                                          navigate(`/user/${encrypted}`);
-                                      }}
-                                >
-                                    {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
-                                    {!r.is_deleted && r.is_owner && (
-                                        <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
-                                            (나)
-                                        </span>
-                                    )}
-                                </span>
-                                            <span className="reply-date">{r.date}</span>
-                                            {!r.is_deleted && r.is_owner && (
-                                                <div className="more-wrapper">
-                                                    <button
-                                                        type="button"
-                                                        className="more-btn"
-                                                        aria-haspopup="menu"
-                                                        aria-expanded={openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id}
-                                                onClick={() => toggleReplyMenu(c.id, r.id)}
-                                                title="더보기"
-                                            >
-                                                ⋯
-                                            </button>
-                                            {openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id && (
-                                                <div className="more-menu" role="menu">
-                                                    <div className="more-menu-item" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleEditReply(c.id, r.id); }}>
-                                                        수정
-                                                    </div>
-                                                    <div className="more-menu-item danger" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleDeleteReply(c.id, r.id); }}>
-                                                        삭제
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    </div>
-                                        {editingReplyKey && editingReplyKey.cId === c.id && editingReplyKey.rId === r.id ? (
-                                        <div className="reply-input-box">
-                                            <textarea
-                                                className="reply-input"
-                                                rows={2}
-                                                value={editText}
-                                                onChange={e => setEditText(e.target.value)}
-                                                placeholder="내용을 수정하세요"
-                                                style={{ resize: "none" }}
-                                            />
-                                            <div className="reply-action-row">
-                                                <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
-                                                <span
-                                                    className={"reply-register-text" + (editText.trim() ? " active" : "")}
-                                                    onClick={() => editText.trim() && saveEditReply(c.id, r.id)}
-                                                >저장</span>
-                                            </div>
-                                        </div>
-                                        ) : (
-                                        <div className={"reply-content" + (r.is_deleted ? " deleted" : "")}>
-                                            {r.content}
-                                        </div>
-                                        )}
-
-                                    </li>
-                                ))}
-                            </ul>
-                            {/* 답글 입력창: replyTargetId와 id가 같을 때만 노출 */}
-                            {replyTargetId === c.id && (
-                                <div className="reply-input-box">
-                                    <textarea
-                                        className="reply-input"
-                                        rows={1}
-                                        placeholder="답글을 입력하세요"
-                                        value={replyInput}
-                                        onChange={e => setReplyInput(e.target.value)}
-                                        style={{resize: "none"}}
-                                    />
-                                    <div className="reply-action-row">
-                                        <span
-                                            className="reply-cancel-text"
-                                            onClick={() => {
-                                                setReplyInput("");
-                                                setReplyTargetId(null);
-                                            }}
-                                        >
-                                            취소
-                                        </span>
-                                        <span
-                                            className={
-                                                "reply-register-text" +
-                                                (replyInput.trim() ? " active" : "")
-                                            }
-                                            onClick={() => {
-                                                if (replyInput.trim()) handleAddReply(c.id);
-                                            }}
-                                        >
-                                            등록
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </li>
-                    ))}
+                    {(post.comments || []).map(comment => renderCommentNode(comment))}
                 </ul>
 
                 <div className="postdetail-comment-input-row">

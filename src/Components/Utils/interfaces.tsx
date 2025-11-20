@@ -10,6 +10,7 @@ export interface PostItem {
     date: string;
     views: number;
     likes: number;
+    comments_count: number;
 }
 
 export interface Attachment {
@@ -33,20 +34,10 @@ export interface Comment {
     author: string;
     content: string;
     date: string;
-    replies?: Reply[];
     is_owner: boolean;
     is_deleted: boolean;
-}
-
-export interface Reply {
-    id: number;
-    user_id: string;
-    author_semester: number;
-    author: string;
-    content: string;
-    date: string;
-    is_owner: boolean;
-    is_deleted: boolean;
+    parent: number | null;
+    children: Comment[];
 }
 
 export interface PostDetailData {

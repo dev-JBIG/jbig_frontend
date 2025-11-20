@@ -379,7 +379,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="title-cell th-title">
                                     <span className="announcement-badge mobile-only">공지</span>
-                                    <span className="announcement-title">{p.title}</span>
+                                    <span className="announcement-title">
+                                        {p.title}
+                                        <span className="comment-count-badge">[{p.comments_count ?? 0}]</span>
+                                    </span>
                                 </td>
                                 <td className="author-cell th-author">
                   <span
@@ -417,7 +420,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     {activeBoardID === 0 || isHome ? p.id : p.board_post_id}
                                 </td>
                                 <td className="title-cell th-title">
-                                    {p.title}
+                                    <span className="title-with-count">
+                                        {p.title}
+                                        <span className="comment-count-badge">[{p.comments_count ?? 0}]</span>
+                                    </span>
                                     {postTypes.get(p.id) === 3 && (
                                         <span 
                                             style={{ color: "#999", marginLeft: "4px" }}
