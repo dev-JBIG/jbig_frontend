@@ -381,7 +381,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     <span className="announcement-badge mobile-only">공지</span>
                                     <span className="announcement-title">
                                         {p.title}
-                                        <span className="comment-count-badge">[{p.comments_count ?? 0}]</span>
+                                        {(p.comments_count ?? 0) > 0 && (
+                                            <span className="comment-count-badge">[{p.comments_count}]</span>
+                                        )}
                                     </span>
                                 </td>
                                 <td className="author-cell th-author">
@@ -422,7 +424,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="title-cell th-title">
                                     <span className="title-with-count">
                                         {p.title}
-                                        <span className="comment-count-badge">[{p.comments_count ?? 0}]</span>
+                                        {(p.comments_count ?? 0) > 0 && (
+                                            <span className="comment-count-badge">[{p.comments_count}]</span>
+                                        )}
                                     </span>
                                     {postTypes.get(p.id) === 3 && (
                                         <span 
