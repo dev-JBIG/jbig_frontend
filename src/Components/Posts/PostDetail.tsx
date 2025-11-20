@@ -482,7 +482,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     if (!post) return <div className="postdetail-container">로딩 중...</div>;
 
     return (
-        <div className="postdetail-container">
+        <div className="postdetail-container has-floating-like">
             <div className="postdetail-header">
                 <div
                     className="postdetail-category"
@@ -545,23 +545,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <span>조회수 {post.views}</span>
                 <span className="postdetail-dot">·</span>
                 <span>좋아요 {post.likes}</span>
-
-                <button
-                    type="button"
-                    className="postdetail-like-btn"
-                    onClick={handleToggleLike}
-                    aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
-                    title={post.isLiked ? "좋아요 취소" : "좋아요"}
-                >
-                    <Heart
-                        size={18}
-                        style={{
-                            fill: post.isLiked ? "#e0245e" : "transparent",
-                            stroke: post.isLiked ? "#e0245e" : "#999",
-                            transition: "all .15s ease",
-                        }}
-                    />
-                </button>
             </div>
             <div className="postdetail-divider"/>
 
@@ -823,7 +806,26 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+            <div className="postdetail-like-floating">
+                <button
+                    type="button"
+                    className="postdetail-like-btn"
+                    onClick={handleToggleLike}
+                    aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
+                    title={post.isLiked ? "좋아요 취소" : "좋아요"}
+                >
+                    <Heart
+                        size={18}
+                        style={{
+                            fill: post.isLiked ? "#e0245e" : "transparent",
+                            stroke: post.isLiked ? "#e0245e" : "#999",
+                            transition: "all .15s ease",
+                        }}
+                    />
+                </button>
+                <span className="postdetail-like-count">좋아요 {post.likes}</span>
+            </div>
+        </div>
 );
 };
 

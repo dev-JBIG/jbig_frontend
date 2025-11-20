@@ -9,6 +9,10 @@
     box-shadow: var(--shadow-sm);
 }
 
+.postdetail-container.has-floating-like {
+    padding-bottom: calc(var(--space-2xl) + 110px);
+}
+
 @media (min-width: 768px) {
     .postdetail-container {
         padding: var(--space-xl) var(--space-2xl);
@@ -92,7 +96,6 @@
 }
 
 .postdetail-like-btn {
-    margin-left: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -101,11 +104,43 @@
     padding: var(--space-xs);
     cursor: pointer;
     border-radius: var(--radius-md);
-    transition: background-color var(--transition-fast);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .postdetail-like-btn:hover {
     background-color: var(--color-bg-secondary);
+}
+
+.postdetail-like-floating {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    z-index: 40;
+    pointer-events: none;
+}
+
+.postdetail-like-floating .postdetail-like-btn {
+    margin-left: 0;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border-light);
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: 999px;
+    box-shadow: 0 12px 32px rgba(25, 33, 60, 0.18);
+    pointer-events: auto;
+}
+
+.postdetail-like-count {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    background: rgba(0, 0, 0, 0.04);
+    padding: 4px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
 }
 
 .postdetail-divider {
