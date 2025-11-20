@@ -619,7 +619,7 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
     return {
         path: file_key,
         name: file.name,
-        download_url: download_url
+        download_url: `ncp-key://${file_key}`
     };
 };
 
