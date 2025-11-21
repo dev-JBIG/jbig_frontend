@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
@@ -16,7 +16,19 @@ import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+    const commentCount = useMemo(() => {
+        if (!post || typeof post === "string") return 0;
 
+        return (post.comments || []).reduce((sum, comment) => {
+            const topLevel = comment.is_deleted ? 0 : 1;
+            const replies = (comment.replies || []).reduce(
+                (replySum, reply) => replySum + (reply.is_deleted ? 0 : 1),
+                0
+            );
+            return sum + topLevel + replies;
+        }, 0);
+    }, [post]);
+    
 interface Props {
     username: string;
 }
@@ -593,7 +605,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">
                 <div className="postdetail-comment-header">
-                    댓글 <b>{post.comments?.length || 0}</b>
+                    댓글 <b>{commentCount}</b>
                 </div>
                 <ul className="postdetail-comment-list">
                     {(post.comments || []).map(c => (
