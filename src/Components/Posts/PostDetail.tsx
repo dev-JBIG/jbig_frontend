@@ -94,26 +94,33 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
             const scrollThreshold = 200; // 200px 이상 스크롤 시 표시
+            const hideThreshold = 100; // 100px 미만에서는 항상 숨김
             const lastScrollY = lastScrollYRef.current;
             const scrollDelta = currentScrollY - lastScrollY;
 
             // 상단 근처에서는 항상 숨김
-            if (currentScrollY < 100) {
+            if (currentScrollY < hideThreshold) {
                 setIsLikeButtonVisible(false);
                 lastScrollYRef.current = currentScrollY;
                 return;
             }
 
-            // 스크롤 방향 감지
-            if (scrollDelta > 0) {
-                // 아래로 스크롤 중이고 임계값을 넘었을 때 표시
-                if (currentScrollY > scrollThreshold) {
+            // 스크롤 위치 기반으로 버튼 표시/숨김 결정 (스크롤 방향과 무관하게)
+            if (currentScrollY >= scrollThreshold) {
+                // 임계값 이상 스크롤했을 때는 표시
+                setIsLikeButtonVisible(true);
+            } else {
+                // 임계값 미만일 때는 스크롤 방향에 따라 결정
+                if (scrollDelta > 0) {
+                    // 아래로 스크롤 중이면 표시
                     setIsLikeButtonVisible(true);
-                }
-            } else if (scrollDelta < 0) {
-                // 위로 스크롤 중일 때는 숨김 (부드러운 UX)
-                if (currentScrollY < scrollThreshold) {
+                } else if (scrollDelta < 0) {
+                    // 위로 스크롤 중이면 숨김
                     setIsLikeButtonVisible(false);
+                } else {
+                    // scrollDelta === 0인 경우 (초기 로드 또는 스크롤 멈춤)
+                    // 현재 위치에 따라 결정
+                    setIsLikeButtonVisible(currentScrollY >= scrollThreshold);
                 }
             }
 
