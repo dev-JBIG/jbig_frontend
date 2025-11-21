@@ -62,6 +62,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
     const [heartBurstKey, setHeartBurstKey] = useState(0);
+    const [heartBurstActive, setHeartBurstActive] = useState(false);
+    const heartBurstTimeoutRef = useRef<number | null>(null);
     const heartParticleSlots = [0, 1, 2, 3, 4];
 
     const commentCount = useMemo(() => {
@@ -93,6 +95,14 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [postId]);
+
+    useEffect(() => {
+        return () => {
+            if (heartBurstTimeoutRef.current) {
+                window.clearTimeout(heartBurstTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -265,6 +275,17 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         navigate(`/board/${boardId}/${post.id}/modify`);
     };
 
+    const triggerHeartBurst = () => {
+        setHeartBurstKey(prev => prev + 1);
+        setHeartBurstActive(true);
+        if (heartBurstTimeoutRef.current) {
+            window.clearTimeout(heartBurstTimeoutRef.current);
+        }
+        heartBurstTimeoutRef.current = window.setTimeout(() => {
+            setHeartBurstActive(false);
+        }, 700);
+    };
+
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
         if (!post || typeof post === "string") return;
@@ -278,7 +299,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         const nextLiked = !post.isLiked;
         const nextLikes = post.likes + (nextLiked ? 1 : -1);
         setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
-        setHeartBurstKey(prev => prev + 1);
+        triggerHeartBurst();
 
         try {
             await togglePostLike(post.id, accessToken);
@@ -829,7 +850,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         </div>
                     </div>
               <div className="postdetail-like-floating">
-                  <div className="postdetail-like-btn-wrapper">
+                    <div className="postdetail-like-btn-wrapper">
                       <button
                           type="button"
                           className="postdetail-like-btn"
@@ -845,8 +866,11 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                   transition: "all .15s ease",
                               }}
                           />
-                      </button>
-                      <div className="postdetail-heart-burst" key={heartBurstKey}>
+                        </button>
+                        <div
+                            className={`postdetail-heart-burst${heartBurstActive ? " is-active" : ""}`}
+                            key={heartBurstKey}
+                        >
                           {heartParticleSlots.map(slot => (
                               <span key={slot} />
                           ))}
