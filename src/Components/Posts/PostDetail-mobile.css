@@ -70,11 +70,20 @@
         gap: var(--space-2xs);
     }
 
+    .postdetail-like-floating.visible {
+        transform: translateX(-50%) translateY(0);
+    }
+
     .postdetail-like-floating .postdetail-like-btn {
         padding: var(--space-md) var(--space-xl);
         border-radius: 999px;
         min-width: 56px;
         min-height: 56px;
+        touch-action: manipulation;
+    }
+
+    .postdetail-like-floating .postdetail-like-btn:active {
+        transform: scale(0.92);
     }
 
     .postdetail-like-count {
