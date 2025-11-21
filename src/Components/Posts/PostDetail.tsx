@@ -16,19 +16,6 @@ import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {encryptUserId} from "../Utils/Encryption";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
-    const commentCount = useMemo(() => {
-        if (!post || typeof post === "string") return 0;
-
-        return (post.comments || []).reduce((sum, comment) => {
-            const topLevel = comment.is_deleted ? 0 : 1;
-            const replies = (comment.replies || []).reduce(
-                (replySum, reply) => replySum + (reply.is_deleted ? 0 : 1),
-                0
-            );
-            return sum + topLevel + replies;
-        }, 0);
-    }, [post]);
-    
 interface Props {
     username: string;
 }
@@ -74,6 +61,19 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
+
+    const commentCount = useMemo(() => {
+        if (!post || typeof post === "string") return 0;
+
+        return (post.comments || []).reduce((sum, comment) => {
+            const topLevel = comment.is_deleted ? 0 : 1;
+            const replies = (comment.replies || []).reduce(
+                (replySum, reply) => replySum + (reply.is_deleted ? 0 : 1),
+                0
+            );
+            return sum + topLevel + replies;
+        }, 0);
+    }, [post]);
 
     const toggleCommentMenu = (id: number) =>
         setOpenMenu(m => (m && m.type === "comment" && m.id === id ? null : { type: "comment", id }));
