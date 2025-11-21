@@ -135,10 +135,14 @@
     width: 16px;
     height: 16px;
     opacity: 0;
-    animation: postdetail-heart-pop 620ms ease-out forwards;
+    animation: none;
     animation-delay: var(--delay);
     transform-origin: center;
     color: #ff6f91;
+}
+
+.postdetail-heart-burst.is-active span {
+    animation: postdetail-heart-pop 620ms ease-out forwards;
 }
 
 .postdetail-heart-burst span::before {
