@@ -62,11 +62,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
-    // 좋아요 버튼 스크롤 상태 관리
-    const [isLikeButtonVisible, setIsLikeButtonVisible] = useState(false);
-    const lastScrollYRef = useRef(0);
-    // 좋아요 클릭 애니메이션 상태
-    const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
     const toggleCommentMenu = (id: number) =>
         setOpenMenu(m => (m && m.type === "comment" && m.id === id ? null : { type: "comment", id }));
@@ -83,49 +78,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     // 페이지 진입 시 스크롤 최상단으로 이동
     useEffect(() => {
         window.scrollTo(0, 0);
-        setIsLikeButtonVisible(false);
-        lastScrollYRef.current = 0;
     }, [postId]);
-
-    // 스크롤 기반 좋아요 버튼 표시/숨김
-    useEffect(() => {
-        if (!post || typeof post === "string") return;
-
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            const scrollThreshold = 200; // 200px 이상 스크롤 시 표시
-            const lastScrollY = lastScrollYRef.current;
-            const scrollDelta = currentScrollY - lastScrollY;
-
-            // 상단 근처에서는 항상 숨김
-            if (currentScrollY < 100) {
-                setIsLikeButtonVisible(false);
-                lastScrollYRef.current = currentScrollY;
-                return;
-            }
-
-            // 스크롤 방향 감지
-            if (scrollDelta > 0) {
-                // 아래로 스크롤 중이고 임계값을 넘었을 때 표시
-                if (currentScrollY > scrollThreshold) {
-                    setIsLikeButtonVisible(true);
-                }
-            } else if (scrollDelta < 0) {
-                // 위로 스크롤 중일 때는 숨김 (부드러운 UX)
-                if (currentScrollY < scrollThreshold) {
-                    setIsLikeButtonVisible(false);
-                }
-            }
-
-            lastScrollYRef.current = currentScrollY;
-        };
-
-        // 초기 스크롤 위치 확인
-        handleScroll();
-
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [post]);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -300,10 +253,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             navigate("/signin");
             return;
         }
-
-        // 클릭 애니메이션 트리거
-        setIsLikeAnimating(true);
-        setTimeout(() => setIsLikeAnimating(false), 300);
 
         const nextLiked = !post.isLiked;
         const nextLikes = post.likes + (nextLiked ? 1 : -1);
@@ -857,10 +806,10 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             </button>
                         </div>
                     </div>
-            <div className={`postdetail-like-floating ${isLikeButtonVisible ? "visible" : ""}`}>
+            <div className="postdetail-like-floating">
                 <button
                     type="button"
-                    className={`postdetail-like-btn ${isLikeAnimating ? "animating" : ""}`}
+                    className="postdetail-like-btn"
                     onClick={handleToggleLike}
                     aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
                     title={post.isLiked ? "좋아요 취소" : "좋아요"}
