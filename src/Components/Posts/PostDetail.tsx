@@ -61,6 +61,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
+    const [heartBurstKey, setHeartBurstKey] = useState(0);
+    const heartParticleSlots = [0, 1, 2, 3, 4];
 
     const commentCount = useMemo(() => {
         if (!post || typeof post === "string") return 0;
@@ -276,6 +278,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         const nextLiked = !post.isLiked;
         const nextLikes = post.likes + (nextLiked ? 1 : -1);
         setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
+        setHeartBurstKey(prev => prev + 1);
 
         try {
             await togglePostLike(post.id, accessToken);
@@ -825,23 +828,30 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             </button>
                         </div>
                     </div>
-            <div className="postdetail-like-floating">
-                <button
-                    type="button"
-                    className="postdetail-like-btn"
-                    onClick={handleToggleLike}
-                    aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
-                    title={post.isLiked ? "좋아요 취소" : "좋아요"}
-                >
-                    <Heart
-                        size={18}
-                        style={{
-                            fill: post.isLiked ? "#e0245e" : "transparent",
-                            stroke: post.isLiked ? "#e0245e" : "#999",
-                            transition: "all .15s ease",
-                        }}
-                    />
-                </button>
+              <div className="postdetail-like-floating">
+                  <div className="postdetail-like-btn-wrapper">
+                      <button
+                          type="button"
+                          className="postdetail-like-btn"
+                          onClick={handleToggleLike}
+                          aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
+                          title={post.isLiked ? "좋아요 취소" : "좋아요"}
+                      >
+                          <Heart
+                              size={18}
+                              style={{
+                                  fill: post.isLiked ? "#e0245e" : "transparent",
+                                  stroke: post.isLiked ? "#e0245e" : "#999",
+                                  transition: "all .15s ease",
+                              }}
+                          />
+                      </button>
+                      <div className="postdetail-heart-burst" key={heartBurstKey}>
+                          {heartParticleSlots.map(slot => (
+                              <span key={slot} />
+                          ))}
+                      </div>
+                  </div>
                 <span className="postdetail-like-count">좋아요 {post.likes}</span>
             </div>
         </div>
