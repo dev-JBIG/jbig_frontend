@@ -108,6 +108,54 @@ const Home: React.FC = () => {
         };
     }, [location.pathname]);
 
+    // Minnit 채팅 열림/닫힘 상태에 따라 부드러운 전환 적용
+    useEffect(() => {
+        const container = document.getElementById('minnit-chat-container');
+        if (!container) return;
+
+        const getChatFrame = () =>
+            container.querySelector<HTMLIFrameElement>('iframe[src*="minnit.chat"]:not([src*="chaticon"])');
+
+        const updateState = () => {
+            const frame = getChatFrame();
+            if (!frame) {
+                container.classList.add('chat-closed');
+                container.classList.remove('chat-open');
+                return;
+            }
+
+            const styles = window.getComputedStyle(frame);
+            const isVisible =
+                styles.display !== 'none' &&
+                styles.visibility !== 'hidden' &&
+                styles.opacity !== '0' &&
+                frame.clientHeight > 0;
+
+            container.classList.toggle('chat-open', isVisible);
+            container.classList.toggle('chat-closed', !isVisible);
+        };
+
+        const observer = new MutationObserver(() => {
+            window.requestAnimationFrame(updateState);
+        });
+
+        observer.observe(container, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+            attributeFilter: ['style', 'class']
+        });
+
+        const intervalId = window.setInterval(updateState, 1000);
+
+        updateState();
+
+        return () => {
+            observer.disconnect();
+            window.clearInterval(intervalId);
+        };
+    }, []);
+
     useEffect(() => {
         const openHandler = (e: any) => {
             const { mode, event } = e.detail || {};
