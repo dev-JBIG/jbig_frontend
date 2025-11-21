@@ -133,6 +133,13 @@ const PostDetail: React.FC<Props> = ({ username }) => {
 
                 const src = raw.post_data ?? raw;
 
+                const rawComments = Array.isArray(src.comments) ? src.comments : [];
+                const topLevelComments = rawComments
+                    // parent가 있는 항목(=대댓글)은 상위 댓글 배열에서 제외
+                    .filter((c: any) => !c.parent)
+                    .slice()
+                    .reverse();
+
                 const mapped: PostDetailData = {
                     id: src.id,
                     board_post_id: src.id,
@@ -171,7 +178,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             };
                         }
                     }),
-                    comments: (src.comments || []).slice().reverse().map((c: any) => ({
+                    comments: topLevelComments.map((c: any) => ({
                         id: c.id,
                         user_id: c.user_id,
                         author_semester: c.author_semester,
