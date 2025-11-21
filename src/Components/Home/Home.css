@@ -64,6 +64,49 @@
     overflow-y: auto;
 }
 
+/* Minnit 채팅 컨테이너 */
+#minnit-chat-container {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-sm);
+    z-index: 1100;
+    --chat-frame-scale: 1;
+    --chat-icon-scale: 1;
+}
+
+#minnit-chat-container .minnit-chat-icon-sembed {
+    pointer-events: auto;
+    transform-origin: bottom right;
+    transition: transform var(--transition-fast);
+    transform: scale(var(--chat-icon-scale));
+}
+
+#minnit-chat-container iframe[src*="minnit.chat"]:not([src*="chaticon"]) {
+    transform-origin: bottom right;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    pointer-events: auto;
+    transform: translateY(0) scale(var(--chat-frame-scale));
+}
+
+#minnit-chat-container.chat-closed iframe[src*="minnit.chat"]:not([src*="chaticon"]) {
+    opacity: 0;
+    transform: translateY(16px) scale(calc(var(--chat-frame-scale) * 0.95));
+    pointer-events: none;
+}
+
+#minnit-chat-container.chat-open iframe[src*="minnit.chat"]:not([src*="chaticon"]) {
+    opacity: 1;
+    transform: translateY(0) scale(var(--chat-frame-scale));
+}
+
+#minnit-chat-container.chat-open .minnit-chat-icon-sembed {
+    transform: translateY(-4px) scale(var(--chat-icon-scale));
+}
+
 /* 로그인 버튼 */
 .login-button {
     padding: var(--space-sm) var(--space-md);

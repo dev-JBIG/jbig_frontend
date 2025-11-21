@@ -130,17 +130,7 @@
         bottom: 20px !important;
         right: 20px !important;
         z-index: 9999 !important;
-    }
-
-    /* 아이콘을 50% 크기로 축소 */
-    .minnit-chat-icon-sembed {
-        transform: scale(0.5) !important;
-        transform-origin: bottom right !important;
-    }
-
-    /* 채팅창은 정상 크기 유지 (scale(0.5) × scale(2) = 1.0) */
-    #minnit-chat-container iframe[src*="minnit.chat"]:not([src*="chaticon"]) {
-        transform: scale(2) !important;
-        transform-origin: bottom right !important;
+        --chat-frame-scale: 2;
+        --chat-icon-scale: 0.5;
     }
 }
