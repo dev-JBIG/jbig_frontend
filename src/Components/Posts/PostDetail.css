@@ -111,6 +111,77 @@
     background-color: var(--color-bg-secondary);
 }
 
+.postdetail-like-btn-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.postdetail-heart-burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.postdetail-heart-burst span {
+    --tx: 0px;
+    --ty: -28px;
+    --delay: 0ms;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    animation: postdetail-heart-pop 620ms ease-out forwards;
+    animation-delay: var(--delay);
+    transform-origin: center;
+    color: #ff6f91;
+}
+
+.postdetail-heart-burst span::before {
+    content: "❤";
+    font-size: 16px;
+    color: currentColor;
+}
+
+.postdetail-heart-burst span:nth-child(1) {
+    --tx: -28px;
+    --ty: -6px;
+    --delay: 0ms;
+    color: #ff8a80;
+}
+
+.postdetail-heart-burst span:nth-child(2) {
+    --tx: -10px;
+    --ty: -36px;
+    --delay: 50ms;
+    color: #ff4d6d;
+}
+
+.postdetail-heart-burst span:nth-child(3) {
+    --tx: 12px;
+    --ty: -28px;
+    --delay: 90ms;
+    color: #e91e63;
+}
+
+.postdetail-heart-burst span:nth-child(4) {
+    --tx: 30px;
+    --ty: -12px;
+    --delay: 40ms;
+    color: #f06292;
+}
+
+.postdetail-heart-burst span:nth-child(5) {
+    --tx: 10px;
+    --ty: -44px;
+    --delay: 0ms;
+    color: #ff6f91;
+}
+
 .postdetail-like-floating {
     position: fixed;
     left: 50%;
@@ -173,6 +244,19 @@
     background-color: var(--color-text-secondary);
 }
 
+@keyframes postdetail-heart-pop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.4);
+    }
+    35% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.1);
+    }
+}
 
 /* --- 사유서 테이블 스타일 --- */
 .postdetail-content table {
