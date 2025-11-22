@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
+import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { fetchSiteSettings, updateSiteSettings } from "../../API/req";
 import "./Admin.css";
 
@@ -112,6 +113,7 @@ function Dashboard() {
 
 function Admin() {
     const { user, authReady, accessToken, signOutLocal } = useUser();
+    const { staffAuth } = useStaffAuth();
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState("dashboard");
     const [authorized, setAuthorized] = useState(false);
@@ -124,13 +126,13 @@ function Admin() {
             navigate("/signin");
             return;
         }
-        if (!user.is_staff) {
+        if (!staffAuth && !user.is_staff) {
             alert("관리자 권한이 필요합니다.");
             navigate("/");
             return;
         }
         setAuthorized(true);
-    }, [authReady, user, accessToken, navigate, signOutLocal]);
+    }, [authReady, user, accessToken, navigate, signOutLocal, staffAuth]);
 
     const adminMenus = [
         { id: "dashboard", name: "대시보드" },
