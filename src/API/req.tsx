@@ -352,24 +352,6 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
     }
 };
 
-// 배너 이미지 가져오기
-export async function fetchBannerImage(): Promise<Blob> {
-    const url = `${BASE_URL}/api/html/banner/`;
-
-    try {
-        const res = await axios.get(url, {
-            responseType: "blob",
-        });
-
-        return res.data; // Blob 반환
-    } catch (err: any) {
-        if (err.response) {
-            throw new Error(`Failed to load banner: ${err.response.status}`);
-        }
-        throw new Error("Failed to load banner: Network error");
-    }
-}
-
 // 전체 게시판 검색 (전체 카테고리)
 export const fetchSearchPosts = async (
     query: string,

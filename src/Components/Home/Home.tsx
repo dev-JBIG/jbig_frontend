@@ -10,7 +10,6 @@ import PostWrite from "../Posts/PostWrite";
 import Search from "../Posts/Search";
 import {
     createCalendarEvent,
-    fetchBannerImage,
     fetchQuizUrl,
     getBoards,
     signout,
@@ -28,9 +27,11 @@ import VastModal from "../Utils/Vast/VastModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import $ from "jquery";
 
+// 배너 이미지 CDN URL (NCP Object Storage)
+const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
+
 const Home: React.FC = () => {
     const [boards, setBoards] = useState<Section[]>([]);
-    const [bannerImage, setBannerImage] = useState<string>();
     const [totalCount, setTotalCount] = useState<number>(0);
     const [quizURL, setQuizURL] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
@@ -49,17 +50,6 @@ const Home: React.FC = () => {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const blob = await fetchBannerImage();
-                const url = URL.createObjectURL(blob);
-                setBannerImage(url);
-            } catch (err) {
-                console.error(err);
-            }
-        })();
-    }, []);
 
     useEffect(() => {
         const openHandler = (e: any) => {
@@ -270,7 +260,7 @@ const Home: React.FC = () => {
                 </div>
             </header>
             <div className="home-banner">
-            <img src={bannerImage} alt="banner-image" className="banner-image"/>
+            <img src={BANNER_IMAGE_URL} alt="banner-image" className="banner-image"/>
             </div>
             <div className="home-content">
                 <Routes>
