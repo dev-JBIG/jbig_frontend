@@ -16,7 +16,20 @@ async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
     if (!res.ok) {
         throw new Error(`Failed to fetch page: ${res.status}`);
     }
-    return res.json();
+    const data = await res.json();
+
+    if (data && !data.block) {
+        return {
+            block: data,
+            collection: {},
+            collection_view: {},
+            notion_user: {},
+            collection_query: {},
+            signed_urls: {},
+        } as ExtendedRecordMap;
+    }
+
+    return data;
 }
 
 const Note: React.FC = () => {
