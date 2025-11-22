@@ -1,17 +1,26 @@
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const SECRET = process.env.REACT_APP_USERID_SECRET || "default-secret";
+// AES-GCM은 16/24/32바이트 키만 허용
+const SECRET = process.env.REACT_APP_USERID_SECRET || "default-secret-16"; // 16바이트
 
 function hasSubtleCrypto(): boolean {
     return !!(window.crypto && window.crypto.subtle);
+}
+
+// 키를 정확히 16바이트로 맞춤
+function padKey(key: string): Uint8Array {
+    const keyBytes = encoder.encode(key);
+    const padded = new Uint8Array(16);
+    padded.set(keyBytes.slice(0, 16));
+    return padded;
 }
 
 async function getKey() {
     if (!hasSubtleCrypto()) return null;
     return window.crypto.subtle.importKey(
         "raw",
-        encoder.encode(SECRET),
+        padKey(SECRET),
         { name: "AES-GCM" },
         false,
         ["encrypt", "decrypt"]
