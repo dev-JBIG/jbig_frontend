@@ -12,8 +12,12 @@ import {refreshTokenAPI} from "./API/req";
 import {useUser} from "./Components/Utils/UserContext";
 import ChangePWD from "./Components/ChangePWD/ChangePWD";
 
+const STAFF_AUTH_KEY = "jbig-staff-auth";
+
 function App() {
-    const [staffAuth, setStaffAuth] = useState<boolean>(false);
+    const [staffAuth, setStaffAuth] = useState<boolean>(() => {
+        return localStorage.getItem(STAFF_AUTH_KEY) === "true";
+    });
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -71,8 +75,17 @@ function App() {
         })();
     }, [authReady, refreshingOnReload, refreshToken, setAuth, signOutLocal, navigate]);
 
+    const handleSetStaffAuth = (value: boolean) => {
+        setStaffAuth(value);
+        if (value) {
+            localStorage.setItem(STAFF_AUTH_KEY, "true");
+        } else {
+            localStorage.removeItem(STAFF_AUTH_KEY);
+        }
+    };
+
     return (
-        <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth }}>
+        <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth: handleSetStaffAuth }}>
             <div className="app-root">
                 {isAuthRoute ? (
                     <Routes>
