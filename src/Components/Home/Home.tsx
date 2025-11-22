@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import "./Home.css"
 import "./Home-mobile.css"
 import MainLayout from "../Utils/MainLayout";
@@ -48,7 +48,6 @@ const Home: React.FC = () => {
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    const location = useLocation();
 
     useEffect(() => {
         (async () => {
@@ -61,52 +60,6 @@ const Home: React.FC = () => {
             }
         })();
     }, []);
-
-    // Minnit 채팅 - 모바일에서는 메인 페이지(/)에서만, 데스크탑에서는 모든 페이지에서 로드
-    useEffect(() => {
-        const isHomePage = location.pathname === '/';
-        const isMobile = window.innerWidth <= 767;
-        const container = document.getElementById('minnit-chat-container');
-
-        if (!container) return;
-
-        const shouldShowChat = isHomePage || !isMobile;
-
-        if (shouldShowChat) {
-            // 이미 로드되어 있으면 다시 로드하지 않음
-            if (document.getElementById('minnit-chat-script')) return;
-
-            // 스크립트 로드
-            const script = document.createElement('script');
-            script.src = 'https://minnit.chat/js/chaticon.js';
-            script.defer = true;
-            script.id = 'minnit-chat-script';
-
-            // 아이콘 span 생성
-            const span = document.createElement('span');
-            span.setAttribute('data-circle-or-square', 'circle');
-            span.setAttribute('data-left-or-right', 'right');
-            span.setAttribute('data-chaturl', 'https://organizations.minnit.chat/515270226603216/c/Main');
-            span.setAttribute('data-hex-color-code', '000000');
-            span.setAttribute('data-icon-url', '');
-            span.className = 'minnit-chat-icon-sembed';
-            span.style.display = 'block';
-            span.id = 'minnit-chat-icon';
-
-            container.appendChild(script);
-            container.appendChild(span);
-        } else {
-            // 모바일에서 메인 페이지가 아니면 제거
-            container.innerHTML = '';
-        }
-
-        return () => {
-            // 클린업 - 모바일에서만
-            if (isMobile && container) {
-                container.innerHTML = '';
-            }
-        };
-    }, [location.pathname]);
 
     useEffect(() => {
         const openHandler = (e: any) => {
