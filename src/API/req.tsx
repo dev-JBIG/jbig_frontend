@@ -13,17 +13,21 @@ import {
  * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
  */
 
-const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
 const BASE_URL = ((): string => {
-    if (SERVER_HOST && SERVER_PORT) {
-        return `http://${SERVER_HOST}:${SERVER_PORT}`;
+    // 1. 환경변수에 API_BASE_URL이 있으면 사용
+    if (process.env.REACT_APP_API_BASE_URL) {
+        return process.env.REACT_APP_API_BASE_URL;
     }
-    // Same-origin fallback for production when env vars are not injected
+    // 2. 로컬 개발용 (SERVER_HOST, SERVER_PORT)
+    const serverHost = process.env.REACT_APP_SERVER_HOST;
+    const serverPort = process.env.REACT_APP_SERVER_PORT;
+    if (serverHost && serverPort) {
+        return `http://${serverHost}:${serverPort}`;
+    }
+    // 3. Same-origin fallback (프로덕션)
     if (typeof window !== 'undefined' && window.location?.origin) {
         return window.location.origin;
     }
-    // Node/test fallback
     return "";
 })();
 
