@@ -27,7 +27,6 @@ import VastModal from "../Utils/Vast/VastModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import $ from "jquery";
 
-// 배너 이미지 CDN URL (NCP Object Storage)
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
 
 const Home: React.FC = () => {
@@ -42,8 +41,6 @@ const Home: React.FC = () => {
     const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
     const [initialEvent, setInitialEvent] = useState<any>(null);
     const [isVastOpen, setVastOpen] = useState(false);
-
-    // 전 페이지 사용자 정보 공유
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
     const { staffAuth } = useStaffAuth();
 
@@ -67,14 +64,10 @@ const Home: React.FC = () => {
         }
     }, []);
 
-    // modal 오픈 시 스크롤 차단, 우측 패딩으로 UI 변동 차단
     useEffect(() => {
         if (isModalOpen) {
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-            // body에 스크롤바 너비만큼 오른쪽 패딩을 추가합니다.
             document.body.style.paddingRight = `${scrollbarWidth}px`;
-
             document.body.classList.add('modal-open');
         } else {
             document.body.style.paddingRight = '';
@@ -148,8 +141,6 @@ const Home: React.FC = () => {
         window.location.reload();
     };
 
-
-    /** 이하 모달 관련 함수 */
     const handleAddEvent = () => {
         if(!authReady || !accessToken) {
             alert("로그인이 필요합니다.");
@@ -174,10 +165,7 @@ const Home: React.FC = () => {
             const $calendar = ($("#calendar") as any);
 
             if (modalMode === "edit" && id) {
-                // 1) 서버 반영
                 const updated = await updateCalendarEvent(id, newEvent, accessToken);
-
-                // 2) UI 반영 (기존 것 제거 후 최신으로 렌더함)
                 $calendar.fullCalendar("removeEvents", id);
                 $calendar.fullCalendar("renderEvent", updated);
             } else {
@@ -208,7 +196,6 @@ const Home: React.FC = () => {
         setModalOpen(false);
     };
 
-    /** 사이드 바 파라미터 */
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
     return (

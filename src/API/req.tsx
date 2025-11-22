@@ -1105,3 +1105,26 @@ export const deleteCalendarEvent = async (
         responseType: "json",
     });
 };
+
+// 사이트 설정 조회
+export const fetchSiteSettings = async (): Promise<{ notion_page_id: string; quiz_url: string }> => {
+    const url = `${BASE_URL}/api/settings/`;
+    const res = await axios.get(url);
+    return res.data;
+};
+
+// 사이트 설정 수정 (관리자 전용)
+export const updateSiteSettings = async (
+    settings: { notion_page_id?: string; quiz_url?: string },
+    token: string
+): Promise<{ message: string; notion_page_id?: string; quiz_url?: string }> => {
+    const url = `${BASE_URL}/api/settings/`;
+    const res = await axios.put(url, settings, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    return res.data;
+};

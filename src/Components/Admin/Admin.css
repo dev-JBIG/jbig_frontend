@@ -276,7 +276,7 @@
 }
 
 .status-inactive {
-    background-color: #fbeee;
+    background-color: #fbeeee;
     color: #c0392b;
 }
 
@@ -324,4 +324,49 @@
     content: '•';
     color: var(--primary-color);
     font-size: 18px;
+}
+
+/* --- 메시지 --- */
+.admin-message {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.admin-message.success {
+    background-color: #eafaf1;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+
+.admin-message.error {
+    background-color: #fbeaea;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+}
+
+/* --- 폼 힌트 --- */
+.form-hint {
+    font-size: 12px;
+    color: var(--text-light-color);
+    margin-top: 4px;
+}
+
+/* --- 로딩 --- */
+.admin-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 16px;
+    color: var(--text-light-color);
+}
+
+/* --- 비활성화 버튼 --- */
+.admin-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }

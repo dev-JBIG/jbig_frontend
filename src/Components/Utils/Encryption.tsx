@@ -1,14 +1,11 @@
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-
-// AES-GCM은 16/24/32바이트 키만 허용
-const SECRET = process.env.REACT_APP_USERID_SECRET || "default-secret-16"; // 16바이트
+const SECRET = process.env.REACT_APP_USERID_SECRET || "default-secret-16";
 
 function hasSubtleCrypto(): boolean {
     return !!(window.crypto && window.crypto.subtle);
 }
 
-// 키를 정확히 16바이트로 맞춤
 function padKey(key: string): Uint8Array {
     const keyBytes = encoder.encode(key);
     const padded = new Uint8Array(16);
@@ -38,7 +35,6 @@ function fromUrlSafe(str: string) {
 
 export async function encryptUserId(userId: string): Promise<string> {
     if (!hasSubtleCrypto()) {
-        // fallback
         return toUrlSafe(btoa(userId));
     }
 
@@ -59,7 +55,6 @@ export async function encryptUserId(userId: string): Promise<string> {
 export async function decryptUserId(cipher: string): Promise<string | null> {
     try {
         if (!hasSubtleCrypto()) {
-            // fallback
             return atob(fromUrlSafe(cipher));
         }
 

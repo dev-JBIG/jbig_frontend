@@ -4,6 +4,7 @@ type User = {
     username: string;
     semester: string;
     email: string;
+    is_staff?: boolean;
 } | null;
 
 type UserContextType = {

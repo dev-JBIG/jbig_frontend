@@ -39,6 +39,7 @@
                             username: result.username,
                             semester: result.semester,
                             email: userId,
+                            is_staff: !!result.is_staff,
                         },
                         result.access,
                         result.refresh
