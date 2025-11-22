@@ -635,24 +635,6 @@ export const fetchAwardsHtml = async (): Promise<string> => {
     return res.data;
 };
 
-// notion html 불러오기
-export async function fetchNotionHtml(fileName: string | null, accessToken: string): Promise<string> {
-    const url = fileName
-        ? `${BASE_URL}/api/html/notion/?file=${encodeURIComponent(fileName)}`
-        : `${BASE_URL}/api/html/notion/`;
-
-    const res = await fetch(url, {
-        credentials: "include",
-        headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to load HTML: ${res.status}`);
-    }
-
-    return res.text();
-}
-
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
     try {

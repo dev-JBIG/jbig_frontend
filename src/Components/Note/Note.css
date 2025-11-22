@@ -13,6 +13,7 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    max-width: 900px;
     padding: 10px 0 20px 0;
     margin-bottom: 20px;
     border-bottom: 1px solid #ccc;
@@ -46,12 +47,104 @@
     transform: scale(1.05);
 }
 
-.note-iframe {
+.note-content {
     width: 100%;
-    max-width: 1000px;
-    height: 1000px;
-    border: none;
-    overflow: hidden;
+    max-width: 900px;
     background-color: white;
+    border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.note-loading,
+.note-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    height: 400px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-size: 18px;
+    color: #666;
+}
+
+.note-error {
+    color: #e53e3e;
+}
+
+/* react-notion-x 스타일 오버라이드 */
+.notion-page {
+    padding: 0 !important;
+}
+
+.notion-page-content {
+    padding: 20px !important;
+}
+
+.notion-title {
+    font-size: 2rem !important;
+}
+
+.notion-h1 {
+    font-size: 1.75rem !important;
+}
+
+.notion-h2 {
+    font-size: 1.5rem !important;
+}
+
+.notion-h3 {
+    font-size: 1.25rem !important;
+}
+
+/* 이미지 스타일 */
+.notion-asset-wrapper img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 코드 블록 스타일 */
+.notion-code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+}
+
+/* 링크 스타일 */
+.notion-link {
+    color: #185a9d;
+    text-decoration: none;
+}
+
+.notion-link:hover {
+    text-decoration: underline;
+}
+
+/* 목차 스타일 */
+.notion-table-of-contents {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .note-wrapper {
+        padding: 10px 16px;
+    }
+
+    .note-header {
+        padding: 10px 0 15px 0;
+    }
+
+    .note-content {
+        border-radius: 4px;
+    }
+
+    .notion-page-content {
+        padding: 15px !important;
+    }
 }
