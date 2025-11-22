@@ -20,7 +20,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-            CI: false 
+          CI: false
+          REACT_APP_API_BASE_URL: ${{ secrets.REACT_APP_API_BASE_URL }}
+          REACT_APP_DEFAULT_NOTION_PAGE_ID: ${{ secrets.REACT_APP_DEFAULT_NOTION_PAGE_ID }}
+          REACT_APP_SERVER_HOST: ${{ secrets.REACT_APP_SERVER_HOST }}
+          REACT_APP_SERVER_PORT: ${{ secrets.REACT_APP_SERVER_PORT }} 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
