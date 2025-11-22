@@ -19,7 +19,7 @@ import AbsenceForm from "./AbsenceForm"; // 결석사유서 추가
 // 업로드 제한 파일 확장자, 필요 시 추가
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 
-// 파일 개수, 용량 제한 (백엔드와 동일하게 10MB로 통일)
+// 파일 개수, 용량 제한 (백엔드와 동일하게 10MB로 통일함.)
 const MAX_FILES = 3;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
