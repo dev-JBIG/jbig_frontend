@@ -59,6 +59,7 @@
 .note-loading,
 .note-error {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     width: 100%;
@@ -69,10 +70,25 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     font-size: 18px;
     color: #666;
+    gap: 16px;
 }
 
 .note-error {
     color: #e53e3e;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #185a9d;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* react-notion-x 스타일 오버라이드 */
