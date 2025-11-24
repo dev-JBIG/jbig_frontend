@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState, useCallback, memo} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req";
@@ -15,6 +15,27 @@ import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+
+// HeartBurst 애니메이션 컴포넌트 (분리하여 리렌더링 최적화)
+const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
+    const [active, setActive] = useState(false);
+    const timeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (triggerKey === 0) return;
+        setActive(true);
+        if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = window.setTimeout(() => setActive(false), 700);
+        return () => { if (timeoutRef.current) window.clearTimeout(timeoutRef.current); };
+    }, [triggerKey]);
+
+    return (
+        <div className={`postdetail-heart-burst${active ? " is-active" : ""}`}>
+            {[0, 1, 2, 3, 4].map(slot => <span key={slot} />)}
+        </div>
+    );
+});
+
 interface Props {
     username: string;
 }
@@ -61,9 +82,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
     const [heartBurstKey, setHeartBurstKey] = useState(0);
-    const [heartBurstActive, setHeartBurstActive] = useState(false);
-    const heartBurstTimeoutRef = useRef<number | null>(null);
-    const heartParticleSlots = [0, 1, 2, 3, 4];
 
     const commentCount = useMemo(() => {
         if (!post || typeof post === "string") return 0;
@@ -95,13 +113,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         window.scrollTo(0, 0);
     }, [postId]);
 
-    useEffect(() => {
-        return () => {
-            if (heartBurstTimeoutRef.current) {
-                window.clearTimeout(heartBurstTimeoutRef.current);
-            }
-        };
-    }, []);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -274,16 +285,9 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         navigate(`/board/${boardId}/${post.id}/modify`);
     };
 
-    const triggerHeartBurst = () => {
+    const triggerHeartBurst = useCallback(() => {
         setHeartBurstKey(prev => prev + 1);
-        setHeartBurstActive(true);
-        if (heartBurstTimeoutRef.current) {
-            window.clearTimeout(heartBurstTimeoutRef.current);
-        }
-        heartBurstTimeoutRef.current = window.setTimeout(() => {
-            setHeartBurstActive(false);
-        }, 700);
-    };
+    }, []);
 
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
@@ -847,14 +851,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                               }}
                           />
                         </button>
-                        <div
-                            className={`postdetail-heart-burst${heartBurstActive ? " is-active" : ""}`}
-                            key={heartBurstKey}
-                        >
-                          {heartParticleSlots.map(slot => (
-                              <span key={slot} />
-                          ))}
-                      </div>
+                        <HeartBurst triggerKey={heartBurstKey} />
                   </div>
                 <span className="postdetail-like-count">좋아요 {post.likes}</span>
             </div>

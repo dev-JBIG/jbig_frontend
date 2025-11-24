@@ -536,8 +536,8 @@ export const deletePost = async (
     } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
             const status = err.response?.status;
-            if (status === 401) return { status: 401, message: "Unauthorized" };
-            if (status === 404) return { status: 404, notFound: true, message: "Not Found" };
+            if (status === 401) return { status: 401, message: "권한이 없습니다." };
+            if (status === 404) return { status: 404, notFound: true, message: "게시글을 찾을 수 없습니다." };
         }
         throw err;
     }

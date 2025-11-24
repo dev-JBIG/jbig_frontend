@@ -20,6 +20,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [page, setPage] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState("");
     const [postPermission, setPostPermission] = useState(false);
+    const [loading, setLoading] = useState(true);
     // 게시글 ID별 post_type 저장 (사유서 게시글 식별용)
     const [postTypes, setPostTypes] = useState<Map<number, number>>(new Map());
 
@@ -117,6 +118,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     useEffect(() => {
         const seq = ++reqSeqRef.current;
+        setLoading(true);
 
         const getPosts = async () => {
             try {
@@ -125,7 +127,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 if (isSearchPage) { // 검색 페이지용
                     if (!q.trim()) {
                         if (seq !== reqSeqRef.current) return;
-                        setPosts([]); setTotalPages(1);
+                        setPosts([]); setTotalPages(1); setLoading(false);
                         return;
                     }
 
@@ -170,7 +172,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
                 setTotalPages(0);
-                console.error(e);
+            } finally {
+                if (seq === reqSeqRef.current) setLoading(false);
             }
         };
 
@@ -248,8 +251,22 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 )}
             </div>
 
+            {/* 로딩 스켈레톤 */}
+            {loading && (
+                <div className="skeleton-container">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="skeleton-row">
+                            <div className="skeleton skeleton-id" />
+                            <div className="skeleton skeleton-title" />
+                            <div className="skeleton skeleton-author" />
+                            <div className="skeleton skeleton-date" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* 리스트 영역 */}
-            {isSearchPage ? (
+            {!loading && isSearchPage ? (
                 // 검색 페이지
                 (!q.trim() || displayPosts.length === 0) ? (
                     <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
@@ -311,7 +328,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         </tbody>
                     </table>
                 )
-            ) : (
+            ) : !loading ? (
                 // 검색 페이지가 아닐 때
                 displayPosts.length === 0 && !isHome ? (
                     <div style={{ textAlign: "center", color: "#666" }}>
@@ -435,7 +452,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         </tbody>
                     </table>
                 )
-            )}
+            ) : null}
 
             {/* Pagination (5개 단위 그룹) */}
             {!isHome && totalPages >= 1 && (

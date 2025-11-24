@@ -154,3 +154,31 @@
 .signin-toggle:hover {
     text-decoration: underline;
 }
+
+/* 폼 에러 스타일 */
+.input-error {
+    border-color: #e53935 !important;
+}
+
+.field-error {
+    display: block;
+    color: #e53935;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.form-error {
+    background: #ffebee;
+    color: #c62828;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.signin-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
