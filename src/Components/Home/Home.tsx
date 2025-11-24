@@ -25,6 +25,7 @@ import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import Profile from "../Profile/Profile";
 import $ from "jquery";
 
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
@@ -297,6 +298,7 @@ const Home: React.FC = () => {
                             <User />
                         </MainLayout>
                     } />
+                    <Route path="@:username" element={<Profile />} />
                 </Routes>
             </div>
             {isModalOpen && (
