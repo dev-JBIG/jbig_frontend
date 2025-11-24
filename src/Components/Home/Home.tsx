@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./Home.css"
 import "./Home-mobile.css"
 import MainLayout from "../Utils/MainLayout";
@@ -47,6 +47,18 @@ const Home: React.FC = () => {
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // /@username 경로 처리 (URL 인코딩 대응: %40 = @)
+    const decodedPath = decodeURIComponent(location.pathname);
+    const isProfilePage = decodedPath.startsWith('/@');
+
+    // 디버깅용 (문제 해결 후 제거)
+    console.log('[Profile Route Debug]', {
+        pathname: location.pathname,
+        decodedPath,
+        isProfilePage
+    });
 
 
     useEffect(() => {
@@ -198,6 +210,11 @@ const Home: React.FC = () => {
     };
 
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
+
+    // /@username 경로면 Profile만 렌더링
+    if (isProfilePage) {
+        return <Profile />;
+    }
 
     return (
         <div className="home-wrapper">
