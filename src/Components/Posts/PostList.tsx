@@ -5,7 +5,6 @@ import "./PostList.css";
 import "./PostList-mobile.css";
 import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
-import {encryptUserId} from "../Utils/Encryption";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 
@@ -294,15 +293,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="author-cell th-author">
                   <span
                     className="author-text"
-                    onClick={async (e) => {
+                    onClick={(e) => {
                                         e.stopPropagation();
-                                        if (!accessToken) {
-                                            alert("로그인이 필요합니다.");
-                                            navigate("/signin");
-                                            return;
-                                        }
-                                        const encrypted = await encryptUserId(String(p.user_id));
-                                        navigate(`/user/${encrypted}`);
+                                        navigate(`/@${p.author}`);
                                     }}
                                     style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
@@ -384,15 +377,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="author-cell th-author">
                   <span
                     className="author-text"
-                    onClick={async (e) => {
+                    onClick={(e) => {
                                         e.stopPropagation();
-                                        if (!accessToken) {
-                                            alert("로그인이 필요합니다.");
-                                            navigate("/signin");
-                                            return;
-                                        }
-                                        const encrypted = await encryptUserId(String(p.user_id));
-                                        navigate(`/user/${encrypted}`);
+                                        navigate(`/@${p.author}`);
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
@@ -430,15 +417,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="author-cell th-author">
                   <span
                     className="author-text"
-                    onClick={async (e) => {
+                    onClick={(e) => {
                                         e.stopPropagation();
-                                        if (!accessToken) {
-                                            alert("로그인이 필요합니다.");
-                                            navigate("/signin");
-                                            return;
-                                        }
-                                        const encrypted = await encryptUserId(String(p.user_id));
-                                        navigate(`/user/${encrypted}`);
+                                        navigate(`/@${p.author}`);
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}

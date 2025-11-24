@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
-import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req"; // 추가
+import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req";
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
@@ -14,7 +14,6 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
-import {encryptUserId} from "../Utils/Encryption";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 interface Props {
     username: string;
@@ -567,12 +566,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 </h2>
             </div>
             <div className="postdetail-info-row">
-            <span className="postdetail-author"
-                  onClick={async (e) => {
-                e.stopPropagation();
-                const encrypted = await encryptUserId(String(post.user_id));
-                navigate(`/user/${encrypted}`);
-            }}>
+            <span className="postdetail-author" onClick={() => navigate(`/@${post.author}`)}>
                 {post.author_semester}기 {post.author}
             </span>
                 <span className="postdetail-dot">·</span>
@@ -637,14 +631,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             <div className="comment-item">
                                 <div className="comment-meta">
                                     <span className={"comment-author" + (c.is_deleted ? " deleted" : "")}
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (c.is_deleted) {
-                                                return;
-                                            }
-                                            const encrypted = await encryptUserId(String(c.user_id));
-                                            navigate(`/user/${encrypted}`);
-                                        }}
+                                        onClick={() => !c.is_deleted && navigate(`/@${c.author}`)}
                                     >
                                         {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
                                         {!c.is_deleted && c.is_owner && (
@@ -720,14 +707,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                     <li className="reply-item" key={r.id}>
                                         <div className="reply-meta">
                                 <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
-                                      onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (r.is_deleted) {
-                                              return;
-                                          }
-                                          const encrypted = await encryptUserId(String(r.user_id));
-                                          navigate(`/user/${encrypted}`);
-                                      }}
+                                      onClick={() => !r.is_deleted && navigate(`/@${r.author}`)}
                                 >
                                     {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
                                     {!r.is_deleted && r.is_owner && (

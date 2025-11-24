@@ -20,7 +20,6 @@ import User from "../User/User";
 import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
-import {encryptUserId} from "../Utils/Encryption";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
