@@ -12,12 +12,7 @@ const Profile: React.FC = () => {
     const location = useLocation();
     const { user, accessToken } = useUser();
 
-    // useParams가 빈 값이면 URL에서 직접 파싱 (/@username 형식 지원)
-    const username = paramUsername || (() => {
-        const decoded = decodeURIComponent(location.pathname);
-        const match = decoded.match(/^\/@(.+)$/);
-        return match ? match[1] : undefined;
-    })();
+    const username = paramUsername || decodeURIComponent(location.pathname).match(/^\/@(.+)$/)?.[1];
 
     const [profile, setProfile] = useState<PublicProfile | null>(null);
     const [loading, setLoading] = useState(true);

@@ -49,17 +49,7 @@ const Home: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // /@username 경로 처리 (URL 인코딩 대응: %40 = @)
-    const decodedPath = decodeURIComponent(location.pathname);
-    const isProfilePage = decodedPath.startsWith('/@');
-
-    // 디버깅용 (문제 해결 후 제거)
-    console.log('[Profile Route Debug]', {
-        pathname: location.pathname,
-        decodedPath,
-        isProfilePage
-    });
-
+    const isProfilePage = decodeURIComponent(location.pathname).startsWith('/@');
 
     useEffect(() => {
         const openHandler = (e: any) => {
@@ -211,10 +201,7 @@ const Home: React.FC = () => {
 
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
-    // /@username 경로면 Profile만 렌더링
-    if (isProfilePage) {
-        return <Profile />;
-    }
+    if (isProfilePage) return <Profile />;
 
     return (
         <div className="home-wrapper">
@@ -315,7 +302,6 @@ const Home: React.FC = () => {
                             <User />
                         </MainLayout>
                     } />
-                    <Route path="@:username" element={<Profile />} />
                 </Routes>
             </div>
             {isModalOpen && (
