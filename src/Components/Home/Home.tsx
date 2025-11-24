@@ -232,7 +232,7 @@ const Home: React.FC = () => {
                             <div className="dropdown-item" onClick={() => {
                                 if (user?.email) {
                                     const username = user.email.split("@")[0];
-                                    navigate(`/@${username}`);
+                                    navigate(`/u/${username}`);
                                 }
                                 setMenuOpen(false);
                             }}>
