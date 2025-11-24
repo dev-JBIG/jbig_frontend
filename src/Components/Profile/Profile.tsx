@@ -151,10 +151,10 @@ const Profile: React.FC = () => {
                     {profile.posts.length > 0 ? (
                         <ul className="profile-list">
                             {profile.posts.map((post) => (
-                                <li key={post.id} className="profile-list-item" onClick={() => navigate(`/post/${post.id}`)}>
+                                <li key={post.id} className="profile-list-item" onClick={() => navigate(`/board/${post.board_id}/${post.id}`)}>
                                     <span className="item-title">{post.title}</span>
                                     <span className="item-meta">
-                                        {post.created_at?.slice(0, 10)} · 조회 {post.views}
+                                        {post.created_at} · 조회 {post.views}
                                     </span>
                                 </li>
                             ))}
@@ -169,7 +169,7 @@ const Profile: React.FC = () => {
                     {profile.comments.length > 0 ? (
                         <ul className="profile-list">
                             {profile.comments.map((comment) => (
-                                <li key={comment.id} className="profile-list-item comment-item" onClick={() => navigate(`/post/${comment.post_id}`)}>
+                                <li key={comment.id} className="profile-list-item comment-item" onClick={() => comment.board_id && navigate(`/board/${comment.board_id}/${comment.post_id}`)}>
                                     <span className="item-content">{comment.content}</span>
                                     <span className="item-meta">
                                         {comment.post_title} · {comment.created_at}

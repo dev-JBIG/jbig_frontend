@@ -1139,17 +1139,18 @@ export interface PublicProfile {
     is_self: boolean;
     posts: {
         id: number;
+        board_id: number;
         board_post_id: number;
         title: string;
-        author: string;
         created_at: string;
         views: number;
-        likes_count: number;
     }[];
     comments: {
         id: number;
         content: string;
         post_id: number;
+        board_id: number | null;
+        board_post_id: number | null;
         post_title: string;
         created_at: string;
     }[];
