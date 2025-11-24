@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useUser } from "../Utils/UserContext";
@@ -7,9 +7,17 @@ import { fetchPublicProfile, updateResume, PublicProfile } from "../../API/req";
 import "./Profile.css";
 
 const Profile: React.FC = () => {
-    const { username } = useParams<{ username: string }>();
+    const { username: paramUsername } = useParams<{ username: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, accessToken } = useUser();
+
+    // useParams가 빈 값이면 URL에서 직접 파싱 (/@username 형식 지원)
+    const username = paramUsername || (() => {
+        const decoded = decodeURIComponent(location.pathname);
+        const match = decoded.match(/^\/@(.+)$/);
+        return match ? match[1] : undefined;
+    })();
 
     const [profile, setProfile] = useState<PublicProfile | null>(null);
     const [loading, setLoading] = useState(true);
