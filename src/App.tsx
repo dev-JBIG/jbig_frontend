@@ -104,7 +104,7 @@ function App() {
                                     <Routes>
                                         <Route path="/note" element={<Note />} />
                                         <Route path="/admin" element={<Admin />} />
-                                        <Route path="/u/:username" element={<Profile />} />
+                                        <Route path="/@:username" element={<Profile />} />
                                         <Route path="/*" element={<Home />} />
                                     </Routes>
                                 </div>
