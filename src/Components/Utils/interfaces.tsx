@@ -5,7 +5,7 @@ export interface PostItem {
     board_post_id: number;
     title: string;
     author: string;
-    user_id: number;
+    user_id: string;
     author_semester: number;
     date: string;
     views: number;
@@ -113,14 +113,14 @@ export interface UploadFile {
 export interface UserComment {
     id: number;
     post_id: number;
-    board_id: number;
+    board_id: number | null;
     user_id: string;
     author: string;
     content: string;
-    post_title: string,
+    post_title: string;
     created_at: string;
     parent: number | null;
-    children: any[];
+    children: unknown[];
     is_owner: boolean;
 }
 

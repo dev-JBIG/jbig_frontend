@@ -30,8 +30,9 @@ const Profile: React.FC = () => {
             const data = await fetchPublicProfile(username, accessToken || undefined);
             setProfile(data);
             setResumeText(data.resume || "");
-        } catch (err: any) {
-            if (err.response?.status === 404) {
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { status?: number } };
+            if (axiosErr.response?.status === 404) {
                 setError("사용자를 찾을 수 없습니다.");
             } else {
                 setError("프로필을 불러오는데 실패했습니다.");

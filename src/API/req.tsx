@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import {
     PostItem,
     Reply,
@@ -9,9 +9,29 @@ import {
     CalendarEventCreate
 } from "../Components/Utils/interfaces";
 
-/*
- * 참고: 게시글 html 요소 불러오는 fetch 는 PostDetail 에서 수행합니다
- */
+// API 에러 응답 타입
+interface ApiErrorResponse {
+    detail?: string;
+    message?: string;
+    error?: string;
+    [key: string]: string | string[] | undefined;
+}
+
+// Axios 에러에서 메시지 추출
+function getErrorMessage(error: unknown, defaultMsg: string): string {
+    if (!axios.isAxiosError(error)) return defaultMsg;
+    const data = error.response?.data as ApiErrorResponse | undefined;
+    if (!data) return defaultMsg;
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
+    const keys = Object.keys(data);
+    if (keys.length > 0) {
+        const firstVal = data[keys[0]];
+        if (Array.isArray(firstVal) && firstVal.length > 0) return firstVal[0];
+    }
+    return defaultMsg;
+}
 
 const BASE_URL = ((): string => {
     // 1. 환경변수에 API_BASE_URL이 있으면 사용
@@ -31,6 +51,57 @@ const BASE_URL = ((): string => {
     return "";
 })();
 
+// API 응답에서 results 배열 추출
+interface PaginatedResponse<T> {
+    results?: T[];
+    count?: number;
+}
+
+function extractResults<T>(data: PaginatedResponse<T> | T[]): T[] {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.results)) return data.results;
+    return [];
+}
+
+// API 응답 아이템을 PostItem으로 변환
+interface RawPostItem {
+    id: number;
+    board_post_id?: number;
+    title: string;
+    author: string;
+    user_id: string;
+    author_semester: number;
+    created_at?: string;
+    views: number;
+    likes_count: number;
+    post_type?: number;
+}
+
+function mapRawPostToPostItem(item: RawPostItem): PostItem {
+    return {
+        id: item.id,
+        board_post_id: item.board_post_id ?? item.id,
+        title: item.title,
+        author: item.author,
+        user_id: item.user_id,
+        author_semester: item.author_semester,
+        date: (item.created_at || "").slice(2, 10).replace(/-/g, "/"),
+        views: item.views,
+        likes: item.likes_count,
+    };
+}
+
+// post_type Map 추출
+function extractPostTypes(rawResults: RawPostItem[]): Map<number, number> {
+    const map = new Map<number, number>();
+    rawResults.forEach((item) => {
+        if (item.id && item.post_type !== undefined) {
+            map.set(item.id, item.post_type);
+        }
+    });
+    return map;
+}
+
 // 이메일 인증코드 인증
 export const verifyAuthEmail = async (email: string, code: string) => {
     try {
@@ -38,16 +109,13 @@ export const verifyAuthEmail = async (email: string, code: string) => {
             email,
             verifyCode: code,
         });
-        return {
-            success: true,
-            status: res.status,
-            data: res.data,
-        };
-    } catch (error: any) {
+        return { success: true, status: res.status, data: res.data };
+    } catch (error: unknown) {
+        const axiosErr = error as AxiosError<ApiErrorResponse>;
         return {
             success: false,
-            status: error?.response?.status,
-            message: error?.response?.data?.detail || "인증 실패",
+            status: axiosErr.response?.status,
+            message: getErrorMessage(error, "인증 실패"),
         };
     }
 };
@@ -58,17 +126,15 @@ export const resendVerifyEmail = async (email: string) => {
         const res = await axios.post(
             `${BASE_URL}/api/users/resend-verify-email/`,
             { email },
-            {
-                headers: { Accept: "*/*", "Content-Type": "application/json" },
-                withCredentials: false,
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: false }
         );
         return { success: true, status: res.status, data: res.data };
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const axiosErr = error as AxiosError<ApiErrorResponse>;
         return {
             success: false,
-            status: error?.response?.status,
-            message: error?.response?.data?.detail || "인증 메일 재전송 실패",
+            status: axiosErr.response?.status,
+            message: getErrorMessage(error, "인증 메일 재전송 실패"),
         };
     }
 };
@@ -84,55 +150,23 @@ export const signupUser = async (
         const res = await axios.post(
             `${BASE_URL}/api/users/signup/`,
             { email, username, semester, password },
-            {
-                headers: { Accept: "*/*", "Content-Type": "application/json" },
-                withCredentials: false,
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: false }
         );
-
+        return { success: true, status: res.status, data: res.data };
+    } catch (error: unknown) {
+        const axiosErr = error as AxiosError<ApiErrorResponse>;
         return {
-            success: true,
-            status: res.status,
-            data: res.data
+            success: false,
+            status: axiosErr.response?.status,
+            message: getErrorMessage(error, "회원가입 실패"),
         };
-    } catch (error: any) {
-        const status = error?.response?.status;
-        let message = "회원가입 실패"; // 기본 에러 메시지
-
-        const errorData = error?.response?.data;
-
-        if (errorData) {
-            // 'detail' 필드가 있는 경우, 해당 메시지를 사용
-            if (typeof errorData.detail === 'string') {
-                message = errorData.detail;
-            }
-            // 필드별 에러 객체인 경우 (e.g., { email: [...], username: [...] })
-            else if (typeof errorData === 'object' && !Array.isArray(errorData) && errorData !== null) {
-                const errorKeys = Object.keys(errorData);
-                // 첫 번째 에러 키의 첫 번째 메시지를 대표 메시지로 사용
-                if (errorKeys.length > 0) {
-                    const firstErrorField = errorKeys[0];
-                    const messages = errorData[firstErrorField];
-                    if (Array.isArray(messages) && messages.length > 0) {
-                        message = messages[0];
-                    }
-                }
-            }
-        }
-
-        return { success: false, status, message };
     }
 };
 
 // sidebar 게시판 목록 조회 함수
 export const getBoards = async () => {
-    try {
-        const response = await axios.get(`${BASE_URL}/api/categories/`);
-        return response.data;
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
+    const response = await axios.get(`${BASE_URL}/api/categories/`);
+    return response.data;
 };
 
 // 로그인 api
@@ -141,36 +175,11 @@ export const signin = async (email: string, password: string) => {
         const response = await axios.post(
             `${BASE_URL}/api/users/signin/`,
             { email, password },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: true }
         );
         return response.data;
-    } catch (error: any) {
-        console.error("Signin error:", error);
-        let message = "로그인 요청 중 오류가 발생했습니다."; // 기본 에러 메시지
-
-        // error.request.response에 JSON 문자열이 담겨 오는 경우를 처리
-        if (error?.request?.response) {
-            try {
-                const errorResponse = JSON.parse(error.request.response);
-                if (errorResponse && typeof errorResponse.message === 'string') {
-                    message = errorResponse.message;
-                }
-            } catch (e) {
-                console.error("Failed to parse error response from error.request.response", e);
-            }
-        }
-        // 일반적인 axios 에러 응답 (error.response.data가 객체인 경우)
-        else if (error?.response?.data?.message) {
-            message = error.response.data.message;
-        }
-
-        return { message };
+    } catch (error: unknown) {
+        return { message: getErrorMessage(error, "로그인 요청 중 오류가 발생했습니다.") };
     }
 };
 
@@ -179,22 +188,15 @@ export const signout = async (accessToken: string, refreshToken: string) => {
     try {
         await axios.post(
             `${BASE_URL}/api/token/logout/`,
+            { refresh: refreshToken },
             {
-                refresh: refreshToken,
-            },
-            {
-                headers: {
-                    Accept: "*/*",
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
+                headers: { Accept: "*/*", "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
                 withCredentials: true,
             }
         );
         return { success: true };
-    } catch (error: any) {
-        console.error("로그아웃 요청 실패:", error);
-        return { success: false, error };
+    } catch {
+        return { success: false };
     }
 };
 
@@ -204,20 +206,11 @@ export const requestVerificationCode = async (email: string) => {
         const response = await axios.post(
             `${BASE_URL}/api/users/password/reset/request/`,
             { email },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: true }
         );
-        // 성공 시 { success: true } 와 같은 응답을 기대합니다.
         return { success: true, ...response.data };
-    } catch (error: any) {
-        console.error("Verification code request error:", error);
-        // 실패 시 에러 응답에 포함된 메시지를 반환합니다.
-        return { success: false, message: error.response?.data?.message || "인증코드 요청에 실패했습니다." };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "인증코드 요청에 실패했습니다.") };
     }
 };
 
@@ -227,18 +220,11 @@ export const verifyCode = async (email: string, verification_code: string) => {
         const response = await axios.post(
             `${BASE_URL}/api/users/password/reset/verify/`,
             { email, verification_code },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: true }
         );
         return { success: true, ...response.data };
-    } catch (error: any) {
-        console.error("Code verification error:", error);
-        return { success: false, message: error.response?.data?.message || "인증코드 확인에 실패했습니다." };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "인증코드 확인에 실패했습니다.") };
     }
 };
 
@@ -248,18 +234,11 @@ export const resetPassword = async (email: string, new_password1: string, new_pa
         const response = await axios.post(
             `${BASE_URL}/api/users/password/reset/`,
             { email, new_password1, new_password2 },
-            {
-                headers: {
-                    "Accept": "*/*",
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: true }
         );
         return { success: true, ...response.data };
-    } catch (error: any) {
-        console.error("Password reset error:", error);
-        return { success: false, message: error.response?.data?.message || "비밀번호 재설정에 실패했습니다." };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "비밀번호 재설정에 실패했습니다.") };
     }
 };
 
@@ -278,53 +257,24 @@ export const fetchBoardPosts = async (
             ? `${BASE_URL}/api/boards/${boardId}/posts/`
             : `${BASE_URL}/api/posts/all`;
 
-    const config: any = isHome
+    const config: { params?: Record<string, unknown>; headers?: Record<string, string> } = isHome
         ? {}
         : { params: { page, page_size: pageSize } };
 
     if (token) {
-        config.headers = {
-            ...config.headers,
-            Authorization: `Bearer ${token}`,
-        };
+        config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
     }
 
     const res = await axios.get(url, config);
-
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
-
-    const postPermission = Boolean(res.data?.board?.post_permission);
-
-    const posts = rawResults.map((item: any) => ({
-        id: item.id,
-        board_post_id: item.board_post_id,
-        title: item.title,
-        author: item.author,
-        user_id: item.user_id,
-        author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "/"),
-        views: item.views,
-        likes: item.likes_count,
-    }));
-
-    // post_type 정보 추출
-    const postTypesMap = new Map<number, number>();
-    rawResults.forEach((item: any) => {
-        if (item.id && item.post_type !== undefined) {
-            postTypesMap.set(item.id, item.post_type);
-        }
-    });
-
+    const rawResults = extractResults<RawPostItem>(res.data);
+    const posts = rawResults.map(mapRawPostToPostItem);
+    const postTypesMap = extractPostTypes(rawResults);
     const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: isHome ? 1 : Math.ceil(count / pageSize),
-        postPermission,
+        postPermission: Boolean(res.data?.board?.post_permission),
         postTypes: postTypesMap,
     };
 };
@@ -344,7 +294,7 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
             typeof res.data?.quiz_url === "string" ? res.data.quiz_url.trim() : "";
 
         return quizUrl || null;
-    } catch (err: any) {
+    } catch (err: unknown) {
         if (axios.isAxiosError(err) && err.response?.status === 401) {
             return "401";
         }
@@ -358,45 +308,18 @@ export const fetchSearchPosts = async (
     pageSize: number,
     page: number
 ): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
-    const url = `${BASE_URL}/api/posts/all/search/`;
-
-    const res = await axios.get(url, {
+    const res = await axios.get(`${BASE_URL}/api/posts/all/search/`, {
         params: { page, page_size: pageSize, q: query },
     });
 
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
-
-    const posts: PostItem[] = rawResults.map((item: any) => ({
-        id: item.id,
-        board_post_id: item.board_post_id,
-        title: item.title,
-        author: item.author,
-        user_id: item.user_id,
-        author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
-        views: item.views,
-        likes: item.likes_count,
-    }));
-
-    // post_type 정보 추출
-    const postTypesMap = new Map<number, number>();
-    rawResults.forEach((item: any) => {
-        if (item.id && item.post_type !== undefined) {
-            postTypesMap.set(item.id, item.post_type);
-        }
-    });
-
-    const count =
-        typeof res.data?.count === "number" ? res.data.count : posts.length;
+    const rawResults = extractResults<RawPostItem>(res.data);
+    const posts = rawResults.map(mapRawPostToPostItem);
+    const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: Math.max(1, Math.ceil(count / pageSize)),
-        postTypes: postTypesMap,
+        postTypes: extractPostTypes(rawResults),
     };
 };
 
@@ -407,46 +330,18 @@ export const fetchBoardSearchPosts = async (
     pageSize: number,
     page: number
 ): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
-    const url = `${BASE_URL}/api/boards/${boardId}/search/`;
-
-    const res = await axios.get(url, {
+    const res = await axios.get(`${BASE_URL}/api/boards/${boardId}/search/`, {
         params: { page, page_size: pageSize, q: query },
     });
 
-    // DRF pagination 대응 (+ 배열 직접 반환 대응)
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
-
-    const posts: PostItem[] = rawResults.map((item: any) => ({
-        id: item.id,
-        board_post_id: item.board_post_id,
-        title: item.title,
-        author: item.author,
-        user_id: item.user_id,
-        author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
-        views: item.views,
-        likes: item.likes_count,
-    }));
-
-    // post_type 정보 추출
-    const postTypesMap = new Map<number, number>();
-    rawResults.forEach((item: any) => {
-        if (item.id && item.post_type !== undefined) {
-            postTypesMap.set(item.id, item.post_type);
-        }
-    });
-
-    const count =
-        typeof res.data?.count === "number" ? res.data.count : posts.length;
+    const rawResults = extractResults<RawPostItem>(res.data);
+    const posts = rawResults.map(mapRawPostToPostItem);
+    const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: Math.max(1, Math.ceil(count / pageSize)),
-        postTypes: postTypesMap,
+        postTypes: extractPostTypes(rawResults),
     };
 };
 
@@ -502,111 +397,53 @@ export const fetchUserPosts = async (
     page: number,
     token: string
 ): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
-    const url = `${BASE_URL}/api/users/${userId}/posts/`;
-
-    const res = await axios.get(url, {
+    const res = await axios.get(`${BASE_URL}/api/users/${userId}/posts/`, {
         params: { page, page_size: pageSize },
-        headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-        },
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
         withCredentials: true,
-        responseType: "json",
     });
 
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
-
-    const posts = rawResults.map((item: any) => ({
-        id: item.id,
-        board_post_id: item.board_post_id || item.id,
-        title: item.title,
-        author: item.author,
-        user_id: item.user_id,
-        author_semester: item.author_semester,
-        date: (item.created_at || "").slice(2, 10).replace(/-/g, "-"),
-        views: item.views,
-        likes: item.likes_count,
-    }));
-
-    // post_type 정보 추출
-    const postTypesMap = new Map<number, number>();
-    rawResults.forEach((item: any) => {
-        if (item.id && item.post_type !== undefined) {
-            postTypesMap.set(item.id, item.post_type);
-        }
-    });
-
+    const rawResults = extractResults<RawPostItem>(res.data);
+    const posts = rawResults.map(mapRawPostToPostItem);
     const count = typeof res.data?.count === "number" ? res.data.count : posts.length;
 
     return {
         posts,
         totalPages: Math.ceil(count / pageSize),
-        postTypes: postTypesMap,
+        postTypes: extractPostTypes(rawResults),
     };
 };
 
 
 // 첨부파일 업로드
 
-// 첨부파일 업로드 (NCP Presigned URL 방식으로 변경)
+// 첨부파일 업로드 (NCP Presigned URL 방식)
 export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; download_url?: string; message?: string }> => {
-
-    // 1. Django 서버에 '업로드용 URL' 요청
     let generateUrlResponse;
     try {
         generateUrlResponse = await axios.post(
-            `${BASE_URL}/api/boards/files/generate-upload-url/`, // 우리가 만든 새 API
-            { filename: file.name }, // 원본 파일명 전송
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, // 인증 토큰
-                },
-            }
+            `${BASE_URL}/api/boards/files/generate-upload-url/`,
+            { filename: file.name },
+            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
         );
-    } catch (error: any) {
-        console.error("Error getting upload URL:", error);
-        return { 
-            path: "", 
-            name: file.name,
-            download_url: "", 
-            message: error.response?.data?.error || "업로드 URL 요청에 실패했습니다." 
-        };
+    } catch (error: unknown) {
+        return { path: "", name: file.name, download_url: "", message: getErrorMessage(error, "업로드 URL 요청에 실패했습니다.") };
     }
 
     const { upload_url, file_key, download_url } = generateUrlResponse.data;
-
     if (!upload_url || !file_key || !download_url) {
         return { path: "", name: file.name, download_url: "", message: "서버에서 유효한 업로드 URL을 받지 못했습니다." };
     }
 
-    // 2. 받은 'upload_url'로 NCP(S3)에 파일 직접 업로드 (PUT)
     try {
-        await axios.put(
-            upload_url, // Django가 발급해준 임시 URL
-            file,       // 파일 객체 본문
-            {
-                headers: {
-                    "Content-Type": file.type || "application/octet-stream",
-                    // Presigned URL에는 별도 인증 헤더(Bearer)가 필요 없습니다.
-                },
-            }
-        );
-    } catch (error: any) {
-        console.error("Error uploading file to NCP:", error);
+        await axios.put(upload_url, file, {
+            headers: { "Content-Type": file.type || "application/octet-stream" },
+        });
+    } catch {
         return { path: "", name: file.name, download_url: "", message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
     }
 
-    // 3. 성공 시, 'createPost'가 필요한 { path: ..., name: ... } 객체 반환
-    return {
-        path: file_key,
-        name: file.name,
-        download_url: `ncp-key://${file_key}`
-    };
+    return { path: file_key, name: file.name, download_url: `ncp-key://${file_key}` };
 };
 
 // 수상경력 html 불러오기
@@ -627,27 +464,11 @@ export const refreshTokenAPI = async (refresh: string) => {
         const response = await axios.post(
             `${BASE_URL}/api/users/token/refresh/`,
             { refresh },
-            {
-                headers: {
-                    Accept: "*/*",
-                    "Content-Type": "application/json",
-                },
-                withCredentials: false,
-            }
+            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: false }
         );
         return response.data;
-    } catch (error: any) {
-        console.error(error);
-
-        if (error.response && error.response.data) {
-            return {
-                message: error.response.data.detail || "토큰 갱신 실패",
-            };
-        }
-
-        return {
-            message: "네트워크 오류 또는 서버 응답 없음",
-        };
+    } catch (error: unknown) {
+        return { message: getErrorMessage(error, "토큰 갱신 실패") };
     }
 };
 
@@ -678,48 +499,47 @@ export const createPost = async (
         if (!response.ok) {
             let message = "게시글 생성에 실패했습니다.";
             try {
-                const err = await response.json();
+                const err = await response.json() as { message?: string };
                 if (err?.message) message = err.message;
-            } catch {}
+            } catch { /* ignore */ }
             throw new Error(message);
         }
 
         return response.json();
-    } catch (error: any) {
-        console.error(error);
-        return {
-            message: error.message || "네트워크 오류 또는 서버 응답 없음",
-        };
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "네트워크 오류 또는 서버 응답 없음";
+        return { message: msg };
     }
 };
 
 // 게시글 삭제
+interface DeletePostResponse {
+    deleted?: boolean;
+    message?: string;
+}
+
 export const deletePost = async (
     postId: number,
     token: string
 ): Promise<{ deleted?: boolean; status?: number; notFound?: boolean; message?: string }> => {
-    const url = `${BASE_URL}/api/posts/${postId}/`;
     try {
-        const res = await axios.delete(url, {
-            headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+        const res = await axios.delete<DeletePostResponse>(`${BASE_URL}/api/posts/${postId}/`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
             withCredentials: true,
-            responseType: "json",
         });
 
-        // 서버가 명시적으로 JSON을 주면 그대로 따르고, 없으면 성공으로 간주
-        const data = res.data as any;
+        const data = res.data;
         if (data && typeof data.deleted === "boolean") {
             return { deleted: data.deleted, status: res.status, message: data.message };
         }
         return { deleted: true, status: res.status };
-    } catch (err: any) {
-        const status = err?.response?.status as number | undefined;
-        if (status === 401) return { status: 401, message: "Unauthorized" };
-        if (status === 404) return { status: 404, notFound: true, message: "Not Found" };
-        return Promise.reject(err);
+    } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            const status = err.response?.status;
+            if (status === 401) return { status: 401, message: "Unauthorized" };
+            if (status === 404) return { status: 404, notFound: true, message: "Not Found" };
+        }
+        throw err;
     }
 };
 
@@ -938,15 +758,26 @@ export const fetchUserComments = async (
         responseType: "json",
     });
 
-    const rawResults = Array.isArray(res.data?.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-            ? res.data
-            : [];
+    interface RawComment {
+        id: number;
+        post_id: number;
+        user_id: string;
+        board_id: number | null;
+        author: string;
+        content: string;
+        post_title: string;
+        created_at: string;
+        parent: number | null;
+        children: unknown[];
+        is_owner: boolean;
+        is_deleted: boolean;
+    }
+
+    const rawResults = extractResults<RawComment>(res.data);
 
     const comments: UserComment[] = rawResults
-        .filter((c: any) => !c.is_deleted)
-        .map((c: any) => ({
+        .filter((c) => !c.is_deleted)
+        .map((c) => ({
             id: c.id,
             post_id: c.post_id,
             user_id: c.user_id,
@@ -976,52 +807,42 @@ export async function changePassword(
     token: string
 ): Promise<{ success: boolean; message?: string }> {
     try {
-        const res = await axios.post(
+        const res = await axios.post<{ detail?: string }>(
             `${BASE_URL}/api/users/password/change/`,
-            {
-                old_password: oldPassword,
-                new_password1: newPassword1,
-                new_password2: newPassword2,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            }
+            { old_password: oldPassword, new_password1: newPassword1, new_password2: newPassword2 },
+            { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
         );
         return { success: true, message: res.data?.detail || "비밀번호 변경 성공" };
-    } catch (err: any) {
-        return {
-            success: false,
-            message:
-                err.response?.data?.detail ||
-                err.response?.data?.error ||
-                "비밀번호 변경에 실패했습니다.",
-        };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "비밀번호 변경에 실패했습니다.") };
     }
 }
 
 // 캘린더 일정 정보 가져오기
-export const fetchCalendarEvents = async (): Promise<CalendarEvent[]> => {
-    const url = `${BASE_URL}/api/calendar/`;
+interface RawCalendarEvent {
+    id: number | string;
+    title: string;
+    start: string;
+    end?: string | null;
+    allDay?: boolean;
+    color?: string;
+    description?: string;
+}
 
-    const res = await axios.get(url, {
+export const fetchCalendarEvents = async (): Promise<CalendarEvent[]> => {
+    const res = await axios.get<RawCalendarEvent[]>(`${BASE_URL}/api/calendar/`, {
         headers: { Accept: "application/json" },
         withCredentials: true,
-        responseType: "json",
     });
 
-    const data = res.data as any[];
-
-    return data.map(ev => ({
+    return res.data.map(ev => ({
         id: String(ev.id),
         title: ev.title,
         start: new Date(ev.start),
         end: ev.end ? new Date(ev.end) : null,
         allDay: ev.allDay ?? false,
-        color: ev.color,
-        description: ev.description,
+        color: ev.color ?? "",
+        description: ev.description ?? "",
     }));
 };
 
