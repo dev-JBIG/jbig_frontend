@@ -10,7 +10,7 @@ const Profile: React.FC = () => {
     const { username: paramUsername } = useParams<{ username: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, accessToken } = useUser();
+    const { accessToken } = useUser();
 
     const username = paramUsername || decodeURIComponent(location.pathname).match(/^\/@(.+)$/)?.[1];
 

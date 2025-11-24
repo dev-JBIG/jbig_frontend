@@ -35,7 +35,7 @@ const Note: React.FC = () => {
     const [recordMap, setRecordMap] = useState<ExtendedRecordMap | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [currentPageId, setCurrentPageId] = useState<string>("");
+    const [, setCurrentPageId] = useState<string>("");
     const defaultPageIdRef = useRef<string>("");
 
     const loadPage = useCallback(async (pageId: string, replace = false) => {

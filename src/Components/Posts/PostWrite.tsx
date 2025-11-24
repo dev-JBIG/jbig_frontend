@@ -28,18 +28,6 @@ interface PostWriteProps {
     boards?: Section[];
 }
 
-//const SERVER_HOST = process.env.REACT_APP_SERVER_HOST;
-//const SERVER_PORT = process.env.REACT_APP_SERVER_PORT;
-//const BASE_URL = ((): string => {
-//    if (SERVER_HOST && SERVER_PORT) {
-//        return `http://${SERVER_HOST}:${SERVER_PORT}`;
-//    }
-//    if (typeof window !== 'undefined' && window.location?.origin) {
-//        return window.location.origin;
-//    }
-//    return "";
-//})();
-
 /**
  * 해당 컴포넌트에서는 게시물 작성과, 게시물 수정을 담당합니다.
  * 코드 중복성을 최소화하고자 url 에 따라 기능을 달리하도록 구현되어 있습니다.
@@ -67,15 +55,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const inFlightRef = useRef(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const { signOutLocal, accessToken, user } = useUser();
+    const { signOutLocal, accessToken } = useUser();
     const { staffAuth } = useStaffAuth();
 
     const isImageFileName = (name: string) =>
         /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
-
-   // const toAbsUrl = (u: string) => /^https?:\/\//i.test(u) ? u : `${BASE_URL}${u}`;
-
-
 
     const handleRemoveExistingAttachment = (urlToRemove: string) => {
         // urlToRemove 에 해당하는 path 찾기
