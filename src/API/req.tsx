@@ -1128,3 +1128,49 @@ export const updateSiteSettings = async (
     });
     return res.data;
 };
+
+// 공개 프로필
+export interface PublicProfile {
+    username: string;
+    email_id: string;
+    semester: number;
+    resume: string;
+    date_joined: string;
+    is_self: boolean;
+    posts: {
+        id: number;
+        board_post_id: number;
+        title: string;
+        author: string;
+        created_at: string;
+        views: number;
+        likes_count: number;
+    }[];
+    comments: {
+        id: number;
+        content: string;
+        post_id: number;
+        post_title: string;
+        created_at: string;
+    }[];
+}
+
+export const fetchPublicProfile = async (username: string, token?: string): Promise<PublicProfile> => {
+    const url = `${BASE_URL}/api/users/profile/${username}/`;
+    const res = await axios.get(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return res.data;
+};
+
+export const updateResume = async (resume: string, token: string): Promise<{ resume: string }> => {
+    const url = `${BASE_URL}/api/users/profile/`;
+    const res = await axios.patch(url, { resume }, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    return res.data;
+};

@@ -6,6 +6,7 @@ import Note from "./Components/Note/Note";
 import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
 import Admin from "./Components/Admin/Admin";
+import Profile from "./Components/Profile/Profile";
 import { StaffAuthContext } from "./Components/Utils/StaffAuthContext";
 import Footer from "./Components/Footer/Footer";
 import {refreshTokenAPI} from "./API/req";
@@ -103,6 +104,7 @@ function App() {
                                     <Routes>
                                         <Route path="/note" element={<Note />} />
                                         <Route path="/admin" element={<Admin />} />
+                                        <Route path="/@:username" element={<Profile />} />
                                         <Route path="/*" element={<Home />} />
                                     </Routes>
                                 </div>

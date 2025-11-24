@@ -229,11 +229,10 @@ const Home: React.FC = () => {
 
                     {menuOpen && (
                         <div className="user-dropdown">
-                            <div className="dropdown-item" onClick={async () => {
+                            <div className="dropdown-item" onClick={() => {
                                 if (user?.email) {
-                                    const plainId = user.email.split("@")[0];
-                                    const encrypted = await encryptUserId(plainId);
-                                    navigate(`/user/${encrypted}`);
+                                    const username = user.email.split("@")[0];
+                                    navigate(`/@${username}`);
                                 }
                                 setMenuOpen(false);
                             }}>
