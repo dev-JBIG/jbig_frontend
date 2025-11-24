@@ -16,7 +16,6 @@ import {
     updateCalendarEvent
 } from "../../API/req";
 import { CircleUserRound  } from "lucide-react";
-import User from "../User/User";
 import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import {AwardsSection} from "../Utils/Awards";
@@ -296,11 +295,6 @@ const Home: React.FC = () => {
                             </MainLayout>
                         }
                     />
-                    <Route path="user/:user_id" element={
-                        <MainLayout sidebarProps={sidebarProps}>
-                            <User />
-                        </MainLayout>
-                    } />
                 </Routes>
             </div>
             {isModalOpen && (
