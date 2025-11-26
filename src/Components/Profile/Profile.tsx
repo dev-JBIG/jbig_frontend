@@ -173,15 +173,16 @@ const Profile: React.FC = () => {
                     {profile.comments.length > 0 ? (
                         <ul className="profile-list">
                             {profile.comments.map((comment) => (
-                                <li key={comment.id} className="profile-list-item comment-item" onClick={() => {
+                                <li key={comment.id} className="profile-list-item profile-comment-item" onClick={() => {
                                     if (comment.board_id != null && comment.post_id != null) {
                                         navigate(`/board/${comment.board_id}/${comment.post_id}`);
                                     }
                                 }}>
-                                    <span className="item-content">{comment.content}</span>
-                                    <span className="item-meta">
-                                        {comment.post_title} · {comment.created_at}
-                                    </span>
+                                    <div className="comment-post-title">{comment.post_title}</div>
+                                    <div className="comment-detail">
+                                        <span className="comment-content">{comment.content}</span>
+                                        <span className="comment-date">· {comment.created_at}</span>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
