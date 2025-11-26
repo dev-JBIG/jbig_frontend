@@ -302,16 +302,19 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     margin-right: 16px;
+    text-align: left;
 }
 
 .item-content {
     font-size: 14px;
-    color: #555;
+    color: #333;
+    font-weight: 500;
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     margin-right: 16px;
+    text-align: left;
 }
 
 .item-meta {
