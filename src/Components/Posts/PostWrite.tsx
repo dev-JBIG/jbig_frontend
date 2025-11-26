@@ -12,6 +12,7 @@ import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import AbsenceForm from "./AbsenceForm"; // 결석사유서 추가
+import FeedbackForm from "./FeedbackForm"; // 에러/피드백 제보 추가
 
 
 
@@ -363,6 +364,24 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 setSubmitting(false);
                 return;
             }
+        } else if (selectedBoard && (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'))) {
+            // '에러/피드백 제보' 게시판일 경우, 폼 데이터 기반 유효성 검사
+            
+            // content (마크다운)에서 핵심 필드가 비어있는지 확인
+            if (/\| \*\*제목\*\* \|\s*\|/.test(content)) {
+                alert("제목을 입력하세요.");
+                inFlightRef.current = false;
+                setSubmitting(false);
+                return;
+            }
+
+            // '상세 내용'이 비어있으면
+            if (/\| \*\*상세 내용\*\* \|\s*(<br \/>)?\s*\|/.test(content)) {
+                alert("상세 내용을 입력하세요.");
+                inFlightRef.current = false;
+                setSubmitting(false);
+                return;
+            }
         } else {
             // 다른 게시판은 기존 '본문' 비어있는지 검사
             if (!content.trim()) {
@@ -604,7 +623,13 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     onChange={e => setTitle(e.target.value)}
                     maxLength={120}
                     required
-                    placeholder={category === '4' ? "[X주차] 결석사유서 OOO" : "제목을 입력하세요"}
+                    placeholder={
+                        category === '4' 
+                            ? "[X주차] 결석사유서 OOO" 
+                            : selectedBoard && (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'))
+                            ? "에러/피드백 제보 제목을 입력하세요"
+                            : "제목을 입력하세요"
+                    }
                 />
             </div>
             {/* 본문 */}
@@ -612,8 +637,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 <label style={{ fontWeight: 'bold' }}>본문</label>
 		{/* 조건부 렌더링 시작 */}
 		{category === '4' ? (
-		    // 게시판 ID가 4면 폼 렌더링
+		    // 게시판 ID가 4면 결석사유서 폼 렌더링
 		    <AbsenceForm
+		        setContent={setContent}
+			initialContent={content}
+		    />
+		) : selectedBoard && (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보')) ? (
+		    // 에러/피드백 제보 게시판이면 FeedbackForm 렌더링
+		    <FeedbackForm
 		        setContent={setContent}
 			initialContent={content}
 		    />
