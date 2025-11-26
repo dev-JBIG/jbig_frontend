@@ -312,7 +312,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     className="author-text"
                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/@${p.author}`);
+                                        navigate(`/@${p.user_id}`);
                                     }}
                                     style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
@@ -396,7 +396,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     className="author-text"
                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/@${p.author}`);
+                                        navigate(`/@${p.user_id}`);
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
@@ -436,7 +436,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     className="author-text"
                     onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/@${p.author}`);
+                                        navigate(`/@${p.user_id}`);
                                     }}
                                     style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}

@@ -570,7 +570,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 </h2>
             </div>
             <div className="postdetail-info-row">
-            <span className="postdetail-author" onClick={() => navigate(`/@${post.author}`)}>
+            <span className="postdetail-author" onClick={() => navigate(`/@${post.user_id}`)}>
                 {post.author_semester}기 {post.author}
             </span>
                 <span className="postdetail-dot">·</span>
@@ -635,7 +635,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                             <div className="comment-item">
                                 <div className="comment-meta">
                                     <span className={"comment-author" + (c.is_deleted ? " deleted" : "")}
-                                        onClick={() => !c.is_deleted && navigate(`/@${c.author}`)}
+                                        onClick={() => !c.is_deleted && navigate(`/@${c.user_id}`)}
                                     >
                                         {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
                                         {!c.is_deleted && c.is_owner && (
@@ -711,7 +711,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                     <li className="reply-item" key={r.id}>
                                         <div className="reply-meta">
                                 <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
-                                      onClick={() => !r.is_deleted && navigate(`/@${r.author}`)}
+                                      onClick={() => !r.is_deleted && navigate(`/@${r.user_id}`)}
                                 >
                                     {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
                                     {!r.is_deleted && r.is_owner && (
