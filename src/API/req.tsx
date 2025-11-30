@@ -75,6 +75,8 @@ interface RawPostItem {
     views: number;
     likes_count: number;
     post_type?: number;
+    board_id?: number;
+    board_name?: string;
 }
 
 function mapRawPostToPostItem(item: RawPostItem): PostItem {
@@ -88,6 +90,8 @@ function mapRawPostToPostItem(item: RawPostItem): PostItem {
         date: (item.created_at || "").slice(2, 10).replace(/-/g, "/"),
         views: item.views,
         likes: item.likes_count,
+        board_id: item.board_id,
+        board_name: item.board_name,
     };
 }
 

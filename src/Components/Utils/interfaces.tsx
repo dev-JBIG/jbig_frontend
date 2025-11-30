@@ -10,6 +10,8 @@ export interface PostItem {
     date: string;
     views: number;
     likes: number;
+    board_id?: number;
+    board_name?: string;
 }
 
 export interface Attachment {

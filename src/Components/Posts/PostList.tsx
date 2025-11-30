@@ -276,7 +276,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     <table className="postlist-table">
                         <thead>
                         <tr>
-                            <th className="th-id">번호</th>
                             <th className="th-title">제목</th>
                             <th className="th-author">작성자</th>
                             <th className="th-date">작성일</th>
@@ -295,8 +294,29 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     navigate(`/board/${targetBoardId}/${p.id}`);
                                 }}
                             >
-                                <td className="th-id">{p.id}</td>
                                 <td className="title-cell th-title">
+                                    {boardIdRaw === "all" && p.board_name && (
+                                        <>
+                                            {p.board_name === "공지사항" ? (
+                                                <span className="announcement-badge" style={{ marginRight: "6px" }}>
+                                                    공지
+                                                </span>
+                                            ) : (
+                                                <span style={{ 
+                                                    display: "inline-block",
+                                                    padding: "2px 8px",
+                                                    backgroundColor: "#3563e9",
+                                                    color: "white",
+                                                    fontSize: "11px",
+                                                    fontWeight: 600,
+                                                    borderRadius: "4px",
+                                                    marginRight: "6px"
+                                                }}>
+                                                    {p.board_name}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
                                     {p.title}
                                     {postTypes.get(p.id) === 3 && (
                                         <span 
@@ -366,7 +386,6 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     <table className="postlist-table">
                         <thead>
                         <tr>
-                            <th className="th-id">번호</th>
                             <th className="th-title">제목</th>
                             <th className="th-author">작성자</th>
                             <th className="th-date">작성일</th>
@@ -384,11 +403,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     navigate(`/board/${activeBoardID}/${p.id}`);
                                 }}
                             >
-                                <td className="th-id">
-                                    <span className="announcement-badge">공지</span>
-                                </td>
                                 <td className="title-cell th-title">
-                                    <span className="announcement-badge mobile-only">공지</span>
+                                    <span className="announcement-badge" style={{ marginRight: "6px" }}>공지</span>
                                     <span className="announcement-title">{p.title}</span>
                                 </td>
                                 <td className="author-cell th-author">
@@ -417,10 +433,29 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     navigate(`/board/${activeBoardID}/${p.id}`);
                                 }}
                             >
-                                <td className="th-id">
-                                    {activeBoardID === 0 || isHome ? p.id : p.board_post_id}
-                                </td>
                                 <td className="title-cell th-title">
+                                    {(activeBoardID === 0 || isHome) && p.board_name && (
+                                        <>
+                                            {p.board_name === "공지사항" ? (
+                                                <span className="announcement-badge" style={{ marginRight: "6px" }}>
+                                                    공지
+                                                </span>
+                                            ) : (
+                                                <span style={{ 
+                                                    display: "inline-block",
+                                                    padding: "2px 8px",
+                                                    backgroundColor: "#3563e9",
+                                                    color: "white",
+                                                    fontSize: "11px",
+                                                    fontWeight: 600,
+                                                    borderRadius: "4px",
+                                                    marginRight: "6px"
+                                                }}>
+                                                    {p.board_name}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
                                     {p.title}
                                     {postTypes.get(p.id) === 3 && (
                                         <span 
