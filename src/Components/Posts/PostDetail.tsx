@@ -170,9 +170,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 const rawComments = Array.isArray(src.comments) ? src.comments : [];
                 const topLevelComments = rawComments
                     // parent가 있는 항목(=대댓글)은 상위 댓글 배열에서 제외
-                    .filter((c: any) => !c.parent)
-                    .slice()
-                    .reverse();
+                    .filter((c: any) => !c.parent);
 
                 const mapped: PostDetailData = {
                     id: src.id,
@@ -221,7 +219,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                         date: toDate(c.created_at),
                         is_owner: c.is_owner,
                         is_deleted: !!c.is_deleted,
-                        replies: (c.children || []).slice().reverse().map((r: any) => ({
+                        replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             user_id: r.user_id,
                             author_semester: r.author_semester,
