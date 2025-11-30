@@ -86,6 +86,10 @@ jobs:
 
             ln -sfn "$NEW_RELEASE" "$APP_CURRENT"
 
+            # 오래된 릴리즈 정리 (최근 5개만 유지)
+            cd "$APP_BASE"
+            ls -t | tail -n +6 | xargs -r rm -rf
+
             if [ -n "$FRONTEND_SERVICE_VALUE" ]; then
               sudo systemctl restart "$FRONTEND_SERVICE_VALUE"
             fi
