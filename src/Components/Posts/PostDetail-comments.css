@@ -32,6 +32,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+    min-width: 0;
+    width: 100%;
 }
 
 /* 댓글 메타 정보 */
@@ -133,15 +135,21 @@
 }
 
 /* 댓글 내용 */
-.comment-content {
+.postdetail-comment-section .comment-content {
     font-size: var(--font-size-base);
-    line-height: var(--line-height-relaxed);
+    line-height: 1;
     color: var(--color-text-primary);
     padding: var(--space-sm) 0;
     word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-line !important;
+    max-width: 100%;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    flex: none;
 }
 
-.comment-content.deleted {
+.postdetail-comment-section .comment-content.deleted {
     color: var(--color-text-tertiary);
     font-style: italic;
 }
@@ -217,9 +225,14 @@
 
 .reply-content {
     font-size: var(--font-size-sm);
-    line-height: var(--line-height-relaxed);
+    line-height: 1;
     color: var(--color-text-primary);
     word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-line;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .reply-content.deleted {
@@ -377,7 +390,7 @@
         font-size: var(--font-size-sm);
     }
 
-    .comment-content {
+    .postdetail-comment-section .comment-content {
         font-size: var(--font-size-sm);
     }
 
