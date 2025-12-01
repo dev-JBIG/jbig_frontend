@@ -1023,7 +1023,11 @@ export const fetchNotifications = async (token: string): Promise<NotificationIte
     const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
     });
-    return res.data;
+    // 페이지네이션 응답일 경우 results 배열 반환, 아니면 그대로 반환
+    if (Array.isArray(res.data)) {
+        return res.data;
+    }
+    return res.data.results || [];
 };
 
 export const fetchUnreadNotificationCount = async (token: string): Promise<number> => {
