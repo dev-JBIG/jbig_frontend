@@ -1002,3 +1002,43 @@ export const updateResume = async (resume: string, token: string): Promise<{ res
     });
     return res.data;
 };
+
+// 알림 관련 API
+export interface NotificationItem {
+    id: number;
+    notification_type: number;
+    notification_type_display: string;
+    actor_name: string;
+    actor_semester: number;
+    post_id: number;
+    post_title: string;
+    board_id: number;
+    comment_content: string | null;
+    is_read: boolean;
+    created_at: string;
+}
+
+export const fetchNotifications = async (token: string): Promise<NotificationItem[]> => {
+    const url = `${BASE_URL}/api/notifications/`;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+};
+
+export const fetchUnreadNotificationCount = async (token: string): Promise<number> => {
+    const url = `${BASE_URL}/api/notifications/unread-count/`;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.unread_count;
+};
+
+export const markNotificationRead = async (token: string, notificationId?: number): Promise<void> => {
+    const url = notificationId
+        ? `${BASE_URL}/api/notifications/${notificationId}/mark-read/`
+        : `${BASE_URL}/api/notifications/mark-read/`;
+    await axios.post(url, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
