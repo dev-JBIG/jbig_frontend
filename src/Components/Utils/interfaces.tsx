@@ -10,6 +10,7 @@ export interface PostItem {
     date: string;
     views: number;
     likes: number;
+    comment_count: number;
     board_id?: number;
     board_name?: string;
 }

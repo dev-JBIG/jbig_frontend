@@ -308,6 +308,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 )}
                                 <td className="title-cell th-title">
                                     {p.title}
+                                    {p.comment_count > 0 && (
+                                        <span className="comment-count">[{p.comment_count}]</span>
+                                    )}
                                     {postTypes.get(p.id) === 3 && (
                                         <span
                                             style={{ color: "#999", marginLeft: "4px" }}
@@ -399,6 +402,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="title-cell th-title">
                                     <span className="announcement-title">{p.title}</span>
+                                    {p.comment_count > 0 && (
+                                        <span className="comment-count">[{p.comment_count}]</span>
+                                    )}
                                 </td>
                                 <td className="author-cell th-author">
                   <span
@@ -439,6 +445,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 )}
                                 <td className="title-cell th-title">
                                     {p.title}
+                                    {p.comment_count > 0 && (
+                                        <span className="comment-count">[{p.comment_count}]</span>
+                                    )}
                                     {postTypes.get(p.id) === 3 && (
                                         <span
                                             style={{ color: "#999", marginLeft: "4px" }}

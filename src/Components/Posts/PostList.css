@@ -175,6 +175,14 @@
     color: #000;
 }
 
+/* 댓글 수 표시 */
+.comment-count {
+    color: #3563e9;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-left: 4px;
+}
+
 /* 페이지네이션 */
 .pagination-row {
     display: flex;
