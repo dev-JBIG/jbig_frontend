@@ -123,4 +123,15 @@
     .sidebar {
         display: none !important;
     }
+
+    /* 알림 드롭다운 모바일 최적화 */
+    .notification-dropdown {
+        position: fixed;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        width: calc(100vw - 32px);
+        max-width: 360px;
+    }
 }
