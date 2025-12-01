@@ -276,7 +276,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     <table className="postlist-table">
                         <thead>
                         <tr>
-                            <th className="th-category">구분</th>
+                            {boardIdRaw === "all" && <th className="th-category">구분</th>}
                             <th className="th-title">제목</th>
                             <th className="th-author">작성자</th>
                             <th className="th-date">작성일</th>
@@ -295,15 +295,17 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     navigate(`/board/${targetBoardId}/${p.id}`);
                                 }}
                             >
-                                <td className="th-category">
-                                    {boardIdRaw === "all" && p.board_name && (
-                                        p.board_name === "공지사항" ? (
-                                            <span className="announcement-badge">공지</span>
-                                        ) : (
-                                            <span className="category-badge">{p.board_name}</span>
-                                        )
-                                    )}
-                                </td>
+                                {boardIdRaw === "all" && (
+                                    <td className="th-category">
+                                        {p.board_name && (
+                                            p.board_name === "공지사항" ? (
+                                                <span className="announcement-badge">공지</span>
+                                            ) : (
+                                                <span className="category-badge">{p.board_name}</span>
+                                            )
+                                        )}
+                                    </td>
+                                )}
                                 <td className="title-cell th-title">
                                     {p.title}
                                     {postTypes.get(p.id) === 3 && (
@@ -374,7 +376,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     <table className="postlist-table">
                         <thead>
                         <tr>
-                            <th className="th-category">구분</th>
+                            {(activeBoardID === 0 || isHome) && <th className="th-category">구분</th>}
                             <th className="th-title">제목</th>
                             <th className="th-author">작성자</th>
                             <th className="th-date">작성일</th>
@@ -424,15 +426,17 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     navigate(`/board/${activeBoardID}/${p.id}`);
                                 }}
                             >
-                                <td className="th-category">
-                                    {(activeBoardID === 0 || isHome) && p.board_name && (
-                                        p.board_name === "공지사항" ? (
-                                            <span className="announcement-badge">공지</span>
-                                        ) : (
-                                            <span className="category-badge">{p.board_name}</span>
-                                        )
-                                    )}
-                                </td>
+                                {(activeBoardID === 0 || isHome) && (
+                                    <td className="th-category">
+                                        {p.board_name && (
+                                            p.board_name === "공지사항" ? (
+                                                <span className="announcement-badge">공지</span>
+                                            ) : (
+                                                <span className="category-badge">{p.board_name}</span>
+                                            )
+                                        )}
+                                    </td>
+                                )}
                                 <td className="title-cell th-title">
                                     {p.title}
                                     {postTypes.get(p.id) === 3 && (
