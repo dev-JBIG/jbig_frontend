@@ -56,11 +56,19 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const inFlightRef = useRef(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const { signOutLocal, accessToken } = useUser();
+    const { signOutLocal, accessToken, user } = useUser();
     const { staffAuth } = useStaffAuth();
 
     const isImageFileName = (name: string) =>
         /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+
+    // 임시 저장용 key (사용자+게시판 기준)
+    const draftKey = useMemo(() => {
+        if (!user) return null;
+        if (!category) return null;
+        if (isEdit) return null; // 수정 모드에서는 임시 저장 사용 안 함 (혼동 방지)
+        return `jbig-draft-${user.email}-${category}`;
+    }, [user, category, isEdit]);
 
     const handleRemoveExistingAttachment = (urlToRemove: string) => {
         // urlToRemove 에 해당하는 path 찾기
@@ -127,6 +135,48 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         const found = BOARD_LIST.find((b) => b.id === id) || null;
         setSelectedBoard(found);
     }, [category, BOARD_LIST]);
+
+    // 초안 불러오기
+    useEffect(() => {
+        if (!draftKey) return;
+        try {
+            const raw = localStorage.getItem(draftKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as { title?: string; content?: string };
+            if (!parsed.title && !parsed.content) return;
+
+            const confirmRestore = window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?");
+            if (confirmRestore) {
+                if (parsed.title) setTitle(parsed.title);
+                if (parsed.content) setContent(parsed.content);
+            } else {
+                // 사용자가 불러오지 않겠다고 하면 초안 삭제
+                localStorage.removeItem(draftKey);
+            }
+        } catch {
+            // 파싱 실패 시 무시
+        }
+    }, [draftKey]);
+
+    // 초안 자동 저장 (제목/본문만, 2초 debounce)
+    useEffect(() => {
+        if (!draftKey) return;
+        const handler = setTimeout(() => {
+            try {
+                if (!title && !content) {
+                    localStorage.removeItem(draftKey);
+                    return;
+                }
+                localStorage.setItem(
+                    draftKey,
+                    JSON.stringify({ title, content })
+                );
+            } catch {
+                // storage 가득 찬 경우 등은 조용히 무시
+            }
+        }, 2000);
+        return () => clearTimeout(handler);
+    }, [title, content, draftKey]);
 
     useEffect(() => {
         if(!accessToken){
@@ -423,6 +473,12 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return;
             }
 
+            // 저장 성공 시 임시 저장 삭제
+            if (draftKey) {
+                try {
+                    localStorage.removeItem(draftKey);
+                } catch {}
+            }
             navigate(`/board/${selectedBoard!.id}`);
         } catch (err) {
             const msg =
