@@ -97,11 +97,8 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                 await new Promise(r => setTimeout(r, 5000));
                 const info = await vastGetInstance(created.id, accessToken);
                 if (info.status === "running") {
-                    let url = info.jupyter_url || (info.public_ip ? `https://${info.public_ip}:8080/` : '');
-                    if (url && token) {
-                        url = url.includes('?') ? `${url}&token=${token}` : `${url}?token=${token}`;
-                    }
-                    setJupyterUrl(url);
+                    // Vast.ai가 제공하는 jupyter_url을 그대로 사용 (토큰 포함됨)
+                    setJupyterUrl(info.jupyter_url || '');
                     setStep('running');
                     setExpiresAt(Date.now() + 30 * 60 * 1000);
                     return;
