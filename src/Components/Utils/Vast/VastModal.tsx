@@ -18,12 +18,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
 
-    const [gpuName, setGpuName] = useState<string>('A100|L40S|3090|4090');
-    const [minVram, setMinVram] = useState<number>(16);
-    const [numGpus, setNumGpus] = useState<number>(1);
-    const [maxPrice, setMaxPrice] = useState<number>(2.0);
-    const [diskGb, setDiskGb] = useState<number>(50);
-    const [image, setImage] = useState<string>(defaultImage);
+    const [maxPrice, setMaxPrice] = useState<number>(1.0);
     const [offers, setOffers] = useState<any[]>([]);
     const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
 
@@ -70,10 +65,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
             setLoading(true);
             setError('');
             const filter: VastOfferFilter = {
-                gpu_name: gpuName || undefined,
-                min_vram_gb: minVram || undefined,
-                num_gpus: numGpus || undefined,
-                max_hourly_price: maxPrice || undefined,
+                max_hourly_price: maxPrice,
             };
             const list = await vastListOffers(filter, accessToken);
             setOffers(list);
@@ -100,8 +92,8 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
             setStep('provision');
             const created = await vastCreateInstance({
                 offer_id: selectedOffer.id,
-                image,
-                disk_gb: diskGb,
+                image: defaultImage,
+                disk_gb: 20,
                 jupyter_port: jupyterPort,
                 jupyter_token: jupyterToken,
             }, accessToken);
@@ -156,32 +148,9 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
 
                 {step === 'config' && (
                     <>
-                        <div className="grid-2">
-                            <div className="form-group">
-                                <label>GPU 이름(정규식)</label>
-                                <input value={gpuName} onChange={e => setGpuName(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label>최소 VRAM(GB)</label>
-                                <input type="number" value={minVram} onChange={e => setMinVram(Number(e.target.value))} />
-                            </div>
-                            <div className="form-group">
-                                <label>GPU 개수</label>
-                                <input type="number" value={numGpus} onChange={e => setNumGpus(Number(e.target.value))} />
-                            </div>
-                            <div className="form-group">
-                                <label>최대 시간당 가격(USD)</label>
-                                <input type="number" step="0.01" value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} />
-                            </div>
-                            <div className="form-group">
-                                <label>디스크(GB)</label>
-                                <input type="number" value={diskGb} onChange={e => setDiskGb(Number(e.target.value))} />
-                            </div>
-                            <div className="form-group">
-                                <label>이미지</label>
-                                <input value={image} onChange={e => setImage(e.target.value)} />
-                                <p className="help">예: {defaultImage}</p>
-                            </div>
+                        <div className="form-group">
+                            <label>최대 시간당 가격 (USD)</label>
+                            <input type="number" step="0.1" value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} />
                         </div>
 
                         <div className="actions">
