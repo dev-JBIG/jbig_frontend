@@ -24,6 +24,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
 
     const [instanceId, setInstanceId] = useState<string | number | null>(null);
     const [jupyterUrl, setJupyterUrl] = useState<string>('');
+    const [jupyterToken, setJupyterToken] = useState<string>('');
 
     const [expiresAt, setExpiresAt] = useState<number | null>(null);
     const [now, setNow] = useState<number>(Date.now());
@@ -89,12 +90,18 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                 disk_gb: 20,
             }, accessToken);
             setInstanceId(created.id);
+            const token = created.jupyter_token || '';
+            setJupyterToken(token);
 
             for (let i = 0; i < 60; i++) {
                 await new Promise(r => setTimeout(r, 5000));
                 const info = await vastGetInstance(created.id, accessToken);
-                if (info.status === "running" && info.jupyter_url) {
-                    setJupyterUrl(info.jupyter_url);
+                if (info.status === "running") {
+                    let url = info.jupyter_url || (info.public_ip ? `https://${info.public_ip}:8080/` : '');
+                    if (url && token) {
+                        url = url.includes('?') ? `${url}&token=${token}` : `${url}?token=${token}`;
+                    }
+                    setJupyterUrl(url);
                     setStep('running');
                     setExpiresAt(Date.now() + 30 * 60 * 1000);
                     return;

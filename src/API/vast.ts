@@ -28,6 +28,7 @@ export interface VastInstanceInfo {
     public_ip?: string;
     ports?: any;
     jupyter_url?: string;
+    jupyter_token?: string;
 }
 
 const API_BASE = "/api/gpu";
@@ -73,7 +74,11 @@ export async function vastCreateInstance(p: VastCreateInstanceParams, token: str
         headers: getAuthHeaders(token),
     });
     const d = res.data as any;
-    return { id: d.id ?? d.instance_id, status: d.status ?? "starting" };
+    return {
+        id: d.id ?? d.instance_id,
+        status: d.status ?? "starting",
+        jupyter_token: d.jupyter_token,
+    };
 }
 
 export async function vastGetInstance(id: string | number, token: string): Promise<VastInstanceInfo> {
