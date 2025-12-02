@@ -41,8 +41,8 @@ const CommentList: React.FC<CommentListProps> = ({ userId }) => {
                 const res = await fetchUserComments(userId, 10, page, accessToken);
                 setComments(prev => [...prev, ...res.comments]);
                 if (page >= res.totalPages) setHasMore(false);
-            } catch (e) {
-                console.error(e);
+            } catch {
+                // 에러 무시
             }
             setLoading(false);
         };

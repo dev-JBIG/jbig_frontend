@@ -59,8 +59,7 @@ const Note: React.FC = () => {
             } else {
                 window.history.pushState({ page: pageId }, "", newUrl);
             }
-        } catch (err) {
-            console.error("Notion page load error:", err);
+        } catch {
             setError("페이지를 불러올 수 없습니다. Notion 페이지가 공개 상태인지 확인하세요.");
         } finally {
             setLoading(false);

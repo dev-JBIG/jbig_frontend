@@ -80,8 +80,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         try {
             const urlObj = new URL(urlToRemove);
             keyToRemove = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
-        } catch (e) {
-            console.error("Error parsing URL to remove:", urlToRemove, e);
+        } catch {
             return; // 파싱 실패 시 중단
         }
 
@@ -229,8 +228,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         const urlObj = new URL(item.url);
                         // 첫 번째 '/' 이후부터 '?' 전까지가 Key
                         key = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
-                     } catch (e) {
-                         console.error("Error parsing attachment URL:", item.url, e);
+                     } catch {
                         key = `error_parsing_${index}`; // 파싱 실패 시 임시값
                      }
                     return { path: key, name: item.name };
@@ -242,7 +240,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     url: att.url, // 이건 표시용이므로 URL 그대로 사용
                     sizeBytes: att.size || undefined // 백엔드가 준 size 사용
                 }));
-               // const attsWithSize = await enrichWithSizes(existingAttsForDisplay); // 사이즈 가져오기
                 setExistingAttachments(existingAttsForDisplay);
 
                 // DB 저장용 상태 설정 ({ path, name } 형식)
@@ -253,14 +250,12 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
                 // 본문 마크다운 로드
                 setContent(src.content_md || "");
-            } catch (e) {
-                console.error(e);
+            } catch {
                 alert("게시글 정보를 불러오지 못했습니다.");
                 navigate(-1);
             }
         })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isEdit, postId, accessToken]);
+    }, [isEdit, postId, accessToken, navigate, signOutLocal, category, BOARD_LIST]);
 
 
     // 첨부파일 업로드

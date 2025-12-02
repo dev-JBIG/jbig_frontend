@@ -36,15 +36,10 @@ const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
     );
 });
 
-interface Props {
-    username: string;
-}
-
-const PostDetail: React.FC<Props> = ({ username }) => {
+const PostDetail: React.FC = () => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
 
-    const [, setUserName] = useState("");
     const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
     // 답글 입력 대상 댓글 id (하나만)
@@ -160,7 +155,6 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                     return;
                 }
 
-                setUserName(username);
 
                 const toDate = (s?: string) => (s ? s.slice(0, 16).replace("T", " ") : "");
                 const ext = (name: string) => name.split(".").pop()?.toLowerCase() || "";
@@ -247,8 +241,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 }
 
                 setPost(mapped);
-            } catch (err) {
-                console.error(err);
+            } catch {
                 setPost("not-found");
             }
         };
@@ -271,8 +264,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             if (res?.notFound) { alert("게시글을 찾을 수 없습니다."); return; }
             // 성공
             navigate(`/board/${boardId}`);
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("게시글 삭제에 실패했습니다.");
         }
     };
@@ -329,8 +321,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 comments: [ ...(post.comments || []), created ],
             });
             setCommentInput("");
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("댓글 등록에 실패했습니다.");
         }
     };
@@ -430,8 +421,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
             });
             setReplyInput("");
             setReplyTargetId(null);
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("답글 등록에 실패했습니다.");
         }
     };
@@ -455,8 +445,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 comments: (post.comments || []).map(c => c.id === commentId ? { ...c, content } : c),
             });
             cancelEdit();
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("댓글 수정에 실패했습니다.");
         }
     };
@@ -478,8 +467,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 ),
             });
             cancelEdit();
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("답글 수정에 실패했습니다.");
         }
     };
@@ -529,8 +517,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
         <div className="postdetail-container has-floating-like">
             <div className="postdetail-header">
                 <div
-                    className="postdetail-category"
-                    style={{cursor: "pointer", color: "#3563e9", fontWeight: 500}}
+                    className="postdetail-category postdetail-category-link"
                     onClick={() => navigate(`/board/${boardId}`)}
                 >
                     {post.board}
@@ -558,8 +545,8 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <h2 className="postdetail-title">
                     {post.title}
                     {post.post_type === 3 && (
-                        <span 
-                            style={{ color: "#999", marginLeft: "8px", fontSize: "0.9em", fontWeight: "normal" }}
+                        <span
+                            className="postdetail-private-badge"
                             title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
                         >
                             (비공개)
@@ -575,7 +562,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                 <span className="postdetail-date">
                     {post.date}
                     {post.updatedAt && post.updatedAt !== post.date && (
-                        <span style={{color: "#bbb", marginLeft: 8}}>
+                        <span className="postdetail-updated-time">
                             수정: {post.updatedAt}
                         </span>
                     )}
@@ -637,7 +624,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                     >
                                         {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
                                         {!c.is_deleted && c.is_owner && (
-                                            <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                            <span className="comment-owner-badge">
                                                 (나)
                                             </span>
                                         )}
@@ -713,7 +700,7 @@ const PostDetail: React.FC<Props> = ({ username }) => {
                                 >
                                     {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
                                     {!r.is_deleted && r.is_owner && (
-                                        <span style={{color: "#2196F3", fontWeight: 500, marginLeft: 3}}>
+                                        <span className="comment-owner-badge">
                                             (나)
                                         </span>
                                     )}

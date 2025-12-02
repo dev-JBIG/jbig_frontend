@@ -107,8 +107,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 );
 
                 setAnnouncementPosts(response.posts);
-            } catch (e) {
-                console.error("Failed to fetch announcements:", e);
+            } catch {
                 setAnnouncementPosts([]);
             }
         };
@@ -269,7 +268,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             {!loading && isSearchPage ? (
                 // 검색 페이지
                 (!q.trim() || displayPosts.length === 0) ? (
-                    <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+                    <div className="no-search-results">
                         해당 게시물이 없습니다.
                     </div>
                 ) : (
@@ -313,7 +312,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     )}
                                     {postTypes.get(p.id) === 3 && (
                                         <span
-                                            style={{ color: "#999", marginLeft: "4px" }}
+                                            className="private-post-badge"
                                             title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
                                         >
                                             (비공개)
@@ -322,12 +321,11 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="author-cell th-author">
                   <span
-                    className="author-text"
+                    className="author-text author-link"
                     onClick={(e) => {
                                         e.stopPropagation();
                                         navigate(`/@${p.user_id}`);
                                     }}
-                                    style={{ color: "#3563e9", cursor: "pointer", fontWeight: 500 }}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
                   >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
@@ -344,14 +342,14 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             ) : !loading ? (
                 // 검색 페이지가 아닐 때
                 displayPosts.length === 0 && !isHome ? (
-                    <div style={{ textAlign: "center", color: "#666" }}>
+                    <div className="empty-posts-message">
                         <div>게시글이 없습니다</div>
                         {(!isUserPage &&
                             !isHome &&
                             activeBoardID !== 0 &&
                             !(activeBoard?.name === "공지사항" && !staffAuth) &&
                             postPermission) && (
-                            <div style={{ marginTop: 10 }}>
+                            <div className="empty-posts-message-with-link">
                                 <span
                                   role="link"
                                   tabIndex={0}
@@ -362,13 +360,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                           handleWrite();
                                       }
                                   }}
-                                  style={{
-                                      color: "#3563e9",
-                                      textDecoration: "underline",
-                                      cursor: "pointer",
-                                      borderRadius: "6px",
-                                      fontWeight: 500,
-                                  }}
+                                  className="write-post-link"
                                 >
                                     게시글 작성하러가기
                                 </span>
@@ -408,12 +400,11 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="author-cell th-author">
                   <span
-                    className="author-text"
+                    className="author-text author-link"
                     onClick={(e) => {
                                         e.stopPropagation();
                                         navigate(`/@${p.user_id}`);
                                     }}
-                                    style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
                   >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
@@ -450,7 +441,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     )}
                                     {postTypes.get(p.id) === 3 && (
                                         <span
-                                            style={{ color: "#999", marginLeft: "4px" }}
+                                            className="private-post-badge"
                                             title="해당 게시물은 작성자와 관리자만 열람할 수 있습니다"
                                         >
                                             (비공개)
@@ -459,12 +450,11 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 </td>
                                 <td className="author-cell th-author">
                   <span
-                    className="author-text"
+                    className="author-text author-link"
                     onClick={(e) => {
                                         e.stopPropagation();
                                         navigate(`/@${p.user_id}`);
                                     }}
-                                    style={{color: "#3563e9", cursor: "pointer", fontWeight: 500}}
                                     title={`${p.author_semester ? `${p.author_semester}기 ` : ""}${p.author}`}
                   >
                     {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}

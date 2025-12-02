@@ -424,3 +424,42 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+/* 작성자 링크 스타일 */
+.author-link {
+    color: #3563e9;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* 비공개 게시물 표시 */
+.private-post-badge {
+    color: #999;
+    margin-left: 4px;
+}
+
+/* 게시글 작성 링크 */
+.write-post-link {
+    color: #3563e9;
+    text-decoration: underline;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* 빈 게시글 메시지 */
+.empty-posts-message {
+    text-align: center;
+    color: #666;
+}
+
+.empty-posts-message-with-link {
+    margin-top: 10px;
+}
+
+/* 검색 결과 없음 */
+.no-search-results {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}

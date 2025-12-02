@@ -250,7 +250,6 @@ const Home: React.FC = () => {
 
             setModalOpen(false);
         } catch (err: any) {
-            console.error("이벤트 저장 실패:", err);
             let message = "이벤트 저장 중 오류가 발생했습니다.";
             if (err?.response?.data) {
                 const d = err.response.data;
@@ -427,7 +426,7 @@ const Home: React.FC = () => {
                     }/>
                     <Route path="board/:boardId/:id" element={
                         <MainLayout sidebarProps={sidebarProps}>
-                            <PostDetail username={userName}/>
+                            <PostDetail/>
                         </MainLayout>
                     }/>
                     <Route

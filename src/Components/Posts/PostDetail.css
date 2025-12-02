@@ -321,3 +321,31 @@
   white-space: pre-wrap; /* 줄바꿈(<br>) 적용 */
   word-break: break-all;
 }
+
+/* 카테고리 링크 스타일 */
+.postdetail-category-link {
+    cursor: pointer;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+/* 비공개 게시글 표시 */
+.postdetail-private-badge {
+    color: #999;
+    margin-left: 8px;
+    font-size: 0.9em;
+    font-weight: normal;
+}
+
+/* 수정 시간 표시 */
+.postdetail-updated-time {
+    color: #bbb;
+    margin-left: 8px;
+}
+
+/* 댓글/답글 (나) 표시 */
+.comment-owner-badge {
+    color: #2196F3;
+    font-weight: 500;
+    margin-left: 3px;
+}

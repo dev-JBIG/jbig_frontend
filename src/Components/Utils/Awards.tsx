@@ -134,8 +134,8 @@ export const AwardsSection: React.FC = () => {
                 };
                 (shadow as any).addEventListener('click', clickHandler);
                 // 컴포넌트 언마운트/재주입 시 정리되도록 잠시 핸들러를 저장하지 않고, 재렌더 시 기존 shadow가 교체되면 GC됨
-            } catch (e) {
-                console.error("수상경력 불러오기 실패:", e);
+            } catch {
+                // 수상경력 로드 실패 시 무시
             }
         })();
 

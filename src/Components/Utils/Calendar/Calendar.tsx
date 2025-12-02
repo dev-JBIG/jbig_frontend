@@ -138,8 +138,7 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                                         await deleteCalendarEvent(removeKey, accessToken);
                                         ($("#calendar") as any).fullCalendar("removeEvents", removeKey); // UI 반영함
                                         ($("[data-toggle='popover']") as any).popover("hide");
-                                    } catch (err) {
-                                        console.error("이벤트 삭제 실패:", err);
+                                    } catch {
                                         alert("이벤트 삭제 중 오류가 발생했습니다.");
                                     }
                                 }
@@ -189,8 +188,8 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                         `);
                     }
                 });
-            } catch (err) {
-                console.error("캘린더 이벤트 불러오기 실패:", err);
+            } catch {
+                // 캘린더 이벤트 로드 실패 시 무시
             }
         };
 
