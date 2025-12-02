@@ -137,7 +137,7 @@
 /* 댓글 내용 */
 .postdetail-comment-section .comment-content {
     font-size: var(--font-size-base);
-    line-height: 1;
+    line-height: 2;
     color: var(--color-text-primary);
     padding: var(--space-sm) 0;
     word-break: break-word;
