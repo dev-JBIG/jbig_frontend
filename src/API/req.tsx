@@ -963,6 +963,7 @@ export interface PublicProfile {
     semester: number;
     resume: string;
     date_joined: string;
+    last_login: string | null;
     is_self: boolean;
     posts: {
         id: number;

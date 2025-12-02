@@ -6,6 +6,23 @@ import { useUser } from "../Utils/UserContext";
 import { fetchPublicProfile, updateResume, PublicProfile } from "../../API/req";
 import "./Profile.css";
 
+const formatLastLogin = (isoString: string | null): string => {
+    if (!isoString) return "";
+    const lastLogin = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - lastLogin.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) return "방금 전 접속";
+    if (diffMinutes < 60) return `${diffMinutes}분 전 접속`;
+    if (diffHours < 24) return `${diffHours}시간 전 접속`;
+    if (diffDays < 30) return `${diffDays}일 전 접속`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전 접속`;
+    return `${Math.floor(diffDays / 365)}년 전 접속`;
+};
+
 const Profile: React.FC = () => {
     const { username: paramUsername } = useParams<{ username: string }>();
     const navigate = useNavigate();
@@ -100,7 +117,12 @@ const Profile: React.FC = () => {
                         <span className="profile-semester">{profile.semester}기</span>
                         <span className="profile-id">@{profile.email_id}</span>
                     </p>
-                    <p className="profile-joined">가입일: {profile.date_joined}</p>
+                    <p className="profile-joined">
+                        가입일: {profile.date_joined}
+                        {profile.last_login && (
+                            <span className="profile-last-login"> · {formatLastLogin(profile.last_login)}</span>
+                        )}
+                    </p>
                 </div>
                 {profile.is_self && (
                     <div className="profile-actions">

@@ -107,6 +107,10 @@
     margin: 0;
 }
 
+.profile-last-login {
+    color: #27ae60;
+}
+
 .profile-actions {
     display: flex;
     gap: 8px;
