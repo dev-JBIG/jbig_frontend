@@ -35,19 +35,15 @@ export interface VastInstanceInfo {
 
 const API_BASE = "/api/gpu";
 
-function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem("accessToken");
-    const headers: Record<string, string> = {
+function getAuthHeaders(token: string): Record<string, string> {
+    return {
         Accept: "application/json",
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
     };
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
-    return headers;
 }
 
-export async function vastListOffers(filter: VastOfferFilter): Promise<VastOfferSummary[]> {
+export async function vastListOffers(filter: VastOfferFilter, token: string): Promise<VastOfferSummary[]> {
     const payload: any = {};
     if (filter.gpu_name) payload.gpu_name = filter.gpu_name;
     if (filter.min_vram_gb) payload.min_vram_gb = filter.min_vram_gb;
@@ -55,7 +51,7 @@ export async function vastListOffers(filter: VastOfferFilter): Promise<VastOffer
     if (filter.max_hourly_price) payload.max_hourly_price = filter.max_hourly_price;
 
     const res = await axios.post(`${API_BASE}/offers`, payload, {
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
     });
 
     const items: any[] = Array.isArray(res.data) ? res.data : [];
@@ -69,7 +65,7 @@ export async function vastListOffers(filter: VastOfferFilter): Promise<VastOffer
     }));
 }
 
-export async function vastCreateInstance(p: VastCreateInstanceParams): Promise<VastInstanceInfo> {
+export async function vastCreateInstance(p: VastCreateInstanceParams, token: string): Promise<VastInstanceInfo> {
     const port = p.jupyter_port ?? 8888;
     const env = {
         JUPYTER_TOKEN: p.jupyter_token,
@@ -92,23 +88,23 @@ export async function vastCreateInstance(p: VastCreateInstanceParams): Promise<V
     };
 
     const res = await axios.post(`${API_BASE}/instances`, payload, {
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
     });
     const d = res.data as any;
     return { id: d.id ?? d.instance_id, status: d.status ?? "starting", public_ip: d.public_ip, ports: d.ports };
 }
 
-export async function vastGetInstance(id: string | number): Promise<VastInstanceInfo> {
+export async function vastGetInstance(id: string | number, token: string): Promise<VastInstanceInfo> {
     const res = await axios.get(`${API_BASE}/instances/${id}`, {
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
     });
     const d = res.data as any;
     return { id: d.id ?? id, status: d.status ?? d.state ?? "unknown", public_ip: d.public_ip, ports: d.ports };
 }
 
-export async function vastDeleteInstance(id: string | number): Promise<void> {
+export async function vastDeleteInstance(id: string | number, token: string): Promise<void> {
     await axios.delete(`${API_BASE}/instances/${id}`, {
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
     });
 }
 

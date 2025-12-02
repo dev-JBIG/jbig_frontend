@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import './VastModal.css';
 import { vastCreateInstance, vastDeleteInstance, vastGetInstance, vastListOffers, VastOfferFilter } from '../../../API/vast';
+import { useUser } from '../UserContext';
 
 interface VastModalProps {
     onClose: () => void;
@@ -12,6 +13,7 @@ type Step = 'config' | 'provision' | 'running' | 'error';
 const defaultImage = 'pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime';
 
 const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
+    const { accessToken } = useUser();
     const [step, setStep] = useState<Step>('config');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
@@ -60,6 +62,10 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
     }, [publicIp, jupyterPort, jupyterToken]);
 
     const handleSearchOffers = async () => {
+        if (!accessToken) {
+            setError('로그인이 필요합니다.');
+            return;
+        }
         try {
             setLoading(true);
             setError('');
@@ -69,7 +75,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                 num_gpus: numGpus || undefined,
                 max_hourly_price: maxPrice || undefined,
             };
-            const list = await vastListOffers(filter);
+            const list = await vastListOffers(filter, accessToken);
             setOffers(list);
             if (list.length === 0) setError('조건에 맞는 오퍼가 없습니다. 필터를 완화해보세요.');
         } catch (e: any) {
@@ -80,6 +86,10 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
     };
 
     const handleProvision = async () => {
+        if (!accessToken) {
+            setError('로그인이 필요합니다.');
+            return;
+        }
         if (!selectedOffer) {
             alert('오퍼를 먼저 선택하세요.');
             return;
@@ -94,12 +104,12 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                 disk_gb: diskGb,
                 jupyter_port: jupyterPort,
                 jupyter_token: jupyterToken,
-            });
+            }, accessToken);
             setInstanceId(created.id);
 
             for (let i = 0; i < 60; i++) {
                 await new Promise(r => setTimeout(r, 5000));
-                const info = await vastGetInstance(created.id);
+                const info = await vastGetInstance(created.id, accessToken);
                 if (info.public_ip) {
                     setPublicIp(info.public_ip);
                     setStep('running');
@@ -121,10 +131,10 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
     };
 
     const handleTerminate = async () => {
-        if (!instanceId) { onClose(); return; }
+        if (!instanceId || !accessToken) { onClose(); return; }
         try {
             setLoading(true);
-            await vastDeleteInstance(instanceId);
+            await vastDeleteInstance(instanceId, accessToken);
             onClose();
         } catch (e: any) {
             setError(e?.response?.data?.detail || e?.message || '인스턴스 종료 실패');
