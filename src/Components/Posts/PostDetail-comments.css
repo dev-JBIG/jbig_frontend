@@ -225,7 +225,7 @@
 
 .reply-content {
     font-size: var(--font-size-sm);
-    line-height: 1;
+    line-height: 2;
     color: var(--color-text-primary);
     word-break: break-word;
     overflow-wrap: break-word;
