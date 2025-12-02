@@ -93,8 +93,17 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
             for (let i = 0; i < 60; i++) {
                 await new Promise(r => setTimeout(r, 5000));
                 const info = await vastGetInstance(created.id, accessToken);
-                if (info.jupyter_url) {
-                    setJupyterUrl(info.jupyter_url);
+                if (info.status === "running" && info.public_ip) {
+                    // 포트 매핑에서 Jupyter URL 구성
+                    let url = info.jupyter_url;
+                    if (!url && info.ports) {
+                        const portKey = Object.keys(info.ports).find(k => k.includes("8080"));
+                        if (portKey && info.ports[portKey]?.[0]?.HostPort) {
+                            const hostPort = info.ports[portKey][0].HostPort;
+                            url = `http://${info.public_ip}:${hostPort}`;
+                        }
+                    }
+                    setJupyterUrl(url || `http://${info.public_ip}:8080`);
                     setStep('running');
                     setExpiresAt(Date.now() + 30 * 60 * 1000);
                     return;
