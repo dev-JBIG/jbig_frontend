@@ -20,10 +20,6 @@ export interface VastCreateInstanceParams {
     offer_id: number;
     image: string;                // e.g., "pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime"
     disk_gb: number;              // e.g., 50
-    jupyter_port?: number;        // default 8888
-    jupyter_token: string;        // we'll generate client-side
-    ssh_key?: string;             // optional user ssh key
-    env?: Record<string, string>;
 }
 
 export interface VastInstanceInfo {
@@ -31,6 +27,7 @@ export interface VastInstanceInfo {
     status: string;               // e.g., running, starting, busy
     public_ip?: string;
     ports?: any;
+    jupyter_url?: string;
 }
 
 const API_BASE = "/api/gpu";
@@ -66,32 +63,17 @@ export async function vastListOffers(filter: VastOfferFilter, token: string): Pr
 }
 
 export async function vastCreateInstance(p: VastCreateInstanceParams, token: string): Promise<VastInstanceInfo> {
-    const port = p.jupyter_port ?? 8888;
-    const env = {
-        JUPYTER_TOKEN: p.jupyter_token,
-        ...p.env,
-    } as Record<string, string>;
-
-    const onstart = [
-        `mkdir -p /root/work`,
-        `pip install --upgrade pip jupyterlab --quiet || true`,
-        `jupyter lab --ip=0.0.0.0 --port=${port} --no-browser --ServerApp.token=${p.jupyter_token} --ServerApp.allow_origin='*' --ServerApp.allow_remote_access=True --NotebookApp.notebook_dir=/root/work &`,
-    ].join(" && ");
-
-    const payload: any = {
+    const payload = {
         bundle_id: p.offer_id,
         image: p.image,
         disk: p.disk_gb,
-        onstart,
-        env,
-        ports: [{ port, proto: "tcp", public: true }],
     };
 
     const res = await axios.post(`${API_BASE}/instances`, payload, {
         headers: getAuthHeaders(token),
     });
     const d = res.data as any;
-    return { id: d.id ?? d.instance_id, status: d.status ?? "starting", public_ip: d.public_ip, ports: d.ports };
+    return { id: d.id ?? d.instance_id, status: d.status ?? "starting" };
 }
 
 export async function vastGetInstance(id: string | number, token: string): Promise<VastInstanceInfo> {
@@ -99,7 +81,13 @@ export async function vastGetInstance(id: string | number, token: string): Promi
         headers: getAuthHeaders(token),
     });
     const d = res.data as any;
-    return { id: d.id ?? id, status: d.status ?? d.state ?? "unknown", public_ip: d.public_ip, ports: d.ports };
+    return {
+        id: d.id ?? id,
+        status: d.status ?? d.state ?? "unknown",
+        public_ip: d.public_ip,
+        ports: d.ports,
+        jupyter_url: d.jupyter_url,
+    };
 }
 
 export async function vastDeleteInstance(id: string | number, token: string): Promise<void> {

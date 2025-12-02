@@ -23,9 +23,7 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
     const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
 
     const [instanceId, setInstanceId] = useState<string | number | null>(null);
-    const [publicIp, setPublicIp] = useState<string>('');
-    const [jupyterPort] = useState<number>(8888);
-    const [jupyterToken] = useState<string>(() => Math.random().toString(36).slice(2));
+    const [jupyterUrl, setJupyterUrl] = useState<string>('');
 
     const [expiresAt, setExpiresAt] = useState<number | null>(null);
     const [now, setNow] = useState<number>(Date.now());
@@ -50,11 +48,6 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
         if (!expiresAt) return 0;
         return Math.max(0, Math.floor((expiresAt - now) / 1000));
     }, [expiresAt, now]);
-
-    const jupyterUrl = useMemo(() => {
-        if (!publicIp) return '';
-        return `http://${publicIp}:${jupyterPort}/?token=${encodeURIComponent(jupyterToken)}`;
-    }, [publicIp, jupyterPort, jupyterToken]);
 
     const handleSearchOffers = async () => {
         if (!accessToken) {
@@ -94,16 +87,14 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                 offer_id: selectedOffer.id,
                 image: defaultImage,
                 disk_gb: 20,
-                jupyter_port: jupyterPort,
-                jupyter_token: jupyterToken,
             }, accessToken);
             setInstanceId(created.id);
 
             for (let i = 0; i < 60; i++) {
                 await new Promise(r => setTimeout(r, 5000));
                 const info = await vastGetInstance(created.id, accessToken);
-                if (info.public_ip) {
-                    setPublicIp(info.public_ip);
+                if (info.jupyter_url) {
+                    setJupyterUrl(info.jupyter_url);
                     setStep('running');
                     setExpiresAt(Date.now() + 30 * 60 * 1000);
                     return;
@@ -200,9 +191,8 @@ const VastModal: React.FC<VastModalProps> = ({ onClose }) => {
                     <div>
                         <div className="info">
                             <div>Instance ID: {instanceId}</div>
-                            <div>Public IP: {publicIp}</div>
                             <div>
-                                주피터 링크: {jupyterUrl ? (<a href={jupyterUrl} target="_blank" rel="noreferrer">열기</a>) : '-'}
+                                Jupyter: {jupyterUrl ? (<a href={jupyterUrl} target="_blank" rel="noreferrer">열기</a>) : '준비 중...'}
                             </div>
                             <div>남은 시간: {Math.floor(remainingSeconds/60)}분 {remainingSeconds%60}초</div>
                         </div>
