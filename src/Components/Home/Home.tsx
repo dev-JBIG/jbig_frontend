@@ -22,7 +22,6 @@ import {
 import { CircleUserRound, Bell } from "lucide-react";
 import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
-import {AwardsSection} from "../Utils/Awards";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
@@ -405,9 +404,6 @@ const Home: React.FC = () => {
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
-                            <div className="main-banner">
-                                <AwardsSection/>
-                            </div>
                             <div className="calendar-section-wrapper">
                                 <Calendar staffAuth={staffAuth}/>
                                 {staffAuth && (
