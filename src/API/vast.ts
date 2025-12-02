@@ -20,6 +20,8 @@ export interface VastCreateInstanceParams {
     offer_id: number;
     image: string;                // e.g., "pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime"
     disk_gb: number;              // e.g., 50
+    gpu_name?: string;
+    hourly_price?: number;
 }
 
 export interface VastInstanceInfo {
@@ -29,6 +31,7 @@ export interface VastInstanceInfo {
     ports?: any;
     jupyter_url?: string;
     jupyter_token?: string;
+    expires_at?: string;
 }
 
 const API_BASE = "/api/gpu";
@@ -64,11 +67,13 @@ export async function vastListOffers(filter: VastOfferFilter, token: string): Pr
 }
 
 export async function vastCreateInstance(p: VastCreateInstanceParams, token: string): Promise<VastInstanceInfo> {
-    const payload = {
+    const payload: any = {
         bundle_id: p.offer_id,
         image: p.image,
         disk: p.disk_gb,
     };
+    if (p.gpu_name) payload.gpu_name = p.gpu_name;
+    if (p.hourly_price) payload.hourly_price = p.hourly_price;
 
     const res = await axios.post(`${API_BASE}/instances`, payload, {
         headers: getAuthHeaders(token),
@@ -78,6 +83,7 @@ export async function vastCreateInstance(p: VastCreateInstanceParams, token: str
         id: d.id ?? d.instance_id,
         status: d.status ?? "starting",
         jupyter_token: d.jupyter_token,
+        expires_at: d.expires_at,
     };
 }
 
@@ -92,7 +98,15 @@ export async function vastGetInstance(id: string | number, token: string): Promi
         public_ip: d.public_ip,
         ports: d.ports,
         jupyter_url: d.jupyter_url,
+        expires_at: d.expires_at,
     };
+}
+
+export async function vastExtendInstance(id: string | number, token: string): Promise<{ expires_at: string }> {
+    const res = await axios.patch(`${API_BASE}/instances/${id}`, {}, {
+        headers: getAuthHeaders(token),
+    });
+    return { expires_at: res.data.expires_at };
 }
 
 export async function vastDeleteInstance(id: string | number, token: string): Promise<void> {
@@ -100,5 +114,3 @@ export async function vastDeleteInstance(id: string | number, token: string): Pr
         headers: getAuthHeaders(token),
     });
 }
-
-

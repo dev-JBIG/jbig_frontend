@@ -38,5 +38,8 @@
 .error { margin-top: 10px; color: #c0392b; }
 .info { display: grid; gap: 6px; margin: 10px 0; }
 
+.provision-timer { font-size: 18px; font-weight: 600; color: #3563e9; margin: 12px 0; }
+.provision-hint { font-size: 13px; color: #888; margin-bottom: 8px; }
+
 
 
