@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import './VastModal.css';
-import { vastCreateInstance, vastDeleteInstance, vastExtendInstance, vastGetInstance, vastListOffers, VastOffer } from '../../../API/vast';
+import { vastCreateInstance, vastDeleteInstance, vastExtendInstance, vastGetInstance, vastGetMyInstances, vastListOffers, VastOffer } from '../../../API/vast';
 import { useUser } from '../UserContext';
 
-type Step = 'config' | 'provision' | 'running' | 'error';
+type Step = 'loading' | 'config' | 'provision' | 'running' | 'error';
 const DEFAULT_IMAGE = 'pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime';
-const PROVISION_TIMEOUT = 5 * 60 * 1000; // 5분
+const PROVISION_TIMEOUT = 5 * 60 * 1000;
 
 const VastModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { accessToken } = useUser();
-    const [step, setStep] = useState<Step>('config');
+    const [step, setStep] = useState<Step>('loading');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [maxPrice, setMaxPrice] = useState(1.0);
@@ -28,12 +28,66 @@ const VastModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const remaining = useMemo(() => expiresAt ? Math.max(0, Math.floor((expiresAt - now) / 1000)) : 0, [expiresAt, now]);
     const elapsed = useMemo(() => provisionStart ? Math.floor((now - provisionStart) / 1000) : 0, [provisionStart, now]);
 
-    const reset = useCallback(() => {
-        setStep('config'); setError(''); setSelected(null); setInstanceId(null);
-        setJupyterUrl(''); setExpiresAt(null); setProvisionStart(null); cancelRef.current = false;
-    }, []);
+    // 기존 인스턴스 복원
+    const restoreInstance = useCallback(async () => {
+        if (!accessToken) { setStep('config'); return; }
+        try {
+            const instances = await vastGetMyInstances(accessToken);
+            if (instances.length > 0) {
+                const inst = instances[0];
+                setInstanceId(inst.id);
+                if (inst.expires_at) setExpiresAt(new Date(inst.expires_at).getTime());
 
-    useEffect(() => { window.addEventListener('OPEN_VAST_MODAL', reset); return () => window.removeEventListener('OPEN_VAST_MODAL', reset); }, [reset]);
+                // 상세 정보 가져오기
+                const info = await vastGetInstance(inst.id, accessToken);
+                setJupyterUrl(info.jupyter_url || '');
+                if (info.expires_at) setExpiresAt(new Date(info.expires_at).getTime());
+                setStep(info.status === 'running' ? 'running' : 'provision');
+
+                // starting이면 폴링 시작
+                if (info.status !== 'running') {
+                    setProvisionStart(Date.now());
+                    pollForRunning(inst.id);
+                }
+            } else {
+                setStep('config');
+            }
+        } catch {
+            setStep('config');
+        }
+    }, [accessToken]);
+
+    // running 될 때까지 폴링
+    const pollForRunning = async (id: string | number) => {
+        if (!accessToken) return;
+        const start = Date.now();
+        for (let i = 0; i < 60; i++) {
+            if (cancelRef.current) return;
+            if (Date.now() - start > PROVISION_TIMEOUT) {
+                try { await vastDeleteInstance(id, accessToken); } catch {}
+                setStep('config'); setError('5분 타임아웃'); setInstanceId(null); return;
+            }
+            await new Promise(r => setTimeout(r, 5000));
+            if (cancelRef.current) return;
+            try {
+                const info = await vastGetInstance(id, accessToken);
+                if (info.status === 'running') {
+                    setJupyterUrl(info.jupyter_url || '');
+                    if (info.expires_at) setExpiresAt(new Date(info.expires_at).getTime());
+                    setStep('running'); setProvisionStart(null); return;
+                }
+            } catch {}
+        }
+        try { await vastDeleteInstance(id, accessToken); } catch {}
+        setStep('config'); setError('인스턴스 시작 실패'); setInstanceId(null);
+    };
+
+    useEffect(() => { restoreInstance(); }, [restoreInstance]);
+    useEffect(() => {
+        const handler = () => restoreInstance();
+        window.addEventListener('OPEN_VAST_MODAL', handler);
+        return () => window.removeEventListener('OPEN_VAST_MODAL', handler);
+    }, [restoreInstance]);
     useEffect(() => { if (expiresAt && remaining === 0 && step === 'running') handleTerminate(); }, [remaining, expiresAt, step]);
 
     const handleSearch = async () => {
@@ -50,44 +104,25 @@ const VastModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleCancel = async () => {
         cancelRef.current = true;
         if (instanceId && accessToken) try { await vastDeleteInstance(instanceId, accessToken); } catch {}
-        reset(); setError('취소됨. 다른 오퍼 선택하세요.');
+        setStep('config'); setError('취소됨'); setInstanceId(null); setProvisionStart(null);
     };
 
     const handleProvision = async () => {
         if (!accessToken || !selected) return;
         cancelRef.current = false;
-        const start = Date.now();
-        setProvisionStart(start); setLoading(true); setError(''); setStep('provision');
+        setProvisionStart(Date.now()); setLoading(true); setError(''); setStep('provision');
 
         try {
             const created = await vastCreateInstance({ offer_id: selected.id, image: DEFAULT_IMAGE, disk_gb: 20, gpu_name: selected.gpu_name, hourly_price: selected.hourly_price }, accessToken);
             if (cancelRef.current) return;
             setInstanceId(created.id);
             setExpiresAt(created.expires_at ? new Date(created.expires_at).getTime() : Date.now() + 30 * 60 * 1000);
-
-            // 5분 타임아웃 폴링
-            for (let i = 0; i < 60; i++) {
-                if (cancelRef.current) return;
-                if (Date.now() - start > PROVISION_TIMEOUT) {
-                    try { await vastDeleteInstance(created.id, accessToken); } catch {}
-                    reset(); setError('5분 타임아웃. 다른 오퍼 선택하세요.'); return;
-                }
-                await new Promise(r => setTimeout(r, 5000));
-                if (cancelRef.current) return;
-                try {
-                    const info = await vastGetInstance(created.id, accessToken);
-                    if (info.status === 'running') {
-                        setJupyterUrl(info.jupyter_url || '');
-                        if (info.expires_at) setExpiresAt(new Date(info.expires_at).getTime());
-                        setStep('running'); setLoading(false); return;
-                    }
-                } catch {}
-            }
-            try { await vastDeleteInstance(created.id, accessToken); } catch {}
-            reset(); setError('인스턴스 시작 실패');
+            setLoading(false);
+            pollForRunning(created.id);
         } catch (e: any) {
             if (!cancelRef.current) { setStep('error'); setError(e?.response?.data?.detail || '생성 실패'); }
-        } finally { setLoading(false); }
+            setLoading(false);
+        }
     };
 
     const handleExtend = async () => {
@@ -112,6 +147,8 @@ const VastModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="vast-modal-backdrop">
             <div className="vast-modal" onClick={e => e.stopPropagation()}>
                 <h2>GPU 인스턴스 대여</h2>
+
+                {step === 'loading' && <div className="center"><p>확인 중...</p></div>}
 
                 {step === 'config' && <>
                     <div className="form-group">
@@ -161,7 +198,7 @@ const VastModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 {step === 'error' && <div>
                     <div className="error">{error}</div>
                     <div className="actions">
-                        <button className="btn-secondary" onClick={reset}>다시 시도</button>
+                        <button className="btn-secondary" onClick={() => setStep('config')}>다시 시도</button>
                         <button className="btn-secondary" onClick={onClose}>닫기</button>
                     </div>
                 </div>}

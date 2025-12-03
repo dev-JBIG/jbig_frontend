@@ -33,3 +33,8 @@ export async function vastExtendInstance(id: string | number, token: string): Pr
 export async function vastDeleteInstance(id: string | number, token: string): Promise<void> {
     await axios.delete(`${API}/instances/${id}`, { headers: headers(token) });
 }
+
+export async function vastGetMyInstances(token: string): Promise<VastInstance[]> {
+    const res = await axios.get(`${API}/instances/my`, { headers: headers(token) });
+    return res.data || [];
+}
