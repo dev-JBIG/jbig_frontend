@@ -47,7 +47,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const postIdNumber = postId ? Number(postId) : null;
 
     const [existingAttachments, setExistingAttachments] = useState<
-        { filename: string; url: string; sizeBytes?: number }[]
+        { filename: string; url: string; sizeBytes?: number; path: string }[]
     >([]);
 
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
@@ -70,27 +70,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         return `jbig-draft-${user.email}-${category}`;
     }, [user, category, isEdit]);
 
-    const handleRemoveExistingAttachment = (urlToRemove: string) => {
-        // urlToRemove 에 해당하는 path 찾기
-        const attachmentToRemove = existingAttachments.find(a => a.url === urlToRemove);
-        if (!attachmentToRemove) return; // 해당 URL 없음
-
-        // URL에서 path(Key) 추출 (useEffect와 동일 로직)
-        let keyToRemove = "";
-        try {
-            const urlObj = new URL(urlToRemove);
-            keyToRemove = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
-        } catch {
-            return; // 파싱 실패 시 중단
-        }
-
-        // 찾은 path 기준으로 attachments 상태에서 제거
-        setAttachments(prev => prev.filter(att => att.path !== keyToRemove));
+    const handleRemoveExistingAttachment = (pathToRemove: string) => {
+        // path 기준으로 attachments 상태에서 제거 (path는 고유함)
+        setAttachments(prev => prev.filter(att => att.path !== pathToRemove));
     };
 
 
     const keptExistingCount = React.useMemo(
-        () => existingAttachments.filter(a => attachments.some(att => att.name === a.filename)).length,
+        () => existingAttachments.filter(a => attachments.some(att => att.path === a.path)).length,
         [existingAttachments, attachments]
     );
     const totalAttached = keptExistingCount + files.length;
@@ -235,11 +222,22 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 });
 
                 // 기존 첨부파일 목록 (미리보기 및 삭제용) 상태 설정
-                const existingAttsForDisplay = attachmentPathsFromAPI.map((att: { url: string; name: string; size:number | null }) => ({
-                    filename: att.name,
-                    url: att.url, // 이건 표시용이므로 URL 그대로 사용
-                    sizeBytes: att.size || undefined // 백엔드가 준 size 사용
-                }));
+                // path도 함께 저장하여 고유 식별에 사용
+                const existingAttsForDisplay = attachmentPathsFromAPI.map((att: { url: string; name: string; size: number | null }, index: number) => {
+                    let key = "";
+                    try {
+                        const urlObj = new URL(att.url);
+                        key = urlObj.pathname.substring(urlObj.pathname.indexOf('/', 1) + 1);
+                    } catch {
+                        key = `error_parsing_${index}`;
+                    }
+                    return {
+                        filename: att.name,
+                        url: att.url,
+                        sizeBytes: att.size || undefined,
+                        path: key  // path 추가하여 고유 식별자로 사용
+                    };
+                });
                 setExistingAttachments(existingAttsForDisplay);
 
                 // DB 저장용 상태 설정 ({ path, name } 형식)
@@ -310,8 +308,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 // 미리보기 URL 생성 (이미지 파일인 경우)
                 const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
 
-                // setFiles 상태 업데이트 (미리보기용) - res.id 대신 file.name 또는 임의의 키 사용
-                setFiles(prev => [...prev, { file, url: previewUrl || "", id: Date.now() }]); // << 이렇게 수정
+                // setFiles 상태 업데이트 (미리보기용) - path도 함께 저장하여 삭제 시 식별
+                setFiles(prev => [...prev, { file, url: previewUrl || "", id: Date.now(), path: res.path }]);
 
                 // setAttachments 상태 업데이트 (DB 저장용) - path와 name 사용
                 setAttachments(prev => [...prev, { path: res.path, name: res.name }]); 
@@ -338,24 +336,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
 
     const handleRemoveFile = (idx: number) => {
-        let removedFileName = "";
-        // files 상태에서 제거하고 제거된 파일명 저장
-        setFiles(prev => {
-            const copy = [...prev];
-            const removedItem = copy.splice(idx, 1)[0];
-            if (removedItem) {
-                removedFileName = removedItem.file.name; // 파일명 저장
-                // Blob URL 해제 (메모리 누수 방지)
-                if (removedItem.url && removedItem.url.startsWith('blob:')) {
-                     URL.revokeObjectURL(removedItem.url);
-                }
-            }
-            return copy;
-        });
+        // files 배열에서 해당 인덱스의 항목을 찾아 path로 삭제
+        const fileToRemove = files[idx];
+        if (!fileToRemove) return;
 
-        // attachments 상태에서도 해당 파일명(name)을 가진 항목 제거
-        if (removedFileName) {
-            setAttachments(prev => prev.filter(att => att.name !== removedFileName));
+        const pathToRemove = fileToRemove.path;
+
+        // Blob URL 해제 (메모리 누수 방지)
+        if (fileToRemove.url && fileToRemove.url.startsWith('blob:')) {
+            URL.revokeObjectURL(fileToRemove.url);
+        }
+
+        // files 상태에서 해당 인덱스 제거
+        setFiles(prev => prev.filter((_, i) => i !== idx));
+
+        // attachments 상태에서 해당 path를 가진 항목 제거 (path는 고유함)
+        if (pathToRemove) {
+            setAttachments(prev => prev.filter(att => att.path !== pathToRemove));
         }
     };
 
@@ -555,6 +552,44 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }
     };
 
+    // 클립보드 이미지 붙여넣기 핸들러
+    const handlePaste = async (e: React.ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 이미지는 붙여넣을 수 없습니다.`);
+                    return;
+                }
+
+                if (!accessToken) {
+                    alert("로그인이 필요합니다.");
+                    return;
+                }
+
+                try {
+                    const res = await uploadAttachment(file, accessToken);
+                    if (res.message || !res.path) {
+                        alert(`이미지 업로드 실패: ${res.message || '알 수 없는 오류'}`);
+                        return;
+                    }
+                    const serverUrl = `ncp-key://${res.path}`;
+                    const imageMarkdown = `![${res.name}](${serverUrl})`;
+                    setContent(prev => prev + imageMarkdown);
+                } catch {
+                    alert('이미지 업로드 실패');
+                }
+                return;
+            }
+        }
+    };
+
     // MDEditor 커스텀 command: 이미지 삽입 버튼
     const addImageCommand: ICommand = {
         name: 'add-image',
@@ -709,6 +744,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                             data-color-mode="light"
                             height={400}
                             preview="edit"
+                            textareaProps={{ onPaste: handlePaste }}
                             previewOptions={{
                                 remarkPlugins: [remarkMath],
                                 rehypePlugins: [rehypeKatex],
@@ -761,9 +797,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 />
                 <div className="postwrite-files">
                     {existingAttachments
-                        .filter(a => attachments.some(att => att.name === a.filename))
-                        .map((a, index) => (
-                            <div className="postwrite-file-preview" key={`ex-${index}`}>
+                        .filter(a => attachments.some(att => att.path === a.path))
+                        .map((a) => (
+                            <div className="postwrite-file-preview" key={`ex-${a.path}`}>
                                 {isImageFileName(a.filename) ? (
                                     <img
                                         src={a.url}
@@ -779,7 +815,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => handleRemoveExistingAttachment(a.url)}
+                                    onClick={() => handleRemoveExistingAttachment(a.path)}
                                     style={{marginLeft: 8}}
                                 >
                                     삭제
@@ -810,7 +846,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     ))}
                 </div>
                 <div className="postwrite-img-hint">
-                    (최대 {MAX_FILES}개, 파일당 20MB 제한)
+                    (최대 {MAX_FILES}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)
                 </div>
             </div>
             <button className="postwrite-submit" type="submit" disabled={submitting} aria-busy={submitting}>
