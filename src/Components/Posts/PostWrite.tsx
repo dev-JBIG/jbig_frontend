@@ -737,14 +737,13 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 		) : (
 		    // 그 외 모든 게시판은 기존 마크다운 에디터 렌더링
 		
-                    <div className="content-body">
+                    <div className="content-body" onPaste={handlePaste}>
                         <MDEditor
                             value={content}
                             onChange={handleChange}
                             data-color-mode="light"
                             height={400}
                             preview="edit"
-                            textareaProps={{ onPaste: handlePaste }}
                             previewOptions={{
                                 remarkPlugins: [remarkMath],
                                 rehypePlugins: [rehypeKatex],
