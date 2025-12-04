@@ -46,6 +46,19 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const uploadedPathsRef = useRef<Set<string>>(new Set());
     const savedRef = useRef(false); // 게시물 저장 성공 여부
 
+    // ncp-key → blob URL 매핑 (Preview 모드에서 이미지 표시용)
+    const imageUrlMapRef = useRef<Map<string, string>>(new Map());
+
+    // 컴포넌트 언마운트 시 blob URL 해제
+    useEffect(() => {
+        return () => {
+            imageUrlMapRef.current.forEach((blobUrl) => {
+                URL.revokeObjectURL(blobUrl);
+            });
+            imageUrlMapRef.current.clear();
+        };
+    }, []);
+
     const { category, id: postId } = useParams(); // :category => boardId로 수정. 이게 board id 입니다
     const isEdit = !!postId;
     const postIdNumber = postId ? Number(postId) : null;
@@ -159,25 +172,29 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }
     }, [draftKey, accessToken]);
 
-    // 초안 자동 저장 (제목/본문만, 2초 debounce)
+    // 초안 자동 저장 (제목/본문/업로드파일 경로, 2초 debounce)
     useEffect(() => {
         if (!draftKey) return;
         const handler = setTimeout(() => {
             try {
-                if (!title && !content) {
+                if (!title && !content && uploadedPathsRef.current.size === 0) {
                     localStorage.removeItem(draftKey);
                     return;
                 }
                 localStorage.setItem(
                     draftKey,
-                    JSON.stringify({ title, content })
+                    JSON.stringify({
+                        title,
+                        content,
+                        uploadedPaths: Array.from(uploadedPathsRef.current)
+                    })
                 );
             } catch {
                 // storage 가득 찬 경우 등은 조용히 무시
             }
         }, 2000);
         return () => clearTimeout(handler);
-    }, [title, content, draftKey]);
+    }, [title, content, draftKey, files]); // files 변경 시에도 저장
 
     useEffect(() => {
         if(!accessToken){
@@ -187,23 +204,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return;
         }
     }, [accessToken, navigate, signOutLocal]);
-
-    // 임시 저장 시 업로드된 파일 path도 함께 저장 (고아 파일 방지용)
-    useEffect(() => {
-        if (!draftKey || uploadedPathsRef.current.size === 0) return;
-
-        // 기존 임시 저장에 uploadedPaths 추가
-        try {
-            const raw = localStorage.getItem(draftKey);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                parsed.uploadedPaths = Array.from(uploadedPathsRef.current);
-                localStorage.setItem(draftKey, JSON.stringify(parsed));
-            }
-        } catch {
-            // 파싱 실패 시 무시
-        }
-    }, [draftKey, files, content]); // files나 content 변경 시 업데이트
 
     useEffect(() => {
         if (!isEdit) return;
@@ -598,17 +598,20 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return; // 함수 종료
             }
 
-            // 수정 //
             // NCP 공개 URL 대신, 백엔드가 준 Presigned Download URL 사용
             // => DB에 임시 URL 대신 영구적인 'Key'를 저장하도록 특수 태그 사용
             const serverUrl = `ncp-key://${res.path}`; // 예: ncp-key://uploads/2025/10/31...png
 
-            // 마크다운 이미지 문법으로 삽입 (res.filename 대신 res.name 사용)
+            // 마크다운 이미지 문법으로 삽입
             const imageMarkdown = `\n![${res.name}](${serverUrl})\n`;
             setContent(prev => prev + imageMarkdown);
 
             // 업로드된 파일 path 추적 (고아 파일 방지용)
             uploadedPathsRef.current.add(res.path);
+
+            // Preview 모드에서 이미지 표시를 위한 blob URL 매핑
+            const blobUrl = URL.createObjectURL(file);
+            imageUrlMapRef.current.set(res.path, blobUrl);
 
 
         } catch (error) {
@@ -652,6 +655,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
                     // 업로드된 파일 path 추적 (고아 파일 방지용)
                     uploadedPathsRef.current.add(res.path);
+
+                    // Preview 모드에서 이미지 표시를 위한 blob URL 매핑
+                    const blobUrl = URL.createObjectURL(file);
+                    imageUrlMapRef.current.set(res.path, blobUrl);
                 } catch {
                     alert('이미지 업로드 실패');
                 }
@@ -817,6 +824,20 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                             previewOptions={{
                                 remarkPlugins: [remarkMath],
                                 rehypePlugins: [rehypeKatex],
+                                components: {
+                                    // ncp-key:// URL을 blob URL로 변환하여 Preview에서 이미지 표시
+                                    img: ({ src, alt, ...props }) => {
+                                        let imageSrc = src;
+                                        if (src?.startsWith('ncp-key://')) {
+                                            const ncpKey = src.replace('ncp-key://', '');
+                                            const blobUrl = imageUrlMapRef.current.get(ncpKey);
+                                            if (blobUrl) {
+                                                imageSrc = blobUrl;
+                                            }
+                                        }
+                                        return <img src={imageSrc} alt={alt} {...props} style={{ maxWidth: '100%' }} />;
+                                    },
+                                },
                             }}
                             commands={[
                                 commands.bold,
