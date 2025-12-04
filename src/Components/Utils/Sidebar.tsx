@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import "../Home/Home.css"
 import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
@@ -15,9 +15,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                              totalCount,
                                              navigate
                                          }) => {
-
-    const [sidebarQuery, setSidebarQuery] = useState("");
-
     const { staffAuth } = useStaffAuth();
 
     return (
@@ -36,33 +33,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                     교안 탭 열기
                 </button>
             )}
-            <div className="sidebar-search-group">
-                <input
-                    type="text"
-                    className="sidebar-search"
-                    placeholder="게시글 검색"
-                    value={sidebarQuery}
-                    onChange={e => setSidebarQuery(e.target.value)}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter' && sidebarQuery.trim()) {
-                            setSidebarQuery("");
-                            // 전체 글에서 조회됨을 기본으로 함
-                            navigate(`/search/all?q=${encodeURIComponent(sidebarQuery)}`);
-                        }
-                    }}
-                />
-                <button
-                    className="side-search-button"
-                    onClick={() => {
-                        if (sidebarQuery.trim()) {
-                            setSidebarQuery("");
-                            navigate(`/search/all?q=${encodeURIComponent(sidebarQuery)}`);
-                        }
-                    }}
-                >
-                    검색
-                </button>
-            </div>
             <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <span style={{display: "flex", alignItems: "center"}}>
