@@ -308,8 +308,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (uploadedPathsRef.current.size === 0 || !accessToken) return;
 
         const usedKeys = new Set<string>();
-        const matches = content.matchAll(/ncp-key:\/\/(uploads\/[^\s\)]+)/g);
-        for (const m of matches) usedKeys.add(m[1]);
+        Array.from(content.matchAll(/ncp-key:\/\/(uploads\/[^\s\)]+)/g)).forEach(m => usedKeys.add(m[1]));
         attachments.forEach(a => usedKeys.add(a.path));
 
         uploadedPathsRef.current.forEach(path => {
