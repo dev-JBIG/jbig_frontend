@@ -467,6 +467,26 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
     return { path: file_key, name: file.name, download_url: `ncp-key://${file_key}` };
 };
 
+// 업로드된 파일 삭제 (NCP)
+export const deleteUploadedFile = async (path: string, token: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+        await axios.delete(`${BASE_URL}/api/boards/files/delete/`, {
+            data: { path },
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return { success: true };
+    } catch (error: unknown) {
+        // 404는 이미 삭제된 것으로 간주하여 성공 처리
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+            return { success: true };
+        }
+        return { success: false, message: getErrorMessage(error, "파일 삭제에 실패했습니다.") };
+    }
+};
+
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
     try {

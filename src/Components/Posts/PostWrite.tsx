@@ -7,7 +7,7 @@ import '@uiw/react-markdown-preview/markdown.css';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
@@ -41,6 +41,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [attachments, setAttachments] = useState<{ path: string; name: string; }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
+
+    // 새로 업로드된 파일 path 추적 (고아 파일 방지용)
+    const uploadedPathsRef = useRef<Set<string>>(new Set());
+    const savedRef = useRef(false); // 게시물 저장 성공 여부
 
     const { category, id: postId } = useParams(); // :category => boardId로 수정. 이게 board id 입니다
     const isEdit = !!postId;
@@ -128,21 +132,32 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         try {
             const raw = localStorage.getItem(draftKey);
             if (!raw) return;
-            const parsed = JSON.parse(raw) as { title?: string; content?: string };
+            const parsed = JSON.parse(raw) as { title?: string; content?: string; uploadedPaths?: string[] };
             if (!parsed.title && !parsed.content) return;
 
             const confirmRestore = window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?");
             if (confirmRestore) {
                 if (parsed.title) setTitle(parsed.title);
                 if (parsed.content) setContent(parsed.content);
+                // 업로드된 파일 path 복원
+                if (parsed.uploadedPaths && Array.isArray(parsed.uploadedPaths)) {
+                    parsed.uploadedPaths.forEach(p => uploadedPathsRef.current.add(p));
+                }
             } else {
-                // 사용자가 불러오지 않겠다고 하면 초안 삭제
+                // 사용자가 불러오지 않겠다고 하면 초안 삭제 + NCP 파일 정리
                 localStorage.removeItem(draftKey);
+
+                // 임시 저장에 포함된 업로드 파일들 삭제
+                if (parsed.uploadedPaths && Array.isArray(parsed.uploadedPaths) && accessToken) {
+                    parsed.uploadedPaths.forEach(path => {
+                        deleteUploadedFile(path, accessToken).catch(() => {});
+                    });
+                }
             }
         } catch {
             // 파싱 실패 시 무시
         }
-    }, [draftKey]);
+    }, [draftKey, accessToken]);
 
     // 초안 자동 저장 (제목/본문만, 2초 debounce)
     useEffect(() => {
@@ -172,6 +187,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return;
         }
     }, [accessToken, navigate, signOutLocal]);
+
+    // 임시 저장 시 업로드된 파일 path도 함께 저장 (고아 파일 방지용)
+    useEffect(() => {
+        if (!draftKey || uploadedPathsRef.current.size === 0) return;
+
+        // 기존 임시 저장에 uploadedPaths 추가
+        try {
+            const raw = localStorage.getItem(draftKey);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                parsed.uploadedPaths = Array.from(uploadedPathsRef.current);
+                localStorage.setItem(draftKey, JSON.stringify(parsed));
+            }
+        } catch {
+            // 파싱 실패 시 무시
+        }
+    }, [draftKey, files, content]); // files나 content 변경 시 업데이트
 
     useEffect(() => {
         if (!isEdit) return;
@@ -312,7 +344,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 setFiles(prev => [...prev, { file, url: previewUrl || "", id: Date.now(), path: res.path }]);
 
                 // setAttachments 상태 업데이트 (DB 저장용) - path와 name 사용
-                setAttachments(prev => [...prev, { path: res.path, name: res.name }]); 
+                setAttachments(prev => [...prev, { path: res.path, name: res.name }]);
+
+                // 업로드된 파일 path 추적 (고아 파일 방지용)
+                uploadedPathsRef.current.add(res.path); 
 
                 remaining--;
                 if (remaining <= 0) break;
@@ -335,7 +370,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     };
 
 
-    const handleRemoveFile = (idx: number) => {
+    const handleRemoveFile = async (idx: number) => {
         // files 배열에서 해당 인덱스의 항목을 찾아 path로 삭제
         const fileToRemove = files[idx];
         if (!fileToRemove) return;
@@ -353,6 +388,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         // attachments 상태에서 해당 path를 가진 항목 제거 (path는 고유함)
         if (pathToRemove) {
             setAttachments(prev => prev.filter(att => att.path !== pathToRemove));
+
+            // NCP에서 파일 삭제 (새로 업로드된 파일만)
+            if (accessToken && uploadedPathsRef.current.has(pathToRemove)) {
+                deleteUploadedFile(pathToRemove, accessToken).catch(() => {
+                    // 삭제 실패해도 UI에 영향 없음 (백그라운드 정리)
+                });
+                uploadedPathsRef.current.delete(pathToRemove);
+            }
         }
     };
 
@@ -440,6 +483,24 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
 
         try {
+            // 저장 전: 업로드했지만 사용되지 않은 파일 정리 (인라인 이미지가 마크다운에서 삭제된 경우)
+            if (uploadedPathsRef.current.size > 0) {
+                const usedKeysInContent = new Set<string>();
+                const ncpKeyPattern = /ncp-key:\/\/(uploads\/[^\s\)]+)/g;
+                let match;
+                while ((match = ncpKeyPattern.exec(content)) !== null) {
+                    usedKeysInContent.add(match[1]);
+                }
+                const usedKeysInAttachments = new Set(attachments.map(a => a.path));
+
+                uploadedPathsRef.current.forEach((path) => {
+                    if (!usedKeysInContent.has(path) && !usedKeysInAttachments.has(path)) {
+                        deleteUploadedFile(path, accessToken).catch(() => {});
+                        uploadedPathsRef.current.delete(path);
+                    }
+                });
+            }
+
             if (isEdit && postIdNumber) {
                 const payload = {
                     title,
@@ -449,6 +510,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 };
 
                 await modifyPost(postIdNumber, payload, accessToken);
+                savedRef.current = true; // 저장 성공 표시
                 navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
@@ -471,6 +533,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     localStorage.removeItem(draftKey);
                 } catch {}
             }
+            savedRef.current = true; // 저장 성공 표시
             navigate(`/board/${selectedBoard!.id}`);
         } catch (err) {
             const msg =
@@ -544,6 +607,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const imageMarkdown = `\n![${res.name}](${serverUrl})\n`;
             setContent(prev => prev + imageMarkdown);
 
+            // 업로드된 파일 path 추적 (고아 파일 방지용)
+            uploadedPathsRef.current.add(res.path);
+
 
         } catch (error) {
             alert(`이미지 업로드 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
@@ -583,6 +649,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     const serverUrl = `ncp-key://${res.path}`;
                     const imageMarkdown = `![${res.name}](${serverUrl})`;
                     setContent(prev => prev + imageMarkdown);
+
+                    // 업로드된 파일 path 추적 (고아 파일 방지용)
+                    uploadedPathsRef.current.add(res.path);
                 } catch {
                     alert('이미지 업로드 실패');
                 }
