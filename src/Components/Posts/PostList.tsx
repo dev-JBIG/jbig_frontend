@@ -7,7 +7,26 @@ import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
-import { getDisplayBoardName } from "../Utils/boardNameFormatter";
+
+/**
+ * 게시판 이름을 간단하게 표시하기 위한 포맷터
+ */
+const getDisplayBoardName = (boardName: string): string => {
+    const name = boardName.trim();
+
+    // 스터디/소모임 홍보 -> 스터디
+    if (name === "스터디/소모임 홍보" || (name.includes("스터디") && name.includes("소모임"))) {
+        return "스터디";
+    }
+    
+    // 에러/피드백 제보 -> 피드백
+    if (name === "에러/피드백 제보" || (name.includes("에러") && name.includes("피드백"))) {
+        return "피드백";
+    }
+
+    // 기본값: 원래 이름 그대로 반환
+    return name;
+};
 
 /**
  * 게시물 리스트 컴포넌트로, 일반적인 게시판의 게시물을 나열합니다
