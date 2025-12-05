@@ -7,6 +7,7 @@ import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import { getDisplayBoardName } from "../Utils/boardNameFormatter";
 
 /**
  * 게시물 리스트 컴포넌트로, 일반적인 게시판의 게시물을 나열합니다
@@ -284,7 +285,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         </tr>
                         </thead>
                         <tbody>
-                        {displayPosts.map((p) => (
+                        {displayPosts.map((p) => {
+                            const displayName = p.board_name ? getDisplayBoardName(p.board_name) : '';
+                            return (
                             <tr
                                 key={p.id}
                                 onClick={() => {
@@ -298,9 +301,13 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     <td className="th-category">
                                         {p.board_name && (
                                             p.board_name === "공지사항" ? (
-                                                <span className="announcement-badge">공지</span>
+                                                <span className="announcement-badge">
+                                                    공지
+                                                </span>
                                             ) : (
-                                                <span className="category-badge">{p.board_name}</span>
+                                                <span className="category-badge">
+                                                    {displayName}
+                                                </span>
                                             )
                                         )}
                                     </td>
@@ -335,7 +342,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="th-views">{p.views.toLocaleString()}</td>
                                 {!isUserPage && <td className="th-likes">{p.likes}</td>}
                             </tr>
-                        ))}
+                            );
+                        })}
                         </tbody>
                     </table>
                 )
@@ -416,7 +424,9 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             </tr>
                         ))}
                         {/* 일반 게시글 표시 */}
-                        {filteredPosts.map((p) => (
+                        {filteredPosts.map((p) => {
+                            const displayName = p.board_name ? getDisplayBoardName(p.board_name) : '';
+                            return (
                             <tr
                                 key={p.id}
                                 onClick={() => {
@@ -427,9 +437,13 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     <td className="th-category">
                                         {p.board_name && (
                                             p.board_name === "공지사항" ? (
-                                                <span className="announcement-badge">공지</span>
+                                                <span className="announcement-badge">
+                                                    공지
+                                                </span>
                                             ) : (
-                                                <span className="category-badge">{p.board_name}</span>
+                                                <span className="category-badge">
+                                                    {displayName}
+                                                </span>
                                             )
                                         )}
                                     </td>
@@ -464,7 +478,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 <td className="th-views">{p.views.toLocaleString()}</td>
                                 {!isUserPage && <td className="th-likes">{p.likes}</td>}
                             </tr>
-                        ))}
+                            );
+                        })}
                         </tbody>
                     </table>
                 )

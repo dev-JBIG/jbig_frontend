@@ -438,6 +438,7 @@
 .menu li {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
     margin-bottom: 2px;
@@ -451,6 +452,24 @@
 .menu li:hover {
     background-color: var(--color-bg-secondary);
     color: var(--color-primary);
+}
+
+.board-item-content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.sidebar-new-badge {
+    display: inline-block;
+    padding: 2px 5px;
+    background-color: #ff0000;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .menu-item-viewall {

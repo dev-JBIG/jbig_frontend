@@ -153,6 +153,18 @@
     border-radius: 4px;
 }
 
+.new-post-badge {
+    display: inline-block;
+    padding: 2px 5px;
+    background-color: #ff0000;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    margin-left: 4px;
+    line-height: 1;
+}
+
 .th-category {
     width: 1%;
     text-align: center;
