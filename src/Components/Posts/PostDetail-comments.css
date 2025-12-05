@@ -154,6 +154,35 @@
     font-style: italic;
 }
 
+/* 댓글 좋아요 */
+.comment-like-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: var(--space-xs) var(--space-sm);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.comment-like-btn:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.comment-like-btn.liked {
+    color: #e0245e;
+}
+
+.comment-like-count {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
 /* 댓글 편집 */
 .comment-edit-box {
     margin-top: var(--space-sm);

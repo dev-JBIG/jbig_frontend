@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback, memo} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData } from "../Utils/interfaces";
-import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, updateComment} from "../../API/req";
+import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, toggleCommentLike, updateComment} from "../../API/req";
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
@@ -213,6 +213,8 @@ const PostDetail: React.FC = () => {
                         date: toDate(c.created_at),
                         is_owner: c.is_owner,
                         is_deleted: !!c.is_deleted,
+                        likes: c.likes || 0,
+                        isLiked: c.isLiked || false,
                         replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             user_id: r.user_id,
@@ -222,6 +224,8 @@ const PostDetail: React.FC = () => {
                             date: toDate(r.created_at),
                             is_owner: r.is_owner,
                             is_deleted: !!r.is_deleted,
+                            likes: r.likes || 0,
+                            isLiked: r.isLiked || false,
                         })),
                     })),
                 };
@@ -297,6 +301,69 @@ const PostDetail: React.FC = () => {
         try {
             await togglePostLike(post.id, accessToken);
         } catch (e) {
+            setPost(post);
+            alert("좋아요 처리 중 오류가 발생했습니다.");
+        }
+    };
+
+    // 댓글 좋아요 토글 핸들러
+    const handleToggleCommentLike = async (commentId: number, isReply: boolean = false) => {
+        if (!post || typeof post === "string" || !post.comments) return;
+
+        if (!accessToken) {
+            alert("로그인이 필요합니다.");
+            navigate("/signin");
+            return;
+        }
+
+        // 낙관적 업데이트
+        const updatedComments = post.comments.map(c => {
+            if (c.id === commentId) {
+                const currentLikes = c.likes || 0;
+                const nextLiked = !c.isLiked;
+                const nextLikes = currentLikes + (nextLiked ? 1 : -1);
+                return { ...c, isLiked: nextLiked, likes: Math.max(0, nextLikes) };
+            }
+            // 답글인 경우
+            if (c.replies) {
+                const updatedReplies = c.replies.map(r => {
+                    if (r.id === commentId) {
+                        const currentLikes = r.likes || 0;
+                        const nextLiked = !r.isLiked;
+                        const nextLikes = currentLikes + (nextLiked ? 1 : -1);
+                        return { ...r, isLiked: nextLiked, likes: Math.max(0, nextLikes) };
+                    }
+                    return r;
+                });
+                return { ...c, replies: updatedReplies };
+            }
+            return c;
+        });
+
+        setPost({ ...post, comments: updatedComments });
+
+        try {
+            const response = await toggleCommentLike(commentId, accessToken);
+            
+            // 서버 응답으로 실제 값 업데이트
+            const finalComments = post.comments.map(c => {
+                if (c.id === commentId) {
+                    return { ...c, isLiked: response.isLiked, likes: response.likes };
+                }
+                if (c.replies) {
+                    const finalReplies = c.replies.map(r => {
+                        if (r.id === commentId) {
+                            return { ...r, isLiked: response.isLiked, likes: response.likes };
+                        }
+                        return r;
+                    });
+                    return { ...c, replies: finalReplies };
+                }
+                return c;
+            });
+            setPost({ ...post, comments: finalComments });
+        } catch (e) {
+            // 실패 시 롤백
             setPost(post);
             alert("좋아요 처리 중 오류가 발생했습니다.");
         }
@@ -631,6 +698,22 @@ const PostDetail: React.FC = () => {
                                     </span>
                                     <span className="comment-date">{c.date}</span>
                                     {!c.is_deleted && (
+                                        <button
+                                            className={`comment-like-btn ${c.isLiked ? "liked" : ""}`}
+                                            onClick={() => handleToggleCommentLike(c.id, false)}
+                                            aria-label={c.isLiked ? "좋아요 취소" : "좋아요"}
+                                        >
+                                            <Heart
+                                                size={14}
+                                                style={{
+                                                    fill: c.isLiked ? "#e0245e" : "transparent",
+                                                    stroke: c.isLiked ? "#e0245e" : "currentColor",
+                                                }}
+                                            />
+                                            <span className="comment-like-count">{c.likes || 0}</span>
+                                        </button>
+                                    )}
+                                    {!c.is_deleted && (
                                         <span
                                             className="reply-write-btn"
                                             onClick={() => handleReplyWriteClick(c.id)}
@@ -706,6 +789,22 @@ const PostDetail: React.FC = () => {
                                     )}
                                 </span>
                                             <span className="reply-date">{r.date}</span>
+                                            {!r.is_deleted && (
+                                                <button
+                                                    className={`comment-like-btn ${r.isLiked ? "liked" : ""}`}
+                                                    onClick={() => handleToggleCommentLike(r.id, true)}
+                                                    aria-label={r.isLiked ? "좋아요 취소" : "좋아요"}
+                                                >
+                                                    <Heart
+                                                        size={14}
+                                                        style={{
+                                                            fill: r.isLiked ? "#e0245e" : "transparent",
+                                                            stroke: r.isLiked ? "#e0245e" : "currentColor",
+                                                        }}
+                                                    />
+                                                    <span className="comment-like-count">{r.likes || 0}</span>
+                                                </button>
+                                            )}
                                             {!r.is_deleted && r.is_owner && (
                                                 <div className="more-wrapper">
                                                     <button
@@ -753,9 +852,9 @@ const PostDetail: React.FC = () => {
                                             </div>
                                         </div>
                                         ) : (
-                                        <div className={"reply-content" + (r.is_deleted ? " deleted" : "")}>
-                                            {r.content}
-                                        </div>
+                                            <div className={"reply-content" + (r.is_deleted ? " deleted" : "")}>
+                                                {r.content}
+                                            </div>
                                         )}
 
                                     </li>

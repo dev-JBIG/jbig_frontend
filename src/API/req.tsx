@@ -411,6 +411,21 @@ export const togglePostLike = async (postId: number, token: string) => {
     return res.data;
 };
 
+// 댓글 좋아요 토글
+export const toggleCommentLike = async (commentId: number, token: string) => {
+    const url = `${BASE_URL}/api/comments/${commentId}/like/`;
+    const res = await axios.post(
+        url,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return res.data;
+};
+
 // 사용자의 내 게시글 목록 api
 export const fetchUserPosts = async (
     userId: string,
@@ -634,6 +649,8 @@ export const createComment = async (
         parent: number | null;
         is_owner: boolean;
         is_deleted: boolean;
+        likes?: number;
+        isLiked?: boolean;
     };
 
     const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
@@ -650,6 +667,8 @@ export const createComment = async (
             date,
             is_owner: d.is_owner,
             is_deleted: false,
+            likes: d.likes || 0,
+            isLiked: d.isLiked || false,
         };
         return reply;
     } else {
@@ -663,6 +682,8 @@ export const createComment = async (
             is_owner: d.is_owner,
             is_deleted: false,
             replies: [] as Reply[],
+            likes: d.likes || 0,
+            isLiked: d.isLiked || false,
         };
         return comment;
     }
@@ -695,6 +716,8 @@ export const updateComment = async (
         parent: number | null;
         is_owner: boolean;
         is_deleted?: boolean;
+        likes?: number;
+        isLiked?: boolean;
     };
 
     const date = d.created_at ? d.created_at.slice(0, 16).replace("T", " ") : "";
@@ -712,6 +735,8 @@ export const updateComment = async (
             date,
             is_owner: !!d.is_owner,
             is_deleted: isDeleted,
+            likes: d.likes || 0,
+            isLiked: d.isLiked || false,
         };
         return reply;
     } else {
@@ -725,6 +750,8 @@ export const updateComment = async (
             is_owner: !!d.is_owner,
             is_deleted: isDeleted,
             replies: [] as Reply[],
+            likes: d.likes || 0,
+            isLiked: d.isLiked || false,
         };
         return comment;
     }

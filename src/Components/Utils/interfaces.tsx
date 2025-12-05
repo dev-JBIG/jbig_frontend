@@ -39,6 +39,8 @@ export interface Comment {
     replies?: Reply[];
     is_owner: boolean;
     is_deleted: boolean;
+    likes: number;
+    isLiked: boolean;
 }
 
 export interface Reply {
@@ -50,6 +52,8 @@ export interface Reply {
     date: string;
     is_owner: boolean;
     is_deleted: boolean;
+    likes: number;
+    isLiked: boolean;
 }
 
 export interface PostDetailData {
