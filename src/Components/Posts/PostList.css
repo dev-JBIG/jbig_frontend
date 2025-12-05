@@ -166,11 +166,14 @@
 }
 
 .th-category {
-    width: 1%;
+    width: 70px;
+    max-width: 70px;
     text-align: center;
     white-space: nowrap;
     padding-left: var(--space-sm) !important;
     padding-right: var(--space-sm) !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .category-badge,
@@ -280,6 +283,7 @@
         width: 100%;
         border-collapse: collapse;
         border-top: 2px solid var(--color-border-dark);
+        table-layout: fixed;
     }
 
     .postlist-table thead {
@@ -314,6 +318,19 @@
         vertical-align: middle;
         border: none;
     }
+    
+    /* 작성자, 작성일, 조회수, 좋아요 컬럼의 padding 최소화 */
+    .postlist-table th.th-author,
+    .postlist-table td.th-author,
+    .postlist-table th.th-date,
+    .postlist-table td.th-date,
+    .postlist-table th.th-views,
+    .postlist-table td.th-views,
+    .postlist-table th.th-likes,
+    .postlist-table td.th-likes {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
 
     .postlist-table th {
         font-weight: var(--font-weight-semibold);
@@ -327,7 +344,7 @@
     }
 
     .th-title {
-        width: 35%;
+        width: auto;
         text-align: left;
         white-space: nowrap;
         overflow: hidden;
@@ -335,17 +352,28 @@
     }
 
     .th-author {
-        width: 150px;
+        width: 95px;
+        max-width: 95px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .th-date {
-        width: 100px;
+        width: 85px;
+        max-width: 85px;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .th-views,
     .th-likes {
-        width: 90px;
+        width: 60px;
+        max-width: 60px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .postlist-table tbody .title-cell {
@@ -361,7 +389,10 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         display: table-cell !important;
-        padding: var(--space-md) !important;
+        padding-top: var(--space-md) !important;
+        padding-bottom: var(--space-md) !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
     }
 
     .author-text {
