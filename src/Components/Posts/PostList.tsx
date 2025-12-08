@@ -14,18 +14,31 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
 const getDisplayBoardName = (boardName: string): string => {
     const name = boardName.trim();
 
-    // 스터디/소모임 홍보 -> 스터디
-    if (name === "스터디/소모임 홍보" || (name.includes("스터디") && name.includes("소모임"))) {
-        return "스터디";
-    }
-    
-    // 에러/피드백 제보 -> 피드백
-    if (name === "에러/피드백 제보" || (name.includes("에러") && name.includes("피드백"))) {
-        return "피드백";
+    // 개별 게시판 매핑 (우선 순위가 높은 것부터)
+    const boardNameMap: Record<string, string> = {
+        "스터디/소모임 홍보": "스터디",
+        "에러/피드백 제보": "피드백",
+        "자유게시판": "자유",
+        "질문게시판": "질문",
+        "사유서제출": "사유서",
+        "공지사항": "공지",
+        "정보게시판": "정보",
+        "논문리뷰": "논문",
+        "공모전게시판": "공모전",
+    };
+
+    // 매핑에 정확히 일치하는 이름이 있으면 반환
+    if (boardNameMap[name]) {
+        return boardNameMap[name];
     }
 
-    // 기본값: 원래 이름 그대로 반환
-    return name;
+    // 매핑에 없는 경우, "게시판"과 "제출" 단어 제거
+    let displayName = name
+        .replace(/게시판/g, '')
+        .replace(/제출/g, '')
+        .trim();
+
+    return displayName || name; // 빈 문자열이면 원래 이름 반환
 };
 
 /**
