@@ -160,8 +160,6 @@ const Home: React.FC = () => {
         };
 
         loadUnreadCount();
-        const interval = setInterval(loadUnreadCount, 30000);
-        return () => clearInterval(interval);
     }, [accessToken, isLogin]);
 
     // 알림 드롭다운 열 때 알림 목록 조회

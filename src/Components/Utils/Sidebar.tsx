@@ -104,13 +104,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         if (boards.length > 0) {
             checkNewPosts();
-            
-            // 30초마다 자동으로 새 게시글 확인
-            const interval = setInterval(() => {
-                checkNewPosts();
-            }, 30000); // 30초
-
-            return () => clearInterval(interval);
         }
     }, [boards, location.pathname]); // location.pathname 추가로 페이지 이동 시마다 갱신
 
