@@ -68,6 +68,14 @@
     .postdetail-like-floating {
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         gap: var(--space-2xs);
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .postdetail-like-floating.scrolling {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
     }
 
     .postdetail-like-floating .postdetail-like-btn {

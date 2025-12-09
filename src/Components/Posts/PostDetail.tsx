@@ -77,6 +77,8 @@ const PostDetail: React.FC = () => {
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
     const [heartBurstKey, setHeartBurstKey] = useState(0);
+    const [isScrolling, setIsScrolling] = useState(false);
+    const scrollTimeoutRef = useRef<number | null>(null);
 
     const commentCount = useMemo(() => {
         if (!post || typeof post === "string") return 0;
@@ -108,6 +110,29 @@ const PostDetail: React.FC = () => {
         window.scrollTo(0, 0);
     }, [postId]);
 
+    // 모바일에서 스크롤 시 좋아요 버튼 표시/숨김
+    useEffect(() => {
+        const isMobile = window.innerWidth <= 768;
+        if (!isMobile) return;
+
+        const handleScroll = () => {
+            setIsScrolling(true);
+            if (scrollTimeoutRef.current) {
+                window.clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = window.setTimeout(() => {
+                setIsScrolling(false);
+            }, 1000);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) {
+                window.clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -917,7 +942,7 @@ const PostDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-              <div className="postdetail-like-floating">
+              <div className={`postdetail-like-floating${isScrolling ? ' scrolling' : ''}`}>
                     <div className="postdetail-like-btn-wrapper">
                       <button
                           type="button"
