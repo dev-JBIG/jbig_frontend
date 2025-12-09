@@ -994,7 +994,7 @@ const PostDetail: React.FC = () => {
                           />
                         </button>
                         <HeartBurst triggerKey={heartBurstKey} />
-                        <LikePlusOne triggerKey={likePlusOneKey} count={post.likes} isLiked={post.isLiked} />
+                        <LikePlusOne triggerKey={likePlusOneKey} count={post.likes ?? 0} isLiked={post.isLiked ?? false} />
                   </div>
             </div>
         </div>
