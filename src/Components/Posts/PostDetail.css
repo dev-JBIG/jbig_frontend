@@ -218,13 +218,33 @@
     pointer-events: auto;
 }
 
-.postdetail-like-count {
+/* +1 애니메이션 */
+.postdetail-like-plusone {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
     font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-    background: rgba(0, 0, 0, 0.04);
-    padding: 4px 12px;
-    border-radius: 999px;
-    backdrop-filter: blur(6px);
+    font-weight: var(--font-weight-bold);
+    color: #e0245e;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.postdetail-like-plusone.is-active {
+    animation: likePlusOneAnim 0.8s ease-out forwards;
+}
+
+@keyframes likePlusOneAnim {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px);
+    }
 }
 
 .postdetail-divider {

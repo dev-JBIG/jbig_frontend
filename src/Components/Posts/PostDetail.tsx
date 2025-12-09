@@ -36,6 +36,28 @@ const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
     );
 });
 
+// +1 애니메이션 컴포넌트
+const LikePlusOne = memo(({ triggerKey, count }: { triggerKey: number; count: number }) => {
+    const [active, setActive] = useState(false);
+    const [displayCount, setDisplayCount] = useState(count);
+    const timeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (triggerKey === 0) return;
+        setDisplayCount(count);
+        setActive(true);
+        if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = window.setTimeout(() => setActive(false), 800);
+        return () => { if (timeoutRef.current) window.clearTimeout(timeoutRef.current); };
+    }, [triggerKey, count]);
+
+    return (
+        <div className={`postdetail-like-plusone${active ? " is-active" : ""}`}>
+            +1 ({displayCount})
+        </div>
+    );
+});
+
 const PostDetail: React.FC = () => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
@@ -77,6 +99,7 @@ const PostDetail: React.FC = () => {
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
     const [heartBurstKey, setHeartBurstKey] = useState(0);
+    const [likePlusOneKey, setLikePlusOneKey] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
     const scrollTimeoutRef = useRef<number | null>(null);
 
@@ -304,6 +327,10 @@ const PostDetail: React.FC = () => {
         setHeartBurstKey(prev => prev + 1);
     }, []);
 
+    const triggerLikePlusOne = useCallback(() => {
+        setLikePlusOneKey(prev => prev + 1);
+    }, []);
+
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
         if (!post || typeof post === "string") return;
@@ -317,7 +344,11 @@ const PostDetail: React.FC = () => {
         const nextLiked = !post.isLiked;
         const nextLikes = post.likes + (nextLiked ? 1 : -1);
         setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
-        triggerHeartBurst();
+
+        if (nextLiked) {
+            triggerHeartBurst();
+            triggerLikePlusOne();
+        }
 
         try {
             await togglePostLike(post.id, accessToken);
@@ -957,8 +988,8 @@ const PostDetail: React.FC = () => {
                           />
                         </button>
                         <HeartBurst triggerKey={heartBurstKey} />
+                        <LikePlusOne triggerKey={likePlusOneKey} count={post.likes} />
                   </div>
-                <span className="postdetail-like-count">좋아요 {post.likes}</span>
             </div>
         </div>
 );
