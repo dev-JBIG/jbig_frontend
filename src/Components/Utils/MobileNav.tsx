@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Menu, X, FileText, SquareCheckBig } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { Section } from "./interfaces";
 import "./MobileNav.css";
 
@@ -189,6 +189,17 @@ const MobileNav: React.FC<MobileNavProps> = ({
               >
                 <FontAwesomeIcon icon={faDiscord as IconProp} />
                 <span>비밀 게임 소모임</span>
+              </a>
+
+              <a
+                href="https://indigo-coder-github.github.io/Big-Tech-News/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mobile-nav-button"
+                onClick={() => setIsOpen(false)}
+              >
+                <FontAwesomeIcon icon={faGithub as IconProp} />
+                <span>BigTech AI News</span>
               </a>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { SidebarProps } from "./interfaces";
 import {FileText, SquareCheckBig } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import {useStaffAuth} from "./StaffAuthContext";
 import { getBoardIcon } from "./boardIcons";
 import { fetchBoardPosts } from "../../API/req";
@@ -194,6 +194,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
                 <FontAwesomeIcon icon={faDiscord as IconProp} className="sidebar-discord-icon" />
                 비밀 게임 소모임
+            </a>
+
+            {/* BigTech AI News 버튼 */}
+            <a
+                href="https://indigo-coder-github.github.io/Big-Tech-News/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-discord-button"
+            >
+                <FontAwesomeIcon icon={faGithub as IconProp} className="sidebar-discord-icon" />
+                BigTech AI News
             </a>
         </aside>
     );
