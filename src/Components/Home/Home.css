@@ -479,19 +479,25 @@
     color: var(--color-text-primary);
     cursor: pointer;
     transition: all var(--transition-fast);
+    min-height: 36px;
 }
 
 .menu li:hover {
     background-color: var(--color-bg-secondary);
     color: var(--color-primary);
-    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
+}
+
+.menu li:hover .board-item-content {
+    transform: scale(1.15);
+    transform-origin: left center;
 }
 
 .board-item-content {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    transition: transform var(--transition-fast);
 }
 
 .sidebar-new-badge {
@@ -517,13 +523,18 @@
     color: var(--color-text-primary);
     cursor: pointer;
     transition: all var(--transition-fast);
+    min-height: 36px;
 }
 
 .menu-item-viewall:hover {
     background-color: var(--color-bg-secondary);
     color: var(--color-primary);
-    font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
+}
+
+.menu-item-viewall:hover > span:first-child {
+    transform: scale(1.15);
+    transform-origin: left center;
 }
 
 .viewall-count {
