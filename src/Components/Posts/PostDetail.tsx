@@ -110,11 +110,8 @@ const PostDetail: React.FC = () => {
         window.scrollTo(0, 0);
     }, [postId]);
 
-    // 모바일에서 스크롤 시 좋아요 버튼 표시/숨김
+    // 스크롤 시 좋아요 버튼 표시/숨김 (CSS에서 모바일만 적용)
     useEffect(() => {
-        const isMobile = window.innerWidth <= 768;
-        if (!isMobile) return;
-
         const handleScroll = () => {
             setIsScrolling(true);
             if (scrollTimeoutRef.current) {

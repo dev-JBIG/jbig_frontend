@@ -64,18 +64,20 @@
         font-weight: var(--font-weight-semibold);
     }
 
-    /* 좋아요 버튼 */
+    /* 좋아요 버튼 - 스크롤 시에만 표시 */
     .postdetail-like-floating {
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         gap: var(--space-2xs);
-        transform: translateX(-50%) translateY(100px);
-        opacity: 0;
-        transition: transform 0.3s ease, opacity 0.3s ease;
+        transform: translateX(-50%) translateY(120px) !important;
+        opacity: 0 !important;
+        visibility: hidden;
+        transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     }
 
     .postdetail-like-floating.scrolling {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
+        transform: translateX(-50%) translateY(0) !important;
+        opacity: 1 !important;
+        visibility: visible;
     }
 
     .postdetail-like-floating .postdetail-like-btn {
