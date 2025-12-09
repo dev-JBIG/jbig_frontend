@@ -110,29 +110,21 @@ const PostDetail: React.FC = () => {
         window.scrollTo(0, 0);
     }, [postId]);
 
-    // 스크롤 시 좋아요 버튼 표시/숨김 (CSS에서 모바일만 적용)
+    // 모바일 스크롤 시 좋아요 버튼 표시 (2초 후 숨김)
     useEffect(() => {
         const showFloating = () => {
             setIsScrolling(true);
-            if (scrollTimeoutRef.current) {
-                window.clearTimeout(scrollTimeoutRef.current);
-            }
-            scrollTimeoutRef.current = window.setTimeout(() => {
-                setIsScrolling(false);
-            }, 1000);
+            if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 2000);
         };
 
         window.addEventListener('scroll', showFloating, { passive: true });
         window.addEventListener('touchmove', showFloating, { passive: true });
-        window.addEventListener('touchstart', showFloating, { passive: true });
 
         return () => {
             window.removeEventListener('scroll', showFloating);
             window.removeEventListener('touchmove', showFloating);
-            window.removeEventListener('touchstart', showFloating);
-            if (scrollTimeoutRef.current) {
-                window.clearTimeout(scrollTimeoutRef.current);
-            }
+            if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
         };
     }, []);
 
