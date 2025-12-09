@@ -110,19 +110,21 @@ const PostDetail: React.FC = () => {
         window.scrollTo(0, 0);
     }, [postId]);
 
-    // 모바일 스크롤 시 좋아요 버튼 표시 (2초 후 숨김)
+    // 스크롤 시 좋아요 버튼 표시 (2초 후 숨김)
     useEffect(() => {
         const showFloating = () => {
             setIsScrolling(true);
             if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 2000);
+            scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 1500);
         };
 
         window.addEventListener('scroll', showFloating, { passive: true });
+        window.addEventListener('wheel', showFloating, { passive: true });
         window.addEventListener('touchmove', showFloating, { passive: true });
 
         return () => {
             window.removeEventListener('scroll', showFloating);
+            window.removeEventListener('wheel', showFloating);
             window.removeEventListener('touchmove', showFloating);
             if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
         };
