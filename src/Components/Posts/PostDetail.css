@@ -236,6 +236,10 @@
     animation: likePlusOneAnim 0.8s ease-out forwards;
 }
 
+.postdetail-like-plusone.minus {
+    color: #999;
+}
+
 @keyframes likePlusOneAnim {
     0% {
         opacity: 1;
