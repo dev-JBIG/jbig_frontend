@@ -64,17 +64,6 @@ const MobileNav: React.FC<MobileNavProps> = ({
             </div>
 
             <div className="mobile-nav-content">
-              {staffAuth && (
-                <button
-                  className="mobile-nav-button mobile-nav-admin"
-                  onClick={() => {
-                    window.open("/admin", "_blank");
-                    setIsOpen(false);
-                  }}
-                >
-                  관리자 페이지
-                </button>
-              )}
 
               {!isLogin && (
                 <button

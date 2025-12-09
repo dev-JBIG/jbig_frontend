@@ -111,11 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
             <div className="sidebar-scrollable">
-                {staffAuth ?
-                    <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
-                        관리자 페이지 열기
-                    </button> : <div/>
-                }
                 {!isLogin && (
                     <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
                 )}
