@@ -1,0 +1,108 @@
+/* JBIG 정보 컨테이너 */
+.jbig-info-container {
+    margin-bottom: var(--space-2xl);
+    background-color: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* Callout 스타일 */
+.jbig-info-callout {
+    background-color: #f5f5f5;
+    border-radius: var(--radius-md);
+    padding: var(--space-xl);
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.jbig-info-icon {
+    font-size: 1.5em;
+    flex-shrink: 0;
+}
+
+.jbig-info-content {
+    width: 100%;
+}
+
+.jbig-info-main {
+    margin-bottom: var(--space-md);
+    line-height: 1.6;
+    font-size: var(--font-size-base);
+}
+
+.jbig-info-text {
+    margin: var(--space-xs) 0;
+    line-height: 1.5;
+    font-size: var(--font-size-base);
+}
+
+/* 하이라이트 스타일 */
+.highlight-red {
+    color: #cd3c3a;
+    font-weight: bold;
+}
+
+.highlight-orange {
+    background-color: #fbecdd;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+/* Contact 섹션 */
+.jbig-contact-section {
+    padding: 0 var(--space-md);
+}
+
+.jbig-contact-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-sm);
+    color: var(--color-text-primary);
+}
+
+.jbig-divider {
+    border: none;
+    border-bottom: 1px solid var(--color-border-light);
+    margin: var(--space-md) 0;
+}
+
+.jbig-contact-text {
+    margin: var(--space-xs) 0;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+}
+
+.jbig-contact-quote {
+    margin: var(--space-sm) 0;
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* 모바일 스타일 */
+@media (max-width: 767px) {
+    .jbig-info-callout {
+        flex-direction: column;
+        padding: var(--space-lg);
+    }
+    
+    .jbig-info-main {
+        font-size: var(--font-size-sm);
+    }
+    
+    .jbig-info-text {
+        font-size: var(--font-size-sm);
+    }
+    
+    .jbig-contact-title {
+        font-size: var(--font-size-base);
+    }
+    
+    .jbig-contact-text,
+    .jbig-contact-quote {
+        font-size: var(--font-size-sm);
+    }
+}
+

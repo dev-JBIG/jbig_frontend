@@ -27,6 +27,7 @@ import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import Profile from "../Profile/Profile";
+import JbigInfo from "./JbigInfo";
 import $ from "jquery";
 
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
@@ -402,6 +403,7 @@ const Home: React.FC = () => {
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
+                            <JbigInfo />
                             <div className="calendar-section-wrapper">
                                 <Calendar staffAuth={staffAuth}/>
                                 {staffAuth && (

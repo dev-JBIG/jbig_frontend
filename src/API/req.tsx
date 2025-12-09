@@ -323,6 +323,50 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
     }
 };
 
+// 사이트 설정 인터페이스
+export interface SiteSettings {
+    notion_page_id: string;
+    quiz_url: string;
+    jbig_president: string;
+    jbig_president_dept: string;
+    jbig_vice_president: string;
+    jbig_vice_president_dept: string;
+    jbig_email: string;
+    jbig_advisor: string;
+    jbig_advisor_dept: string;
+}
+
+// 사이트 설정 가져오기
+export const fetchSiteSettings = async (): Promise<SiteSettings> => {
+    const url = `${BASE_URL}/api/settings/`;
+    
+    try {
+        const res = await axios.get(url);
+        return res.data;
+    } catch (err) {
+        throw err;
+    }
+};
+
+// 사이트 설정 업데이트
+export const updateSiteSettings = async (
+    token: string,
+    settings: Partial<SiteSettings>
+): Promise<any> => {
+    const url = `${BASE_URL}/api/settings/`;
+    
+    try {
+        const res = await axios.put(url, settings, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return res.data;
+    } catch (err) {
+        throw err;
+    }
+};
+
 // 전체 게시판 검색 (전체 카테고리)
 export const fetchSearchPosts = async (
     query: string,
@@ -981,29 +1025,6 @@ export const deleteCalendarEvent = async (
         withCredentials: true,
         responseType: "json",
     });
-};
-
-// 사이트 설정 조회
-export const fetchSiteSettings = async (): Promise<{ notion_page_id: string; quiz_url: string }> => {
-    const url = `${BASE_URL}/api/settings/`;
-    const res = await axios.get(url);
-    return res.data;
-};
-
-// 사이트 설정 수정 (관리자 전용)
-export const updateSiteSettings = async (
-    settings: { notion_page_id?: string; quiz_url?: string },
-    token: string
-): Promise<{ message: string; notion_page_id?: string; quiz_url?: string }> => {
-    const url = `${BASE_URL}/api/settings/`;
-    const res = await axios.put(url, settings, {
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-    });
-    return res.data;
 };
 
 // 공개 프로필

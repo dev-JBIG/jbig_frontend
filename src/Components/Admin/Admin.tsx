@@ -8,6 +8,13 @@ import "./Admin.css";
 function SettingsManagement({ accessToken }: { accessToken: string }) {
     const [notionPageId, setNotionPageId] = useState("");
     const [quizUrl, setQuizUrl] = useState("");
+    const [jbigPresident, setJbigPresident] = useState("");
+    const [jbigPresidentDept, setJbigPresidentDept] = useState("");
+    const [jbigVicePresident, setJbigVicePresident] = useState("");
+    const [jbigVicePresidentDept, setJbigVicePresidentDept] = useState("");
+    const [jbigEmail, setJbigEmail] = useState("");
+    const [jbigAdvisor, setJbigAdvisor] = useState("");
+    const [jbigAdvisorDept, setJbigAdvisorDept] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -18,6 +25,13 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
                 const settings = await fetchSiteSettings();
                 setNotionPageId(settings.notion_page_id || "");
                 setQuizUrl(settings.quiz_url || "");
+                setJbigPresident(settings.jbig_president || "");
+                setJbigPresidentDept(settings.jbig_president_dept || "");
+                setJbigVicePresident(settings.jbig_vice_president || "");
+                setJbigVicePresidentDept(settings.jbig_vice_president_dept || "");
+                setJbigEmail(settings.jbig_email || "");
+                setJbigAdvisor(settings.jbig_advisor || "");
+                setJbigAdvisorDept(settings.jbig_advisor_dept || "");
             } catch {
                 setMessage({ type: 'error', text: '설정을 불러오는데 실패했습니다.' });
             } finally {
@@ -31,7 +45,17 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
         setSaving(true);
         setMessage(null);
         try {
-            await updateSiteSettings({ notion_page_id: notionPageId, quiz_url: quizUrl }, accessToken);
+            await updateSiteSettings(accessToken, {
+                notion_page_id: notionPageId,
+                quiz_url: quizUrl,
+                jbig_president: jbigPresident,
+                jbig_president_dept: jbigPresidentDept,
+                jbig_vice_president: jbigVicePresident,
+                jbig_vice_president_dept: jbigVicePresidentDept,
+                jbig_email: jbigEmail,
+                jbig_advisor: jbigAdvisor,
+                jbig_advisor_dept: jbigAdvisorDept
+            });
             setMessage({ type: 'success', text: '설정이 저장되었습니다.' });
         } catch {
             setMessage({ type: 'error', text: '설정 저장에 실패했습니다.' });
@@ -84,6 +108,83 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
                         />
                         <p className="form-hint">사이드바에 표시되는 퀴즈 링크입니다.</p>
                     </div>
+                    
+                    <h3 className="card-title" style={{ marginTop: '2rem' }}>JBIG 정보</h3>
+                    
+                    <div className="form-group">
+                        <label className="form-label">회장 이름</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigPresident}
+                            onChange={(e) => setJbigPresident(e.target.value)}
+                            placeholder="예: 박성현"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">회장 소속</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigPresidentDept}
+                            onChange={(e) => setJbigPresidentDept(e.target.value)}
+                            placeholder="예: 전자공학부"
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label className="form-label">부회장 이름</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigVicePresident}
+                            onChange={(e) => setJbigVicePresident(e.target.value)}
+                            placeholder="예: 국환"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">부회장 소속</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigVicePresidentDept}
+                            onChange={(e) => setJbigVicePresidentDept(e.target.value)}
+                            placeholder="예: 사회학과"
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label className="form-label">이메일</label>
+                        <input
+                            className="admin-input"
+                            type="email"
+                            value={jbigEmail}
+                            onChange={(e) => setJbigEmail(e.target.value)}
+                            placeholder="예: green031234@naver.com"
+                        />
+                    </div>
+                    
+                    <div className="form-group">
+                        <label className="form-label">지도 교수</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigAdvisor}
+                            onChange={(e) => setJbigAdvisor(e.target.value)}
+                            placeholder="예: 최규빈 교수님"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">지도 교수 소속</label>
+                        <input
+                            className="admin-input"
+                            type="text"
+                            value={jbigAdvisorDept}
+                            onChange={(e) => setJbigAdvisorDept(e.target.value)}
+                            placeholder="예: 통계학과"
+                        />
+                    </div>
+                    
                     <button
                         className="admin-button button-primary"
                         onClick={handleSave}
