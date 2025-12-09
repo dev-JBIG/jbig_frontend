@@ -380,6 +380,14 @@ const Home: React.FC = () => {
                                 }}>
                                     내 정보
                                 </div>
+                                {(staffAuth || user?.is_staff) && (
+                                    <div className="dropdown-item" onClick={() => {
+                                        navigate('/admin');
+                                        setMenuOpen(false);
+                                    }}>
+                                        관리자 페이지 열기
+                                    </div>
+                                )}
                                 <div className="dropdown-item" onClick={handleLogout}>
                                     로그아웃
                                 </div>
