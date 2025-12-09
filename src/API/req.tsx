@@ -327,6 +327,7 @@ export const fetchQuizUrl = async (token: string): Promise<string | null> => {
 export interface SiteSettings {
     notion_page_id: string;
     quiz_url: string;
+    jbig_description: string;
     jbig_president: string;
     jbig_president_dept: string;
     jbig_vice_president: string;

@@ -8,6 +8,7 @@ import "./Admin.css";
 function SettingsManagement({ accessToken }: { accessToken: string }) {
     const [notionPageId, setNotionPageId] = useState("");
     const [quizUrl, setQuizUrl] = useState("");
+    const [jbigDescription, setJbigDescription] = useState("");
     const [jbigPresident, setJbigPresident] = useState("");
     const [jbigPresidentDept, setJbigPresidentDept] = useState("");
     const [jbigVicePresident, setJbigVicePresident] = useState("");
@@ -25,6 +26,7 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
                 const settings = await fetchSiteSettings();
                 setNotionPageId(settings.notion_page_id || "");
                 setQuizUrl(settings.quiz_url || "");
+                setJbigDescription(settings.jbig_description || "");
                 setJbigPresident(settings.jbig_president || "");
                 setJbigPresidentDept(settings.jbig_president_dept || "");
                 setJbigVicePresident(settings.jbig_vice_president || "");
@@ -48,6 +50,7 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
             await updateSiteSettings(accessToken, {
                 notion_page_id: notionPageId,
                 quiz_url: quizUrl,
+                jbig_description: jbigDescription,
                 jbig_president: jbigPresident,
                 jbig_president_dept: jbigPresidentDept,
                 jbig_vice_president: jbigVicePresident,
@@ -110,6 +113,19 @@ function SettingsManagement({ accessToken }: { accessToken: string }) {
                     </div>
                     
                     <h3 className="card-title" style={{ marginTop: '2rem' }}>JBIG 정보</h3>
+                    
+                    <div className="form-group">
+                        <label className="form-label">JBIG 소개</label>
+                        <textarea
+                            className="admin-input"
+                            value={jbigDescription}
+                            onChange={(e) => setJbigDescription(e.target.value)}
+                            placeholder="예: 'JBIG'(JBNU Big Data & AI Group)은..."
+                            rows={3}
+                            style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                        />
+                        <p className="form-hint">홈페이지 상단에 표시되는 JBIG 학회 소개 문구입니다.</p>
+                    </div>
                     
                     <div className="form-group">
                         <label className="form-label">회장 이름</label>

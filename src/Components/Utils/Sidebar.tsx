@@ -110,20 +110,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
-            {staffAuth ?
-                <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
-                    관리자 페이지 열기
-                </button> : <div/>
-            }
-            {!isLogin && (
-                <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
-            )}
-            {isLogin && (
-                <button className="sidebar-button open-notion-btn" onClick={() => window.open("/note", "_blank")}>
-                    교안 탭 열기
-                </button>
-            )}
-            <ul className="menu">
+            <div className="sidebar-scrollable">
+                {staffAuth ?
+                    <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
+                        관리자 페이지 열기
+                    </button> : <div/>
+                }
+                {!isLogin && (
+                    <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
+                )}
+                {isLogin && (
+                    <button className="sidebar-button open-notion-btn" onClick={() => window.open("/note", "_blank")}>
+                        교안 탭 열기
+                    </button>
+                )}
+                <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <span style={{display: "flex", alignItems: "center"}}>
                         <FileText size={18} className="board-icon"/>
@@ -206,6 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <FontAwesomeIcon icon={faGithub as IconProp} className="sidebar-discord-icon" />
                 BigTech AI News
             </a>
+            </div>
         </aside>
     );
 };

@@ -6,6 +6,7 @@ const JbigInfo: React.FC = () => {
     const [settings, setSettings] = useState<SiteSettings>({
         notion_page_id: '',
         quiz_url: '',
+        jbig_description: "'JBIG'(JBNU Big Data & AI Group)은 데이터 사이언스와 딥러닝, 머신러닝을 포함한 AI에 대한 학술 교류를 목표로 2021년 설립된 전북대학교의 학생 학회입니다.",
         jbig_president: '박성현',
         jbig_president_dept: '전자공학부',
         jbig_vice_president: '국환',
@@ -33,7 +34,18 @@ const JbigInfo: React.FC = () => {
                 <div className="jbig-info-icon">💡</div>
                 <div className="jbig-info-content">
                     <p className="jbig-info-main">
-                        <strong>'<mark className="highlight-red">JBIG</mark>'(<mark className="highlight-red">J</mark>BNU <mark className="highlight-red">B</mark>ig Data & A<mark className="highlight-red">I</mark> <mark className="highlight-red">G</mark>roup)은 <mark className="highlight-orange">데이터 사이언스</mark>와 <mark className="highlight-orange">딥러닝</mark>, <mark className="highlight-orange">머신러닝</mark>을 포함한 <mark className="highlight-orange">AI</mark>에 대한 학술 교류를 목표로 2021년 설립된 전북대학교의 학생 학회입니다.</strong>
+                        <strong dangerouslySetInnerHTML={{ 
+                            __html: settings.jbig_description
+                                .replace(/'JBIG'/g, '<mark class="highlight-red">JBIG</mark>')
+                                .replace(/JBNU /g, '<mark class="highlight-red">J</mark>BNU ')
+                                .replace(/Big Data/g, '<mark class="highlight-red">B</mark>ig Data')
+                                .replace(/AI /g, 'A<mark class="highlight-red">I</mark> ')
+                                .replace(/Group/g, '<mark class="highlight-red">G</mark>roup')
+                                .replace(/데이터 사이언스/g, '<mark class="highlight-orange">데이터 사이언스</mark>')
+                                .replace(/딥러닝/g, '<mark class="highlight-orange">딥러닝</mark>')
+                                .replace(/머신러닝/g, '<mark class="highlight-orange">머신러닝</mark>')
+                                .replace(/AI에/g, '<mark class="highlight-orange">AI</mark>에')
+                        }} />
                     </p>
                     <p className="jbig-info-text">
                         <strong>회장 : {settings.jbig_president} ({settings.jbig_president_dept})</strong>
