@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { fetchSiteSettings, updateSiteSettings } from "../../API/req";
+import { Menu, X } from "lucide-react";
 import "./Admin.css";
 
 function SettingsManagement({ accessToken }: { accessToken: string }) {
@@ -234,6 +235,7 @@ function Admin() {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState("dashboard");
     const [authorized, setAuthorized] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         if (!authReady) return;
@@ -260,6 +262,11 @@ function Admin() {
         navigate("/");
     };
 
+    const handleMenuSelect = (menuId: string) => {
+        setCurrentPage(menuId);
+        setMobileMenuOpen(false);
+    };
+
     const renderContent = () => {
         if (!accessToken) return null;
         switch (currentPage) {
@@ -281,8 +288,17 @@ function Admin() {
     return (
         <div className="admin-container">
             <header className="admin-header-bar">
-                <div className="admin-logo" onClick={handleGoHome}>
-                    JBIG Admin
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                        className="admin-menu-toggle"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label="메뉴 토글"
+                    >
+                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                    <div className="admin-logo" onClick={handleGoHome}>
+                        JBIG Admin
+                    </div>
                 </div>
                 <div className="admin-user-info">
                     <span>{user?.username || "관리자"}님</span>
@@ -293,14 +309,20 @@ function Admin() {
             </header>
 
             <div className="admin-content">
-                <aside className="admin-sidebar">
+                {/* 모바일 오버레이 */}
+                <div
+                    className={`admin-sidebar-overlay ${mobileMenuOpen ? 'show' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+
+                <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
                     <nav className="admin-menu">
                         <ul>
                             {adminMenus.map((menu) => (
                                 <li
                                     key={menu.id}
                                     className={currentPage === menu.id ? "active" : ""}
-                                    onClick={() => setCurrentPage(menu.id)}
+                                    onClick={() => handleMenuSelect(menu.id)}
                                 >
                                     {menu.name}
                                 </li>
