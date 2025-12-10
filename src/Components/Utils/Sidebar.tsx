@@ -121,10 +121,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
-                    <span style={{display: "flex", alignItems: "center"}}>
+                    <div className="borad-item-content">
                         <FileText size={18} className="board-icon"/>
                         전체 글 보기
-                    </span>
+                    </div>
                     <span className="viewall-count">{totalCount.toLocaleString()}</span>
                 </li>
                 {quizURL && quizURL.trim() !== "" && (
@@ -132,10 +132,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         className="menu-item-viewall"
                         onClick={() => window.open(quizURL, "_blank", "noopener,noreferrer")}
                     >
-                        <span style={{ display: "flex", alignItems: "center" }}>
+                        <div className="board-item-content">
                             <SquareCheckBig size={18} className="board-icon" />
                             이번 주 퀴즈
-                        </span>
+                        </div>
                     </li>
                 )}
             </ul>
