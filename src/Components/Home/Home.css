@@ -552,8 +552,8 @@
     justify-content: center;
     gap: var(--space-sm);
     width: 100%;
-    padding: var(--space-md);
-    margin-top: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    margin-top: var(--space-sm);
     background-color: #5865F2;
     color: var(--color-text-inverse);
     border: none;

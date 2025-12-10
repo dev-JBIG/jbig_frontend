@@ -190,13 +190,22 @@
     position: fixed;
     left: 50%;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+    visibility: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
     z-index: 40;
     pointer-events: none;
+    transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.postdetail-like-floating.scrolling {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
 }
 
 .postdetail-like-floating .postdetail-like-btn {
@@ -209,13 +218,37 @@
     pointer-events: auto;
 }
 
-.postdetail-like-count {
+/* +1 애니메이션 */
+.postdetail-like-plusone {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
     font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-    background: rgba(0, 0, 0, 0.04);
-    padding: 4px 12px;
-    border-radius: 999px;
-    backdrop-filter: blur(6px);
+    font-weight: var(--font-weight-bold);
+    color: #e0245e;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.postdetail-like-plusone.is-active {
+    animation: likePlusOneAnim 0.8s ease-out forwards;
+}
+
+.postdetail-like-plusone.minus {
+    color: #999;
+}
+
+@keyframes likePlusOneAnim {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px);
+    }
 }
 
 .postdetail-divider {
