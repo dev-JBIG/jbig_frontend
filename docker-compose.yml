@@ -1,4 +1,4 @@
-version: '3.12-alpine'
+version: '3.8'
 
 services:
   # React 프론트엔드
@@ -18,7 +18,7 @@ services:
       - "com.jbig.service=frontend"
       - "com.jbig.project=jbig"
     ports:
-      - "${FRONTEND_PORT}:80"
+      - "${FRONTEND_PORT:-3001}:80"
     networks:
       - jbig_network
     depends_on:
