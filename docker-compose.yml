@@ -1,4 +1,4 @@
-version: '3.12-alpine'
+version: '3.8'
 
 services:
   # React 프론트엔드
