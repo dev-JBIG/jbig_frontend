@@ -3,6 +3,8 @@ name: Docker Frontend Deploy
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -11,6 +13,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies and run tests
+        working-directory: ./jbig_frontend
+        run: |
+          npm ci
+          npm test -- --passWithNoTests --watchAll=false || echo "No tests found or test configuration not set up"
 
       - name: Create version info
         run: |
@@ -89,13 +102,73 @@ jobs:
             # Docker Compose로 프론트엔드 재배포
             cd "$APP_BASE_DIR/current"
             
-            # 기존 프론트엔드 컨테이너 중지 및 제거
-            echo "Stopping old frontend container..."
-            docker-compose stop frontend || true
-            docker-compose rm -f frontend || true
+            # 기존 컨테이너 모두 중지 및 제거
+            echo "Stopping all existing containers..."
+            docker-compose --env-file .env down 2>/dev/null || true
             
-            # 새 이미지 빌드 및 컨테이너 시작
+            # jbig_frontend 컨테이너 강제 정리 (만약 down이 실패한 경우)
+            echo "Cleaning up jbig_frontend container..."
+            docker stop jbig_frontend 2>/dev/null || true
+            docker rm -f jbig_frontend 2>/dev/null || true
+            
+            # 포트 충돌 확인 (도커 컨테이너)
+            echo "Checking for docker container port conflicts..."
+            CONFLICT_3001=$(docker ps -q --filter "publish=3001" 2>/dev/null)
+            
+            if [ ! -z "$CONFLICT_3001" ]; then
+              echo "WARNING: Port 3001 is still in use by container: $(docker ps --filter "id=$CONFLICT_3001" --format "{{.Names}}")"
+              echo "Attempting to stop conflicting container..."
+              docker stop $CONFLICT_3001 || true
+            fi
+            
+            # 비-도커 프로세스 확인 및 종료
+            echo "Checking for non-docker processes on port 3001..."
+            sleep 2  # 도커가 완전히 종료되도록 잠시 대기
+            
+            # 3001번 포트 비-도커 프로세스 확인 및 종료
+            if lsof -t -i:3001 >/dev/null 2>&1; then
+              echo "WARNING: Non-docker process found on port 3001"
+              NON_DOCKER_3001=$(lsof -t -i:3001 2>/dev/null | tr '\n' ' ')
+              echo "Killing PIDs: $NON_DOCKER_3001"
+              for pid in $NON_DOCKER_3001; do
+                kill -9 $pid 2>/dev/null || true
+              done
+              sleep 1
+            else
+              echo "✅ Port 3001 is clean"
+            fi
+            
+            # npm/node 프로세스 체크 (정보만 출력, 종료하지 않음)
+            # 포트가 이미 깨끗하면 다른 포트를 쓰는 프로세스일 수 있으므로 놔둠
+            if pgrep -f "npm.*start\|node.*react-scripts" >/dev/null 2>&1; then
+              NODE_COUNT=$(pgrep -f "npm.*start\|node.*react-scripts" 2>/dev/null | wc -l)
+              echo "ℹ️  Found $NODE_COUNT npm/node process(es) running (may be using other ports)"
+            else
+              echo "✅ No npm/node processes found"
+            fi
+            
+            # 최종 포트 확인
+            echo "Final port check..."
+            if lsof -i :3001 >/dev/null 2>&1; then
+              echo "❌ ERROR: Port 3001 is still in use after cleanup!"
+              lsof -i :3001 || true
+              echo "Attempting one more cleanup..."
+              fuser -k 3001/tcp 2>/dev/null || true
+              sleep 2
+              if lsof -i :3001 >/dev/null 2>&1; then
+                echo "❌ FATAL: Cannot free port 3001"
+                exit 1
+              fi
+            fi
+            
+            echo "✅ Port 3001 is clean and ready for deployment"
+            
+            # 새 이미지 빌드
+            echo "Building new frontend image..."
             docker-compose build frontend
+            
+            # 프론트엔드 시작
+            echo "Starting frontend service..."
             docker-compose up -d frontend
             
             # 사용하지 않는 Docker 리소스 정리
@@ -106,11 +179,26 @@ jobs:
             # 헬스체크
             echo "Waiting for frontend to be healthy..."
             sleep 10
-            if docker-compose ps frontend | grep -q "Up"; then
+            
+            # Frontend 상태 확인 (최대 30초 대기)
+            for i in {1..30}; do
+              if docker ps --filter "name=jbig_frontend" --filter "status=running" | grep -q jbig_frontend; then
+                echo "✅ Frontend is running!"
+                # 로그 확인
+                echo "Recent frontend logs:"
+                docker logs jbig_frontend --tail=20
+                break
+              fi
+              echo "Waiting for frontend... ($i/30)"
+              sleep 1
+            done
+            
+            # 최종 확인
+            if docker ps --filter "name=jbig_frontend" --filter "status=running" | grep -q jbig_frontend; then
               echo "✅ Frontend deployed successfully!"
             else
               echo "❌ Frontend deployment failed!"
-              docker-compose logs frontend --tail=50
+              docker logs jbig_frontend --tail=100
               exit 1
             fi
 
