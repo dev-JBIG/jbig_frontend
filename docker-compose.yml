@@ -4,7 +4,7 @@ services:
   # React 프론트엔드
   frontend:
     build:
-      context: ./jbig_frontend
+      context: .
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
@@ -21,9 +21,6 @@ services:
       - "${FRONTEND_PORT:-3001}:80"
     networks:
       - jbig_network
-    depends_on:
-      backend:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
