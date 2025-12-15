@@ -69,7 +69,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     }, [BOARD_LIST, staffAuth]);
 
     const canUseDraft = useMemo(() => {
-        return !!(user && category && !isEdit);
+        const result = !!(user && category !== undefined && !isEdit);
+        console.log('[Draft] canUseDraft:', result, { user: !!user, category, isEdit });
+        return result;
     }, [user, category, isEdit]);
 
     const keptExistingCount = useMemo(
@@ -146,17 +148,27 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 초안 불러오기 (DB - 단일 버퍼)
     useEffect(() => {
+        console.log('[Draft] Load effect triggered:', { isEdit, loaded: draftLoadedRef.current, canUseDraft, hasToken: !!accessToken });
         // 수정 모드이거나 이미 불러왔으면 스킵
-        if (isEdit || draftLoadedRef.current || !canUseDraft || !accessToken) return;
+        if (isEdit || draftLoadedRef.current || !canUseDraft || !accessToken) {
+            console.log('[Draft] Load skipped');
+            return;
+        }
         
         draftLoadedRef.current = true;
+        console.log('[Draft] Attempting to load draft from server...');
 
         (async () => {
             try {
                 const draft = await fetchDraft(accessToken);
-                if (!draft || (!draft.title && !draft.content_md)) return;
+                console.log('[Draft] Draft fetched:', draft);
+                if (!draft || (!draft.title && !draft.content_md)) {
+                    console.log('[Draft] No draft content to restore');
+                    return;
+                }
 
                 if (window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?")) {
+                    console.log('[Draft] User accepted - restoring draft');
                     if (draft.title) setTitle(draft.title);
                     if (draft.content_md) setContent(draft.content_md);
                     draft.uploaded_paths?.forEach(p => uploadedPathsRef.current.add(p));
@@ -166,6 +178,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         if (board) setSelectedBoard(board);
                     }
                 } else {
+                    console.log('[Draft] User rejected - deleting draft');
                     // 임시저장 거부 시 DB에서 삭제 및 업로드된 파일도 삭제
                     await deleteDraft(accessToken);
                     if (draft.uploaded_paths) {
@@ -174,34 +187,39 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 }
             } catch (err) {
                 // 404 등 에러는 무시 (임시저장 없음)
-                console.error('Draft fetch failed:', err);
+                console.error('[Draft] Draft fetch failed:', err);
             }
         })();
     }, [canUseDraft, accessToken, isEdit, BOARD_LIST]);
 
     // 초안 자동 저장 (2초 debounce, DB - 단일 버퍼)
     useEffect(() => {
-        if (!canUseDraft || !accessToken) return;
+        console.log('[Draft] Auto-save effect triggered:', { canUseDraft, hasToken: !!accessToken });
+        if (!canUseDraft || !accessToken) {
+            console.log('[Draft] Auto-save skipped - conditions not met');
+            return;
+        }
         
         const handler = setTimeout(() => {
             (async () => {
                 try {
                     if (!title && !content && uploadedPathsRef.current.size === 0) {
                         // 비어있으면 DB에서 삭제
+                        console.log('[Draft] Deleting empty draft');
                         await deleteDraft(accessToken).catch(() => {});
                     } else {
                         // DB에 저장 (upsert) - 현재 선택된 게시판도 함께 저장
-                        console.log('Saving draft:', { board_id: selectedBoard?.id, title, content_length: content.length });
+                        console.log('[Draft] Saving draft:', { board_id: selectedBoard?.id, title, content_length: content.length });
                         const result = await saveDraft({
                             board_id: selectedBoard?.id || null,
                             title,
                             content_md: content,
                             uploaded_paths: Array.from(uploadedPathsRef.current)
                         }, accessToken);
-                        console.log('Draft saved successfully:', result);
+                        console.log('[Draft] Draft saved successfully:', result);
                     }
                 } catch (err) {
-                    console.error('Draft save failed:', err);
+                    console.error('[Draft] Draft save failed:', err);
                 }
             })();
         }, 2000);
