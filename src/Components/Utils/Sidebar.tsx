@@ -111,11 +111,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
             <div className="sidebar-scrollable">
-                {staffAuth ?
-                    <button className="sidebar-button" onClick={() => window.open("/admin", "_blank")}>
-                        관리자 페이지 열기
-                    </button> : <div/>
-                }
                 {!isLogin && (
                     <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
                 )}
@@ -126,10 +121,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
-                    <span style={{display: "flex", alignItems: "center"}}>
+                    <div className="borad-item-content">
                         <FileText size={18} className="board-icon"/>
                         전체 글 보기
-                    </span>
+                    </div>
                     <span className="viewall-count">{totalCount.toLocaleString()}</span>
                 </li>
                 {quizURL && quizURL.trim() !== "" && (
@@ -137,10 +132,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         className="menu-item-viewall"
                         onClick={() => window.open(quizURL, "_blank", "noopener,noreferrer")}
                     >
-                        <span style={{ display: "flex", alignItems: "center" }}>
+                        <div className="board-item-content">
                             <SquareCheckBig size={18} className="board-icon" />
                             이번 주 퀴즈
-                        </span>
+                        </div>
                     </li>
                 )}
             </ul>

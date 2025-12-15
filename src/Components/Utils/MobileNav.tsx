@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { Section } from "./interfaces";
+import { getBoardIcon } from "./boardIcons";
 import "./MobileNav.css";
 
 interface MobileNavProps {
@@ -64,17 +65,6 @@ const MobileNav: React.FC<MobileNavProps> = ({
             </div>
 
             <div className="mobile-nav-content">
-              {staffAuth && (
-                <button
-                  className="mobile-nav-button mobile-nav-admin"
-                  onClick={() => {
-                    window.open("/admin", "_blank");
-                    setIsOpen(false);
-                  }}
-                >
-                  관리자 페이지
-                </button>
-              )}
 
               {!isLogin && (
                 <button
@@ -151,18 +141,21 @@ const MobileNav: React.FC<MobileNavProps> = ({
               {boards.map((section, idx) => (
                 <React.Fragment key={section.category}>
                   <div className="mobile-nav-section">
-                    {section.boards.map((board) => (
-                      <div
-                        key={board.id}
-                        className="mobile-nav-item"
-                        onClick={() => handleNavigate(`/board/${board.id}`)}
-                      >
-                        <div className="mobile-nav-item-content">
-                          <FileText size={18} />
-                          <span>{board.name}</span>
+                    {section.boards.map((board) => {
+                      const IconComponent = getBoardIcon(board.name);
+                      return (
+                        <div
+                          key={board.id}
+                          className="mobile-nav-item"
+                          onClick={() => handleNavigate(`/board/${board.id}`)}
+                        >
+                          <div className="mobile-nav-item-content">
+                            <IconComponent size={18} />
+                            <span>{board.name}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {idx !== boards.length - 1 && <div className="mobile-nav-divider" />}
                 </React.Fragment>

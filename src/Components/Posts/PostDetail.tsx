@@ -36,6 +36,30 @@ const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
     );
 });
 
+// +1/-1 애니메이션 컴포넌트
+const LikePlusOne = memo(({ triggerKey, count, isLiked }: { triggerKey: number; count: number; isLiked: boolean }) => {
+    const [active, setActive] = useState(false);
+    const [displayCount, setDisplayCount] = useState(count);
+    const [displayLiked, setDisplayLiked] = useState(isLiked);
+    const timeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (triggerKey === 0) return;
+        setDisplayCount(count);
+        setDisplayLiked(isLiked);
+        setActive(true);
+        if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = window.setTimeout(() => setActive(false), 800);
+        return () => { if (timeoutRef.current) window.clearTimeout(timeoutRef.current); };
+    }, [triggerKey, count, isLiked]);
+
+    return (
+        <div className={`postdetail-like-plusone${active ? " is-active" : ""}${!displayLiked ? " minus" : ""}`}>
+            {displayLiked ? "+1" : "-1"} ({displayCount})
+        </div>
+    );
+});
+
 const PostDetail: React.FC = () => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
@@ -77,6 +101,9 @@ const PostDetail: React.FC = () => {
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
     const [heartBurstKey, setHeartBurstKey] = useState(0);
+    const [likePlusOneKey, setLikePlusOneKey] = useState(0);
+    const [isScrolling, setIsScrolling] = useState(false);
+    const scrollTimeoutRef = useRef<number | null>(null);
 
     const commentCount = useMemo(() => {
         if (!post || typeof post === "string") return 0;
@@ -108,6 +135,25 @@ const PostDetail: React.FC = () => {
         window.scrollTo(0, 0);
     }, [postId]);
 
+    // 스크롤 시 좋아요 버튼 표시 (2초 후 숨김)
+    useEffect(() => {
+        const showFloating = () => {
+            setIsScrolling(true);
+            if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 1500);
+        };
+
+        window.addEventListener('scroll', showFloating, { passive: true });
+        window.addEventListener('wheel', showFloating, { passive: true });
+        window.addEventListener('touchmove', showFloating, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', showFloating);
+            window.removeEventListener('wheel', showFloating);
+            window.removeEventListener('touchmove', showFloating);
+            if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const onPointerDown = (ev: PointerEvent) => {
@@ -283,6 +329,10 @@ const PostDetail: React.FC = () => {
         setHeartBurstKey(prev => prev + 1);
     }, []);
 
+    const triggerLikePlusOne = useCallback(() => {
+        setLikePlusOneKey(prev => prev + 1);
+    }, []);
+
     // 좋아요 버튼 핸들러
     const handleToggleLike = async () => {
         if (!post || typeof post === "string") return;
@@ -296,7 +346,15 @@ const PostDetail: React.FC = () => {
         const nextLiked = !post.isLiked;
         const nextLikes = post.likes + (nextLiked ? 1 : -1);
         setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
-        triggerHeartBurst();
+
+        // 애니메이션 트리거
+        if (nextLiked) triggerHeartBurst();
+        triggerLikePlusOne();
+
+        // 모바일에서 버튼 클릭 시 floating 유지
+        setIsScrolling(true);
+        if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 1500);
 
         try {
             await togglePostLike(post.id, accessToken);
@@ -917,7 +975,7 @@ const PostDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-              <div className="postdetail-like-floating">
+              <div className={`postdetail-like-floating${isScrolling ? ' scrolling' : ''}`}>
                     <div className="postdetail-like-btn-wrapper">
                       <button
                           type="button"
@@ -936,8 +994,8 @@ const PostDetail: React.FC = () => {
                           />
                         </button>
                         <HeartBurst triggerKey={heartBurstKey} />
+                        <LikePlusOne triggerKey={likePlusOneKey} count={post.likes ?? 0} isLiked={post.isLiked ?? false} />
                   </div>
-                <span className="postdetail-like-count">좋아요 {post.likes}</span>
             </div>
         </div>
 );

@@ -77,10 +77,6 @@
         min-height: 56px;
     }
 
-    .postdetail-like-count {
-        font-size: var(--font-size-base);
-    }
-
     /* 구분선 */
     .postdetail-divider {
         margin: var(--space-xl) 0;
