@@ -48,6 +48,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const imageInputRef = useRef<HTMLInputElement>(null);
     const uploadedPathsRef = useRef<Set<string>>(new Set());
     const savedRef = useRef(false);
+    const draftLoadedRef = useRef(false);
     const inFlightRef = useRef(false);
     const imageUrlMapRef = useRef<Map<string, string>>(new Map());
 
@@ -145,7 +146,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 초안 불러오기 (DB - 단일 버퍼)
     useEffect(() => {
-        if (!canUseDraft || !accessToken) return;
+        // 수정 모드이거나 이미 불러왔으면 스킵
+        if (isEdit || draftLoadedRef.current || !canUseDraft || !accessToken) return;
+        
+        draftLoadedRef.current = true;
 
         (async () => {
             try {
@@ -170,14 +174,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 }
             } catch (err) {
                 // 404 등 에러는 무시 (임시저장 없음)
-                console.log('Draft fetch failed:', err);
+                console.error('Draft fetch failed:', err);
             }
         })();
-    }, [canUseDraft, accessToken, BOARD_LIST]);
+    }, [canUseDraft, accessToken, isEdit, BOARD_LIST]);
 
     // 초안 자동 저장 (2초 debounce, DB - 단일 버퍼)
     useEffect(() => {
         if (!canUseDraft || !accessToken) return;
+        
         const handler = setTimeout(() => {
             (async () => {
                 try {
@@ -186,15 +191,17 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         await deleteDraft(accessToken).catch(() => {});
                     } else {
                         // DB에 저장 (upsert) - 현재 선택된 게시판도 함께 저장
-                        await saveDraft({
+                        console.log('Saving draft:', { board_id: selectedBoard?.id, title, content_length: content.length });
+                        const result = await saveDraft({
                             board_id: selectedBoard?.id || null,
                             title,
                             content_md: content,
                             uploaded_paths: Array.from(uploadedPathsRef.current)
                         }, accessToken);
+                        console.log('Draft saved successfully:', result);
                     }
                 } catch (err) {
-                    console.log('Draft save failed:', err);
+                    console.error('Draft save failed:', err);
                 }
             })();
         }, 2000);
