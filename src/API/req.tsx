@@ -1135,3 +1135,53 @@ export const markNotificationRead = async (token: string, notificationId?: numbe
         headers: { Authorization: `Bearer ${token}` },
     });
 };
+
+// 임시저장 관련 API (계정 단일 버퍼)
+export interface DraftData {
+    board_id?: number | null;
+    board_name?: string | null;
+    title: string;
+    content_md: string;
+    uploaded_paths: string[];
+    created_at?: string;
+    updated_at?: string;
+}
+
+// 임시저장 버퍼 조회
+export const fetchDraft = async (token: string): Promise<DraftData | null> => {
+    const url = `${BASE_URL}/api/draft/`;
+    try {
+        const res = await axios.get(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.data;
+    } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+            return null; // 임시저장 없음
+        }
+        throw err;
+    }
+};
+
+// 임시저장 버퍼 생성/업데이트
+export const saveDraft = async (
+    data: { board_id?: number | null; title: string; content_md: string; uploaded_paths: string[] },
+    token: string
+): Promise<DraftData> => {
+    const url = `${BASE_URL}/api/draft/`;
+    const res = await axios.post(url, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+    return res.data;
+};
+
+// 임시저장 버퍼 삭제
+export const deleteDraft = async (token: string): Promise<void> => {
+    const url = `${BASE_URL}/api/draft/delete/`;
+    await axios.delete(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};

@@ -7,7 +7,7 @@ import '@uiw/react-markdown-preview/markdown.css';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
@@ -67,9 +67,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         );
     }, [BOARD_LIST, staffAuth]);
 
-    const draftKey = useMemo(() => {
-        if (!user || !category || isEdit) return null;
-        return `jbig-draft-${user.email}-${category}`;
+    const canUseDraft = useMemo(() => {
+        return !!(user && category && !isEdit);
     }, [user, category, isEdit]);
 
     const keptExistingCount = useMemo(
@@ -144,44 +143,63 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         setSelectedBoard(BOARD_LIST.find((b) => b.id === Number(category)) || null);
     }, [category, BOARD_LIST]);
 
-    // 초안 불러오기
+    // 초안 불러오기 (DB - 단일 버퍼)
     useEffect(() => {
-        if (!draftKey) return;
-        try {
-            const raw = localStorage.getItem(draftKey);
-            if (!raw) return;
-            const parsed = JSON.parse(raw) as { title?: string; content?: string; uploadedPaths?: string[] };
-            if (!parsed.title && !parsed.content) return;
+        if (!canUseDraft || !accessToken) return;
 
-            if (window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?")) {
-                if (parsed.title) setTitle(parsed.title);
-                if (parsed.content) setContent(parsed.content);
-                parsed.uploadedPaths?.forEach(p => uploadedPathsRef.current.add(p));
-            } else {
-                localStorage.removeItem(draftKey);
-                if (parsed.uploadedPaths && accessToken) {
-                    parsed.uploadedPaths.forEach(path => deleteUploadedFile(path, accessToken).catch(() => {}));
-                }
-            }
-        } catch { /* ignore */ }
-    }, [draftKey, accessToken]);
-
-    // 초안 자동 저장 (2초 debounce)
-    useEffect(() => {
-        if (!draftKey) return;
-        const handler = setTimeout(() => {
+        (async () => {
             try {
-                if (!title && !content && uploadedPathsRef.current.size === 0) {
-                    localStorage.removeItem(draftKey);
+                const draft = await fetchDraft(accessToken);
+                if (!draft || (!draft.title && !draft.content_md)) return;
+
+                if (window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?")) {
+                    if (draft.title) setTitle(draft.title);
+                    if (draft.content_md) setContent(draft.content_md);
+                    draft.uploaded_paths?.forEach(p => uploadedPathsRef.current.add(p));
+                    // 저장된 게시판이 있으면 복원
+                    if (draft.board_id) {
+                        const board = BOARD_LIST.find(b => b.id === draft.board_id);
+                        if (board) setSelectedBoard(board);
+                    }
                 } else {
-                    localStorage.setItem(draftKey, JSON.stringify({
-                        title, content, uploadedPaths: Array.from(uploadedPathsRef.current)
-                    }));
+                    // 임시저장 거부 시 DB에서 삭제 및 업로드된 파일도 삭제
+                    await deleteDraft(accessToken);
+                    if (draft.uploaded_paths) {
+                        draft.uploaded_paths.forEach(path => deleteUploadedFile(path, accessToken).catch(() => {}));
+                    }
                 }
-            } catch { /* ignore */ }
+            } catch (err) {
+                // 404 등 에러는 무시 (임시저장 없음)
+                console.log('Draft fetch failed:', err);
+            }
+        })();
+    }, [canUseDraft, accessToken, BOARD_LIST]);
+
+    // 초안 자동 저장 (2초 debounce, DB - 단일 버퍼)
+    useEffect(() => {
+        if (!canUseDraft || !accessToken) return;
+        const handler = setTimeout(() => {
+            (async () => {
+                try {
+                    if (!title && !content && uploadedPathsRef.current.size === 0) {
+                        // 비어있으면 DB에서 삭제
+                        await deleteDraft(accessToken).catch(() => {});
+                    } else {
+                        // DB에 저장 (upsert) - 현재 선택된 게시판도 함께 저장
+                        await saveDraft({
+                            board_id: selectedBoard?.id || null,
+                            title,
+                            content_md: content,
+                            uploaded_paths: Array.from(uploadedPathsRef.current)
+                        }, accessToken);
+                    }
+                } catch (err) {
+                    console.log('Draft save failed:', err);
+                }
+            })();
         }, 2000);
         return () => clearTimeout(handler);
-    }, [title, content, draftKey, files]);
+    }, [title, content, selectedBoard, canUseDraft, accessToken]);
 
     // 수정 모드: 기존 게시글 로드
     useEffect(() => {
@@ -346,7 +364,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments }, accessToken);
             if (res?.unauthorized) { alert("인증에 문제가 있습니다. 다시 로그인해주세요."); navigate("/signin"); return; }
 
-            if (draftKey) localStorage.removeItem(draftKey);
+            // 게시글 등록 성공 시 DB 임시저장 삭제
+            if (canUseDraft) {
+                await deleteDraft(accessToken).catch(() => {});
+            }
             savedRef.current = true;
             navigate(`/board/${selectedBoard!.id}`);
         } catch (err) {
