@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-string-replace-all */
 import React, { useEffect, useMemo, useState } from "react";
 import "./JbigInfo.css";
 import { fetchSiteSettings, SiteSettings } from "../../API/req";
