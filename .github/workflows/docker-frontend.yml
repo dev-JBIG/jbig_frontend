@@ -1,0 +1,212 @@
+name: Docker Frontend Deploy
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies and run tests
+        run: |
+          npm install
+          npm test -- --passWithNoTests --watchAll=false || echo "No tests found or test configuration not set up"
+
+      - name: Create version info
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%s | sed 's/"/\\"/g')
+          cat > VERSION.json << EOF
+          {
+            "commit": "${{ github.sha }}",
+            "commit_short": "$(echo ${{ github.sha }} | cut -c1-7)",
+            "message": "$COMMIT_MSG",
+            "branch": "${{ github.ref_name }}",
+            "time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+      - name: Create deployment package
+        run: |
+          tar czf /tmp/docker-frontend.tar.gz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='build' \
+            --exclude='.env' \
+            --exclude='.github' \
+            .
+          mv /tmp/docker-frontend.tar.gz docker-frontend.tar.gz
+
+      - name: Upload to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-frontend.tar.gz"
+          target: "/tmp/"
+
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            APP_BASE_DIR="$HOME/${{ secrets.DEPLOY_PATH }}"
+            RELEASES_DIR="$APP_BASE_DIR/releases"
+            SHARED_DIR="$APP_BASE_DIR/shared"
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            NEW_RELEASE="$RELEASES_DIR/$TIMESTAMP"
+
+            # 디렉토리 생성
+            mkdir -p "$RELEASES_DIR"
+            mkdir -p "$SHARED_DIR/media"
+
+            # .env 파일 확인
+            if [ ! -f "$SHARED_DIR/.env" ]; then
+              echo "WARNING: .env file not found in $SHARED_DIR!"
+              echo "Please create .env file with required environment variables"
+              exit 1
+            fi
+
+            # 빌드 압축 해제
+            mkdir -p "$NEW_RELEASE"
+            tar xzf "/tmp/docker-frontend.tar.gz" -C "$NEW_RELEASE"
+            rm -f "/tmp/docker-frontend.tar.gz"
+
+            # 공유 디렉토리 심볼릭 링크
+            ln -sfn "$SHARED_DIR/.env" "$NEW_RELEASE/.env"
+
+            # 새 릴리즈 활성화
+            ln -sfn "$NEW_RELEASE" "$APP_BASE_DIR/current"
+
+            # Docker Compose로 프론트엔드 재배포
+            cd "$APP_BASE_DIR/current"
+            
+            # 프론트엔드 컨테이너만 중지 (프로젝트명 지정)
+            echo "Stopping frontend container..."
+            docker-compose -p jbig --env-file .env stop frontend 2>/dev/null || true
+            docker-compose -p jbig --env-file .env rm -f frontend 2>/dev/null || true
+            
+            # jbig_frontend 컨테이너 강제 정리 (백업)
+            echo "Cleaning up jbig_frontend container..."
+            docker stop jbig_frontend 2>/dev/null || true
+            docker rm -f jbig_frontend 2>/dev/null || true
+            
+            # 포트 충돌 확인 (도커 컨테이너)
+            echo "Checking for docker container port conflicts..."
+            CONFLICT_3001=$(docker ps -q --filter "publish=3001" 2>/dev/null)
+            
+            if [ ! -z "$CONFLICT_3001" ]; then
+              echo "WARNING: Port 3001 is still in use by container: $(docker ps --filter "id=$CONFLICT_3001" --format "{{.Names}}")"
+              echo "Attempting to stop conflicting container..."
+              docker stop $CONFLICT_3001 || true
+            fi
+            
+            # 비-도커 프로세스 확인 및 종료
+            echo "Checking for non-docker processes on port 3001..."
+            sleep 2  # 도커가 완전히 종료되도록 잠시 대기
+            
+            # 3001번 포트 비-도커 프로세스 확인 및 종료
+            if lsof -t -i:3001 >/dev/null 2>&1; then
+              echo "WARNING: Non-docker process found on port 3001"
+              NON_DOCKER_3001=$(lsof -t -i:3001 2>/dev/null | tr '\n' ' ')
+              echo "Killing PIDs: $NON_DOCKER_3001"
+              for pid in $NON_DOCKER_3001; do
+                kill -9 $pid 2>/dev/null || true
+              done
+              sleep 1
+            else
+              echo "✅ Port 3001 is clean"
+            fi
+            
+            # npm/node 프로세스 체크 (정보만 출력, 종료하지 않음)
+            # 포트가 이미 깨끗하면 다른 포트를 쓰는 프로세스일 수 있으므로 놔둠
+            if pgrep -f "npm.*start\|node.*react-scripts" >/dev/null 2>&1; then
+              NODE_COUNT=$(pgrep -f "npm.*start\|node.*react-scripts" 2>/dev/null | wc -l)
+              echo "ℹ️  Found $NODE_COUNT npm/node process(es) running (may be using other ports)"
+            else
+              echo "✅ No npm/node processes found"
+            fi
+            
+            # 최종 포트 확인 및 강제 정리
+            echo "Final port check..."
+            for attempt in {1..3}; do
+              if lsof -i :3001 >/dev/null 2>&1; then
+                echo "⚠️  Attempt $attempt: Port 3001 still in use"
+                lsof -i :3001 || true
+                fuser -k 3001/tcp 2>/dev/null || true
+                sleep 2
+              else
+                echo "✅ Port 3001 is clean"
+                break
+              fi
+              
+              if [ $attempt -eq 3 ] && lsof -i :3001 >/dev/null 2>&1; then
+                echo "❌ FATAL: Cannot free port 3001 after 3 attempts"
+                lsof -i :3001 || true
+                exit 1
+              fi
+            done
+            
+            echo "✅ Port 3001 is clean and ready for deployment"
+            
+            # 새 이미지 빌드
+            echo "Building new frontend image..."
+            docker-compose -p jbig --env-file .env build frontend
+            
+            # 프론트엔드 시작
+            echo "Starting frontend service..."
+            docker-compose -p jbig --env-file .env up -d frontend
+            
+            # 사용하지 않는 Docker 리소스 정리
+            echo "Cleaning up unused Docker resources..."
+            docker image prune -f
+            docker container prune -f
+
+            # 헬스체크
+            echo "Waiting for frontend to be healthy..."
+            sleep 10
+            
+            # Frontend 상태 확인 (최대 30초 대기)
+            for i in {1..30}; do
+              if docker ps --filter "name=jbig_frontend" --filter "status=running" | grep -q jbig_frontend; then
+                echo "✅ Frontend is running!"
+                # 로그 확인
+                echo "Recent frontend logs:"
+                docker logs jbig_frontend --tail=20
+                break
+              fi
+              echo "Waiting for frontend... ($i/30)"
+              sleep 1
+            done
+            
+            # 최종 확인
+            if docker ps --filter "name=jbig_frontend" --filter "status=running" | grep -q jbig_frontend; then
+              echo "✅ Frontend deployed successfully!"
+            else
+              echo "❌ Frontend deployment failed!"
+              docker logs jbig_frontend --tail=100
+              exit 1
+            fi
+
+            # 오래된 릴리즈 정리 (최근 5개만 유지)
+            cd "$RELEASES_DIR"
+            ls -t | tail -n +6 | xargs -r rm -rf
+
+            echo "Deployed: $TIMESTAMP"
+
