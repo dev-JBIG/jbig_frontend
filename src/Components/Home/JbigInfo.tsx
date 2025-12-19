@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable unicorn/prefer-string-replace-all */
+import React, { useEffect, useMemo, useState } from "react";
 import "./JbigInfo.css";
 import { fetchSiteSettings, SiteSettings } from "../../API/req";
 
@@ -28,34 +29,115 @@ const JbigInfo: React.FC = () => {
         loadSettings();
     }, []);
 
+    const highlightedDescription = useMemo(() => {
+        const text = settings.jbig_description || "";
+        const tokenRegex =
+            /(JBIG|JBNU|Big Data|AI|Group|데이터 사이언스|딥러닝|머신러닝)/g;
+
+        return text.split(tokenRegex).filter(Boolean).map((part, idx) => {
+            const className =
+                part === "JBIG"
+                    ? "jbig-highlight-brand"
+                    : part === "JBNU" || part === "Big Data" || part === "AI" || part === "Group"
+                        ? "jbig-highlight-acronym"
+                        : part === "데이터 사이언스" || part === "딥러닝" || part === "머신러닝"
+                            ? "jbig-highlight-topic"
+                            : undefined;
+
+            if (!className) return <React.Fragment key={idx}>{part}</React.Fragment>;
+            return (
+                <span key={idx} className={className}>
+                    {part}
+                </span>
+            );
+        });
+    }, [settings.jbig_description]);
+
     return (
         <div className="jbig-info-container">
-            <div className="jbig-info-callout">
-                <div className="jbig-info-icon">💡</div>
-                <div className="jbig-info-content">
-                    <p className="jbig-info-main">
-                        <strong dangerouslySetInnerHTML={{ 
-                            __html: settings.jbig_description
-                                .replace(/'JBIG'/g, '<mark class="highlight-red">JBIG</mark>')
-                                .replace(/JBNU /g, '<mark class="highlight-red">J</mark>BNU ')
-                                .replace(/Big Data/g, '<mark class="highlight-red">B</mark>ig Data')
-                                .replace(/AI /g, 'A<mark class="highlight-red">I</mark> ')
-                                .replace(/Group/g, '<mark class="highlight-red">G</mark>roup')
-                                .replace(/데이터 사이언스/g, '<mark class="highlight-orange">데이터 사이언스</mark>')
-                                .replace(/딥러닝/g, '<mark class="highlight-orange">딥러닝</mark>')
-                                .replace(/머신러닝/g, '<mark class="highlight-orange">머신러닝</mark>')
-                                .replace(/AI에/g, '<mark class="highlight-orange">AI</mark>에')
-                        }} />
-                    </p>
-                    <p className="jbig-info-text">
-                        <strong>회장 : {settings.jbig_president} ({settings.jbig_president_dept})</strong>
-                    </p>
-                    <p className="jbig-info-text">
-                        <strong>부회장 : {settings.jbig_vice_president} ({settings.jbig_vice_president_dept})</strong>
-                    </p>
-                    <p className="jbig-info-text">
-                        <strong>지도 교수 : {settings.jbig_advisor} ({settings.jbig_advisor_dept})</strong>
-                    </p>
+            <div className="jbig-info-hero">
+                <div className="jbig-info-badge" aria-hidden="true">
+                    JBIG
+                </div>
+                <div className="jbig-info-hero-text">
+                    <div className="jbig-info-kicker">JBNU Big Data & AI Group</div>
+                    <div className="jbig-info-title">
+                        <span className="jbig-info-title-strong">JBIG</span>는 데이터·AI 학술 교류 모임입니다
+                    </div>
+                </div>
+                <div className="jbig-info-hero-icon" aria-hidden="true">
+                    💡
+                </div>
+            </div>
+
+            <div className="jbig-info-body">
+                <p className="jbig-info-main">{highlightedDescription}</p>
+
+                <div className="jbig-acronym-section">
+                    <div className="jbig-section-title">
+                        <span className="jbig-section-title-strong">JBIG</span>가 무슨 약자인가요?
+                    </div>
+                    <div className="jbig-acronym-chips" role="list">
+                        <div className="jbig-acronym-chip" role="listitem">
+                            <span className="jbig-acronym-letter">J</span>
+                            <span className="jbig-acronym-word">JBNU</span>
+                        </div>
+                        <div className="jbig-acronym-chip" role="listitem">
+                            <span className="jbig-acronym-letter">B</span>
+                            <span className="jbig-acronym-word">Big Data</span>
+                        </div>
+                        <div className="jbig-acronym-chip" role="listitem">
+                            <span className="jbig-acronym-letter">I</span>
+                            <span className="jbig-acronym-word">AI</span>
+                        </div>
+                        <div className="jbig-acronym-chip" role="listitem">
+                            <span className="jbig-acronym-letter">G</span>
+                            <span className="jbig-acronym-word">Group</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="jbig-activities-section">
+                    <div className="jbig-section-title">우리가 하는 활동</div>
+                    <div className="jbig-activity-chips" role="list">
+                        <div className="jbig-activity-chip" role="listitem">
+                            <span className="jbig-activity-dot" aria-hidden="true" />
+                            데이터 사이언스
+                        </div>
+                        <div className="jbig-activity-chip" role="listitem">
+                            <span className="jbig-activity-dot" aria-hidden="true" />
+                            딥러닝
+                        </div>
+                        <div className="jbig-activity-chip" role="listitem">
+                            <span className="jbig-activity-dot" aria-hidden="true" />
+                            머신러닝
+                        </div>
+                        <div className="jbig-activity-chip" role="listitem">
+                            <span className="jbig-activity-dot" aria-hidden="true" />
+                            AI
+                        </div>
+                    </div>
+                </div>
+
+                <div className="jbig-leaders">
+                    <div className="jbig-leader-line">
+                        <span className="jbig-leader-label">회장</span>
+                        <span className="jbig-leader-value">
+                            {settings.jbig_president} <span className="jbig-leader-meta">({settings.jbig_president_dept})</span>
+                        </span>
+                    </div>
+                    <div className="jbig-leader-line">
+                        <span className="jbig-leader-label">부회장</span>
+                        <span className="jbig-leader-value">
+                            {settings.jbig_vice_president} <span className="jbig-leader-meta">({settings.jbig_vice_president_dept})</span>
+                        </span>
+                    </div>
+                    <div className="jbig-leader-line">
+                        <span className="jbig-leader-label">지도 교수</span>
+                        <span className="jbig-leader-value">
+                            {settings.jbig_advisor} <span className="jbig-leader-meta">({settings.jbig_advisor_dept})</span>
+                        </span>
+                    </div>
                 </div>
             </div>
             

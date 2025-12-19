@@ -532,7 +532,7 @@
     font-weight: var(--font-weight-medium);
 }
 
-.menu-item-viewall:hover > span:first-child {
+.menu-item-viewall:hover .board-item-content {
     transform: scale(1.15);
     transform-origin: left center;
 }

@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
-                    <div className="borad-item-content">
+                    <div className="board-item-content">
                         <FileText size={18} className="board-icon"/>
                         전체 글 보기
                     </div>
