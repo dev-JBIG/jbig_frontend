@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signupUser, verifyAuthEmail, resendVerifyEmail } from "../../API/req";
+import { useAlert } from "../Utils/AlertContext";
 import "./Signup.css";
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -28,6 +29,7 @@ const Signup: React.FC = () => {
     const [secondsLeft, setSecondsLeft] = useState(0); // ← 5분 타이머(초)
 
     const navigate = useNavigate();
+    const { showAlert } = useAlert();
 
     // 타이머 진행
     useEffect(() => {
@@ -55,23 +57,23 @@ const Signup: React.FC = () => {
 
         // 검증
         if (!isValidEmailDomain(trimmedEmail)) {
-            alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
+            showAlert({ message: "전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.", type: 'warning' });
             return;
         }
         if (!trimmedUserId) {
-            alert("아이디(유저명)를 입력해주세요.");
+            showAlert({ message: "아이디(유저명)를 입력해주세요.", type: 'warning' });
             return;
         }
         if (semester === null || !isValidSemester(semester)) {
-            alert("부적절한 기수 입니다.");
+            showAlert({ message: "부적절한 기수 입니다.", type: 'warning' });
             return;
         }
         if (!isValidPassword(trimmedPwd)) {
-            alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
+            showAlert({ message: "비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.", type: 'warning' });
             return;
         }
         if (password !== confirmPassword) {
-            alert("비밀번호 확인이 일치하지 않습니다.");
+            showAlert({ message: "비밀번호 확인이 일치하지 않습니다.", type: 'warning' });
             return;
         }
 
@@ -82,10 +84,10 @@ const Signup: React.FC = () => {
                 setStep(2);
                 setSecondsLeft(300);
             } else {
-                alert(result?.message || "회원가입 요청에 실패했습니다.");
+                showAlert({ message: result?.message || "회원가입 요청에 실패했습니다.", type: 'error' });
             }
         } catch {
-            alert("회원가입 요청 중 오류가 발생했습니다.");
+            showAlert({ message: "회원가입 요청 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -97,13 +99,16 @@ const Signup: React.FC = () => {
         try {
             const result = await verifyAuthEmail(email.trim(), emailCode.trim());
             if (result.success || result.status === 200) {
-                alert("운영진 승인 이후 회원가입이 완료됩니다.");
-                navigate("/");
+                showAlert({
+                    message: "운영진 승인 이후 회원가입이 완료됩니다.",
+                    type: 'success',
+                    onClose: () => navigate("/")
+                });
             } else {
-                alert(result.message || "인증 코드가 올바르지 않습니다.");
+                showAlert({ message: result.message || "인증 코드가 올바르지 않습니다.", type: 'error' });
             }
         } catch {
-            alert("인증 요청 중 오류가 발생했습니다.");
+            showAlert({ message: "인증 요청 중 오류가 발생했습니다.", type: 'error' });
         }
     };
 
@@ -114,13 +119,13 @@ const Signup: React.FC = () => {
             setLoading(true);
             const res = await resendVerifyEmail(email.trim());
             if (res.success) {
-                alert("인증 메일이 재전송되었습니다.");
+                showAlert({ message: "인증 메일이 재전송되었습니다.", type: 'success' });
                 setSecondsLeft(300);
             } else {
-                alert(res.message || "재전송에 실패했습니다.");
+                showAlert({ message: res.message || "재전송에 실패했습니다.", type: 'error' });
             }
         } catch {
-            alert("인증 메일 재전송 중 오류가 발생했습니다.");
+            showAlert({ message: "인증 메일 재전송 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setLoading(false);
         }

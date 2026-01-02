@@ -11,6 +11,7 @@ import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploade
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import {useAlert} from "../Utils/AlertContext";
 import AbsenceForm from "./AbsenceForm";
 import FeedbackForm from "./FeedbackForm";
 
@@ -58,6 +59,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const navigate = useNavigate();
     const { signOutLocal, accessToken, user } = useUser();
     const { staffAuth } = useStaffAuth();
+    const { showAlert, showConfirm } = useAlert();
 
     const BOARD_LIST = useMemo(() => boards.flatMap((sec) => sec.boards), [boards]);
 
@@ -89,18 +91,18 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     // 공통 이미지 업로드 로직
     const uploadInlineImage = useCallback(async (file: File): Promise<boolean> => {
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
+            showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
             return false;
         }
         if (file.size > MAX_FILE_SIZE) {
-            alert(`${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 이미지는 업로드할 수 없습니다.`);
+            showAlert({ message: `${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 이미지는 업로드할 수 없습니다.`, type: 'warning' });
             return false;
         }
 
         try {
             const res = await uploadAttachment(file, accessToken);
             if (res.message || !res.path) {
-                alert(`이미지 업로드 실패: ${res.message || '알 수 없는 오류'}`);
+                showAlert({ message: `이미지 업로드 실패: ${res.message || '알 수 없는 오류'}`, type: 'error' });
                 return false;
             }
 
@@ -109,10 +111,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             imageUrlMapRef.current.set(res.path, URL.createObjectURL(file));
             return true;
         } catch (error) {
-            alert(`이미지 업로드 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+            showAlert({ message: `이미지 업로드 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`, type: 'error' });
             return false;
         }
-    }, [accessToken]);
+    }, [accessToken, showAlert]);
 
     // blob URL 정리
     useEffect(() => {
@@ -126,19 +128,25 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     useEffect(() => {
         if (!accessToken) {
             signOutLocal();
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
         }
-    }, [accessToken, navigate, signOutLocal]);
+    }, [accessToken, navigate, signOutLocal, showAlert]);
 
     // 게시판 접근 권한 체크
     useEffect(() => {
         if (!staffAuth && selectedBoard &&
             BLOCKED_BOARD_KEYWORDS.some((kw) => selectedBoard.name.toLowerCase().includes(kw.toLowerCase()))) {
-            alert("해당 게시판에는 글을 작성할 수 없습니다.");
-            navigate("/");
+            showAlert({
+                message: "해당 게시판에는 글을 작성할 수 없습니다.",
+                type: 'warning',
+                onClose: () => navigate("/")
+            });
         }
-    }, [selectedBoard, staffAuth, navigate]);
+    }, [selectedBoard, staffAuth, navigate, showAlert]);
 
     // URL에서 게시판 설정
     useEffect(() => {
@@ -167,24 +175,32 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     return;
                 }
 
-                if (window.confirm("이전에 임시 저장된 글이 있습니다. 불러올까요?")) {
-                    console.log('[Draft] User accepted - restoring draft');
-                    if (draft.title) setTitle(draft.title);
-                    if (draft.content_md) setContent(draft.content_md);
-                    draft.uploaded_paths?.forEach(p => uploadedPathsRef.current.add(p));
-                    // 저장된 게시판이 있으면 복원
-                    if (draft.board_id) {
-                        const board = BOARD_LIST.find(b => b.id === draft.board_id);
-                        if (board) setSelectedBoard(board);
+                const confirmed = await showConfirm({
+                    message: "이전에 임시 저장된 글이 있습니다. 불러올까요?",
+                    title: "임시 저장 글 불러오기",
+                    type: 'info',
+                    confirmText: '불러오기',
+                    cancelText: '취소',
+                    onConfirm: async () => {
+                        console.log('[Draft] User accepted - restoring draft');
+                        if (draft.title) setTitle(draft.title);
+                        if (draft.content_md) setContent(draft.content_md);
+                        draft.uploaded_paths?.forEach(p => uploadedPathsRef.current.add(p));
+                        // 저장된 게시판이 있으면 복원
+                        if (draft.board_id) {
+                            const board = BOARD_LIST.find(b => b.id === draft.board_id);
+                            if (board) setSelectedBoard(board);
+                        }
+                    },
+                    onCancel: async () => {
+                        console.log('[Draft] User rejected - deleting draft');
+                        // 임시저장 거부 시 DB에서 삭제 및 업로드된 파일도 삭제
+                        await deleteDraft(accessToken);
+                        if (draft.uploaded_paths) {
+                            draft.uploaded_paths.forEach(path => deleteUploadedFile(path, accessToken).catch(() => {}));
+                        }
                     }
-                } else {
-                    console.log('[Draft] User rejected - deleting draft');
-                    // 임시저장 거부 시 DB에서 삭제 및 업로드된 파일도 삭제
-                    await deleteDraft(accessToken);
-                    if (draft.uploaded_paths) {
-                        draft.uploaded_paths.forEach(path => deleteUploadedFile(path, accessToken).catch(() => {}));
-                    }
-                }
+                });
             } catch (err) {
                 // 404 등 에러는 무시 (임시저장 없음)
                 console.error('[Draft] Draft fetch failed:', err);
@@ -256,8 +272,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     path: extractKeyFromUrl(att.url, `error_${idx}`)
                 })));
             } catch {
-                alert("게시글 정보를 불러오지 못했습니다.");
-                navigate(-1);
+                showAlert({
+                    message: "게시글 정보를 불러오지 못했습니다.",
+                    type: 'error',
+                    onClose: () => navigate(-1)
+                });
             }
         })();
     }, [isEdit, postId, accessToken, navigate, category, BOARD_LIST]);
@@ -269,7 +288,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
         let remaining = remainingSlots;
         if (remaining <= 0) {
-            alert(`첨부는 최대 ${MAX_FILES}개까지 가능합니다.`);
+            showAlert({ message: `첨부는 최대 ${MAX_FILES}개까지 가능합니다.`, type: 'warning' });
             if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
@@ -282,12 +301,19 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const ext = file.name.split(".").pop()?.toLowerCase() || "";
             if (BLOCKED_EXTENSIONS.includes(ext)) { blockedFile = true; continue; }
             if (file.size > MAX_FILE_SIZE) { overSize = true; continue; }
-            if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (!accessToken) { 
+                showAlert({
+                    message: "로그인이 필요합니다.",
+                    type: 'warning',
+                    onClose: () => navigate("/signin")
+                }); 
+                return; 
+            }
 
             try {
                 const res = await uploadAttachment(file, accessToken);
                 if (res.message || !res.path) {
-                    alert(`"${file.name}" 업로드 실패: ${res.message || '알 수 없는 오류'}`);
+                    showAlert({ message: `"${file.name}" 업로드 실패: ${res.message || '알 수 없는 오류'}`, type: 'error' });
                     continue;
                 }
 
@@ -298,14 +324,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 remaining--;
                 if (remaining <= 0) break;
             } catch {
-                alert(`"${file.name}" 업로드 실패`);
+                showAlert({ message: `"${file.name}" 업로드 실패`, type: 'error' });
             }
         }
 
-        if (blockedFile) alert("jsp, php, asp, cgi 확장자 파일은 첨부할 수 없습니다.");
-        if (overSize) alert(`${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 파일은 첨부할 수 없습니다.`);
+        if (blockedFile) showAlert({ message: "jsp, php, asp, cgi 확장자 파일은 첨부할 수 없습니다.", type: 'warning' });
+        if (overSize) showAlert({ message: `${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 파일은 첨부할 수 없습니다.`, type: 'warning' });
         if (candidates.length > willProcess.length) {
-            alert(`최대 ${MAX_FILES}개까지 가능해서 ${candidates.length - willProcess.length}개는 제외되었습니다.`);
+            showAlert({ message: `최대 ${MAX_FILES}개까지 가능해서 ${candidates.length - willProcess.length}개는 제외되었습니다.`, type: 'info' });
         }
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
@@ -332,16 +358,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 유효성 검사
     const validateForm = (): boolean => {
-        if (!title.trim()) { alert("제목을 입력하세요."); return false; }
+        if (!title.trim()) { showAlert({ message: "제목을 입력하세요.", type: 'warning' }); return false; }
 
         if (category === '4') {
-            if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) { alert("결석 날짜를 입력하세요."); return false; }
-            if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { alert("결석 사유를 입력하세요."); return false; }
+            if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) { showAlert({ message: "결석 날짜를 입력하세요.", type: 'warning' }); return false; }
+            if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "결석 사유를 입력하세요.", type: 'warning' }); return false; }
         } else if (isFeedbackBoard) {
-            if (/\| \*\*제목\*\* \|\s*\|/.test(content)) { alert("제목을 입력하세요."); return false; }
-            if (/\| \*\*상세 내용\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { alert("상세 내용을 입력하세요."); return false; }
+            if (/\| \*\*제목\*\* \|\s*\|/.test(content)) { showAlert({ message: "제목을 입력하세요.", type: 'warning' }); return false; }
+            if (/\| \*\*상세 내용\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "상세 내용을 입력하세요.", type: 'warning' }); return false; }
         } else if (!content.trim()) {
-            alert("본문을 입력하세요."); return false;
+            showAlert({ message: "본문을 입력하세요.", type: 'warning' }); return false;
         }
         return true;
     };
@@ -366,8 +392,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         e?.preventDefault();
         if (submitting || inFlightRef.current) return;
 
-        if (!accessToken) { signOutLocal(); alert("로그인이 필요합니다."); navigate("/signin"); return; }
-        if (!selectedBoard && !isEdit) { alert("게시판을 선택하세요."); return; }
+        if (!accessToken) { 
+            signOutLocal(); 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            }); 
+            return; 
+        }
+        if (!selectedBoard && !isEdit) { showAlert({ message: "게시판을 선택하세요.", type: 'warning' }); return; }
         if (!validateForm()) { return; }
 
         inFlightRef.current = true;
@@ -387,7 +421,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             }
 
             const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments }, accessToken);
-            if (res?.unauthorized) { alert("인증에 문제가 있습니다. 다시 로그인해주세요."); navigate("/signin"); return; }
+            if (res?.unauthorized) { 
+                showAlert({
+                    message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
+                    type: 'error',
+                    onClose: () => navigate("/signin")
+                }); 
+                return; 
+            }
 
             // 게시글 등록 성공 시 DB 임시저장 삭제
             if (canUseDraft) {
@@ -396,7 +437,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             savedRef.current = true;
             navigate(`/board/${selectedBoard!.id}`);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.");
+            showAlert({ message: err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setSubmitting(false);
             inFlightRef.current = false;
@@ -406,7 +447,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (!file.type.startsWith('image/')) alert('이미지 파일만 삽입할 수 있습니다.');
+            if (!file.type.startsWith('image/')) showAlert({ message: '이미지 파일만 삽입할 수 있습니다.', type: 'warning' });
             else await uploadInlineImage(file);
         }
         if (imageInputRef.current) imageInputRef.current.value = "";

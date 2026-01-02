@@ -15,6 +15,7 @@ import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import {useAlert} from "../Utils/AlertContext";
 
 // HeartBurst 애니메이션 컴포넌트 (분리하여 리렌더링 최적화)
 const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
@@ -74,6 +75,7 @@ const PostDetail: React.FC = () => {
 
     const { accessToken, authReady, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
+    const { showAlert, showConfirm } = useAlert();
 
     // Sanitize 스키마: style 속성 허용 (text-align, color만)
     const sanitizeSchema = {
@@ -169,17 +171,25 @@ const PostDetail: React.FC = () => {
         if (redirectedRef.current) return;
         redirectedRef.current = true;
 
-        alert("접근 권한이 없습니다.");
-        navigate(-1);
+        showAlert({
+            message: "접근 권한이 없습니다.",
+            type: 'warning',
+            onClose: () => navigate(-1)
+        });
     };
 
     useEffect(() => {
         if (!authReady || !postId) return;
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            signOutLocal();
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'info',
+                onClose: () => {
+                    signOutLocal();
+                    navigate("/signin");
+                }
+            });
             return;
         }
 
@@ -279,14 +289,20 @@ const PostDetail: React.FC = () => {
                 // 접근 권한 체크
                 // 어드민 게시글
                 if (mapped.post_type === 2 && !staffAuth) {
-                    alert("접근 권한이 없습니다.");
-                    navigate("/", { replace: true });
+                    showAlert({
+                        message: "접근 권한이 없습니다.",
+                        type: 'warning',
+                        onClose: () => navigate("/", { replace: true })
+                    });
                     return;
                 }
                 // 사유서 게시글
                 if (mapped.post_type === 3 && !staffAuth && !mapped.is_owner) {
-                    alert("접근 권한이 없습니다.");
-                    navigate("/", { replace: true });
+                    showAlert({
+                        message: "접근 권한이 없습니다.",
+                        type: 'warning',
+                        onClose: () => navigate("/", { replace: true })
+                    });
                     return;
                 }
 
@@ -304,18 +320,42 @@ const PostDetail: React.FC = () => {
     // 게시글 삭제
     const handleDeletePost = async () => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!accessToken) { 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
+            return; 
+        }
 
-        if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
+        const confirmed = await showConfirm({
+            message: "게시글을 삭제하시겠습니까?",
+            title: "게시글 삭제",
+            type: 'danger',
+            confirmText: '삭제',
+            cancelText: '취소'
+        });
+        if (!confirmed) return;
 
         try {
             const res = await deletePost(post.id, accessToken);
-            if (res?.status === 401) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
-            if (res?.notFound) { alert("게시글을 찾을 수 없습니다."); return; }
+            if (res?.status === 401) { 
+                showAlert({
+                    message: "로그인이 필요합니다.",
+                    type: 'warning',
+                    onClose: () => navigate("/signin")
+                });
+                return; 
+            }
+            if (res?.notFound) { 
+                showAlert({ message: "게시글을 찾을 수 없습니다.", type: 'error' });
+                return; 
+            }
             // 성공
             navigate(`/board/${boardId}`);
         } catch {
-            alert("게시글 삭제에 실패했습니다.");
+            showAlert({ message: "게시글 삭제에 실패했습니다.", type: 'error' });
         }
     };
 
@@ -338,8 +378,11 @@ const PostDetail: React.FC = () => {
         if (!post || typeof post === "string") return;
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'info',
+                onClose: () => navigate("/signin")
+            });
             return;
         }
 
@@ -360,7 +403,7 @@ const PostDetail: React.FC = () => {
             await togglePostLike(post.id, accessToken);
         } catch (e) {
             setPost(post);
-            alert("좋아요 처리 중 오류가 발생했습니다.");
+            showAlert({ message: "좋아요 처리 중 오류가 발생했습니다.", type: 'error' });
         }
     };
 
@@ -369,8 +412,11 @@ const PostDetail: React.FC = () => {
         if (!post || typeof post === "string" || !post.comments) return;
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'info',
+                onClose: () => navigate("/signin")
+            });
             return;
         }
 
@@ -423,7 +469,7 @@ const PostDetail: React.FC = () => {
         } catch (e) {
             // 실패 시 롤백
             setPost(post);
-            alert("좋아요 처리 중 오류가 발생했습니다.");
+            showAlert({ message: "좋아요 처리 중 오류가 발생했습니다.", type: 'error' });
         }
     };
 
@@ -434,8 +480,11 @@ const PostDetail: React.FC = () => {
         if (!content) return;
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'info',
+                onClose: () => navigate("/signin")
+            });
             return;
         }
 
@@ -447,14 +496,21 @@ const PostDetail: React.FC = () => {
             });
             setCommentInput("");
         } catch {
-            alert("댓글 등록에 실패했습니다.");
+            showAlert({ message: "댓글 등록에 실패했습니다.", type: 'error' });
         }
     };
 
     // 댓글 삭제
     const handleDeleteComment = async (commentId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!accessToken) { 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
+            return; 
+        }
 
         const prev = post;
         const optimistic = {
@@ -467,19 +523,34 @@ const PostDetail: React.FC = () => {
 
         try {
             const res: any = await deleteComment(commentId, accessToken);
-            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res && res.status === 401) { 
+                setPost(prev); 
+                showAlert({
+                    message: "로그인이 필요합니다.",
+                    type: 'warning',
+                    onClose: () => navigate("/signin")
+                });
+                return; 
+            }
             if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
             // 성공 시 그대로 유지
         } catch {
             setPost(prev);
-            alert("댓글 삭제에 실패했습니다.");
+            showAlert({ message: "댓글 삭제에 실패했습니다.", type: 'error' });
         }
     };
 
     // 답글 삭제
     const handleDeleteReply = async (commentId: number, replyId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!accessToken) { 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
+            return; 
+        }
 
         const prev = post;
         const optimistic = {
@@ -499,22 +570,37 @@ const PostDetail: React.FC = () => {
 
         try {
             const res: any = await deleteComment(replyId, accessToken); // 답글도 같은 엔드포인트
-            if (res && res.status === 401) { setPost(prev); alert("로그인이 필요합니다."); navigate("/signin"); return; }
+            if (res && res.status === 401) { 
+                setPost(prev); 
+                showAlert({
+                    message: "로그인이 필요합니다.",
+                    type: 'warning',
+                    onClose: () => navigate("/signin")
+                });
+                return; 
+            }
             if (res && res.deleted === false) { throw new Error(res.message || "삭제 실패"); }
         } catch {
             setPost(prev);
-            alert("답글 삭제에 실패했습니다.");
+            showAlert({ message: "답글 삭제에 실패했습니다.", type: 'error' });
         }
     };
 
     // 답글쓰기 버튼 클릭
-    const handleReplyWriteClick = (id: number) => {
+    const handleReplyWriteClick = async (id: number) => {
         // 이미 다른 답글창이 열려 있고, 입력값이 있다면 confirm
         if (replyTargetId !== null && replyTargetId !== id && replyInput.trim().length > 0) {
-            if (window.confirm("작성 중인 답글을 취소 하시겠습니까?")) {
-                setReplyTargetId(id);
-                setReplyInput("");
-            }
+            const confirmed = await showConfirm({
+                message: "작성 중인 답글을 취소 하시겠습니까?",
+                title: "답글 작성 취소",
+                type: 'warning',
+                confirmText: '취소',
+                cancelText: '계속 작성',
+                onConfirm: () => {
+                    setReplyTargetId(id);
+                    setReplyInput("");
+                }
+            });
             // 취소시 아무 것도 하지 않음 (기존 답글창/입력값 유지)
         } else {
             setReplyTargetId(replyTargetId === id ? null : id);
@@ -529,8 +615,11 @@ const PostDetail: React.FC = () => {
         if (!content) return;
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'info',
+                onClose: () => navigate("/signin")
+            });
             return;
         }
 
@@ -547,7 +636,7 @@ const PostDetail: React.FC = () => {
             setReplyInput("");
             setReplyTargetId(null);
         } catch {
-            alert("답글 등록에 실패했습니다.");
+            showAlert({ message: "답글 등록에 실패했습니다.", type: 'error' });
         }
     };
 
@@ -559,7 +648,14 @@ const PostDetail: React.FC = () => {
 
     const saveEditComment = async (commentId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!accessToken) { 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
+            return; 
+        }
         const content = editText.trim();
         if (!content) return;
 
@@ -571,13 +667,20 @@ const PostDetail: React.FC = () => {
             });
             cancelEdit();
         } catch {
-            alert("댓글 수정에 실패했습니다.");
+            showAlert({ message: "댓글 수정에 실패했습니다.", type: 'error' });
         }
     };
 
     const saveEditReply = async (cId: number, rId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { alert("로그인이 필요합니다."); navigate("/signin"); return; }
+        if (!accessToken) { 
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
+            return; 
+        }
         const content = editText.trim();
         if (!content) return;
 
@@ -593,7 +696,7 @@ const PostDetail: React.FC = () => {
             });
             cancelEdit();
         } catch {
-            alert("답글 수정에 실패했습니다.");
+            showAlert({ message: "답글 수정에 실패했습니다.", type: 'error' });
         }
     };
 

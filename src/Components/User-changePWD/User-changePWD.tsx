@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { changePassword, signout } from "../../API/req";
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
+import { useAlert } from "../Utils/AlertContext";
 import "./User-changePWD.css";
 
 const UserChangePWD: React.FC = () => {
@@ -14,6 +15,7 @@ const UserChangePWD: React.FC = () => {
 
     const { accessToken, signOutLocal, refreshToken } = useUser();
     const { setStaffAuth } = useStaffAuth();
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
 
     const isValidPassword = (pwd: string) =>
@@ -21,21 +23,24 @@ const UserChangePWD: React.FC = () => {
 
     const handleChangePassword = async () => {
         if (!currentPw || !newPw || !newPw2) {
-            alert("모든 항목을 입력하세요.");
+            showAlert({ message: "모든 항목을 입력하세요.", type: 'warning' });
             return;
         }
         if (newPw !== newPw2) {
-            alert("새 비밀번호가 서로 다릅니다.");
+            showAlert({ message: "새 비밀번호가 서로 다릅니다.", type: 'warning' });
             return;
         }
         if (!isValidPassword(newPw)) {
-            alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
+            showAlert({ message: "비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.", type: 'warning' });
             return;
         }
 
         if (!accessToken) {
-            alert("로그인이 필요합니다.");
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/signin")
+            });
             return;
         }
 
@@ -44,16 +49,19 @@ const UserChangePWD: React.FC = () => {
         setLoading(false);
 
         if (result.success) {
-            alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
             // 백엔드에서 토큰 블랙리스트 처리됨, 프론트엔드도 로그아웃 처리함
             if (accessToken && refreshToken) {
                 await signout(accessToken, refreshToken);
             }
             signOutLocal();
             setStaffAuth(false);
-            navigate("/signin");
+            showAlert({
+                message: "비밀번호가 변경되었습니다. 다시 로그인해주세요.",
+                type: 'success',
+                onClose: () => navigate("/signin")
+            });
         } else {
-            alert(result.message || "비밀번호 변경에 실패했습니다.");
+            showAlert({ message: result.message || "비밀번호 변경에 실패했습니다.", type: 'error' });
         }
     };
 

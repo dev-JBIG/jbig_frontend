@@ -1,0 +1,178 @@
+/* 모달 오버레이 (배경) */
+.alert-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 1rem;
+    z-index: 1000;
+    animation: backdropFadeIn 0.2s ease-out;
+}
+
+/* 모달 카드 */
+.alert-modal-card {
+    background: #ffffff;
+    width: 360px;
+    max-width: calc(100% - 2rem);
+    padding: 32px 24px 24px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    text-align: center;
+    position: relative;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+/* 아이콘 영역 */
+.alert-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 20px;
+    flex-shrink: 0;
+}
+
+.alert-modal-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* 타이틀 */
+.alert-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* 설명 텍스트 */
+.alert-modal-desc {
+    font-size: 15px;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 28px;
+    white-space: pre-wrap;
+}
+
+/* 버튼 그룹 */
+.alert-modal-button-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* 버튼 공통 스타일 */
+.alert-modal-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.alert-modal-btn-secondary {
+    background: #f1f3f5;
+    color: #495057;
+}
+
+.alert-modal-btn-secondary:hover {
+    background: #e9ecef;
+}
+
+.alert-modal-btn-primary {
+    background: #4B61DD;
+    color: white;
+}
+
+.alert-modal-btn-primary:hover {
+    background: #3a4eb9;
+    transform: translateY(-1px);
+}
+
+.alert-modal-btn-danger {
+    background: #ef4444;
+}
+
+.alert-modal-btn-danger:hover {
+    background: #dc2626;
+}
+
+/* 애니메이션 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 576px) {
+    .alert-modal-overlay {
+        padding-top: 0.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        align-items: flex-start;
+    }
+
+    .alert-modal-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 24px 20px 20px;
+    }
+
+    .alert-modal-icon {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .alert-modal-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .alert-modal-title {
+        font-size: 17px;
+        margin-bottom: 6px;
+    }
+
+    .alert-modal-desc {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .alert-modal-button-group {
+        flex-direction: column-reverse;
+        gap: 8px;
+    }
+
+    .alert-modal-btn {
+        width: 100%;
+        padding: 13px;
+    }
+}

@@ -26,6 +26,7 @@ import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import {useAlert} from "../Utils/AlertContext";
 import Profile from "../Profile/Profile";
 import JbigInfo from "./JbigInfo";
 import $ from "jquery";
@@ -74,6 +75,7 @@ const Home: React.FC = () => {
     const [unreadCount, setUnreadCount] = useState(0);
     const { user, signOutLocal, authReady, accessToken, refreshToken } = useUser();
     const { staffAuth } = useStaffAuth();
+    const { showAlert } = useAlert();
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -152,8 +154,11 @@ const Home: React.FC = () => {
                 } else if(url === "401") {
                     setQuizURL("");
                     signOutLocal();
-                    alert("로그인이 필요합니다.");
-                    navigate("/signin");
+                    showAlert({
+                        message: "로그인이 필요합니다.",
+                        type: 'warning',
+                        onClose: () => navigate("/signin")
+                    });
                 } else{
                     setQuizURL(url);
                 }
@@ -257,7 +262,7 @@ const Home: React.FC = () => {
 
     const handleAddEvent = () => {
         if(!authReady || !accessToken) {
-            alert("로그인이 필요합니다.");
+            showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
             signOutLocal();
             navigate("/signin");
             return;
@@ -270,7 +275,7 @@ const Home: React.FC = () => {
     const handleSaveEvent = async (newEvent: CalendarEventCreate, id?: string) => {
         try {
             if (!accessToken) {
-                alert("로그인이 필요합니다.");
+                showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
                 signOutLocal();
                 navigate("/signin");
                 return;
@@ -301,7 +306,7 @@ const Home: React.FC = () => {
                     if (Array.isArray(firstVal) && firstVal.length > 0) message = firstVal[0];
                 }
             }
-            alert(message);
+            showAlert({ message, type: 'error' });
         }
     };
 

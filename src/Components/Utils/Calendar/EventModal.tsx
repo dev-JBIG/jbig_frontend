@@ -4,6 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './EventModal.css';
 import {CalendarEventCreate} from "../interfaces";
+import {useAlert} from "../AlertContext";
 
 interface EventModalProps {
     mode: 'create' | 'edit';
@@ -23,6 +24,7 @@ const getInitialStartTime = () => {
 };
 
 const EventModal: React.FC<EventModalProps> = ({ mode, initial, onClose, onSave }) => {
+    const { showAlert } = useAlert();
     const [title, setTitle] = useState(initial?.title ?? '');
     const [start, setStart] = useState<Date | null>(initial?.start ?? getInitialStartTime());
     const [endManuallySet, setEndManuallySet] = useState(false);
@@ -53,19 +55,19 @@ const EventModal: React.FC<EventModalProps> = ({ mode, initial, onClose, onSave 
         e.preventDefault();
 
         if (!start) {
-            alert("시작 시각을 입력해주세요.");
+            showAlert({ message: "시작 시각을 입력해주세요.", type: 'warning' });
             return;
         }
         if (!title) {
-            alert("일정 제목을 입력해주세요.");
+            showAlert({ message: "일정 제목을 입력해주세요.", type: 'warning' });
             return;
         }
         if (!allDay && !end) {
-            alert("종료 시각을 입력해주세요.");
+            showAlert({ message: "종료 시각을 입력해주세요.", type: 'warning' });
             return;
         }
         if(description.length < 1 || !description){
-            alert("설명란이 비어있습니다.");
+            showAlert({ message: "설명란이 비어있습니다.", type: 'warning' });
             return;
         }
 

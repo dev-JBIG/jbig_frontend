@@ -3,6 +3,7 @@ import { NotionRenderer } from "react-notion-x";
 import { ExtendedRecordMap } from "notion-types";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
+import { useAlert } from "../Utils/AlertContext";
 import { fetchSiteSettings } from "../../API/req";
 
 import "react-notion-x/src/styles.css";
@@ -31,6 +32,7 @@ async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
 
 const Note: React.FC = () => {
     const { user, authReady, accessToken, signOutLocal } = useUser();
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
     const [recordMap, setRecordMap] = useState<ExtendedRecordMap | null>(null);
     const [loading, setLoading] = useState(true);
@@ -69,9 +71,14 @@ const Note: React.FC = () => {
     useEffect(() => {
         if (!authReady) return;
         if (!user || !accessToken) {
-            alert("로그인이 필요합니다.");
-            signOutLocal();
-            navigate("/signin");
+            showAlert({
+                message: "로그인이 필요합니다.",
+                type: 'warning',
+                onClose: () => {
+                    signOutLocal();
+                    navigate("/signin");
+                }
+            });
             return;
         }
 

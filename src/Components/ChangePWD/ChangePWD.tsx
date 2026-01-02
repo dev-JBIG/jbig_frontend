@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { requestVerificationCode, verifyCode, resetPassword } from "../../API/req";
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
+import { useAlert } from "../Utils/AlertContext";
 
 // 이메일 도메인 유효성 검사
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -25,6 +26,7 @@ const ChangePWD: React.FC = () => {
     const navigate = useNavigate();
     const { signOutLocal } = useUser();
     const { setStaffAuth } = useStaffAuth();
+    const { showAlert } = useAlert();
 
     // 타이머 로직
     useEffect(() => {
@@ -38,7 +40,7 @@ const ChangePWD: React.FC = () => {
 
             if (remaining === 0) {
                 clearInterval(intervalId);
-                alert("인증코드 유효시간이 만료되었습니다. 다시 요청해주세요.");
+                showAlert({ message: "인증코드 유효시간이 만료되었습니다. 다시 요청해주세요.", type: 'warning' });
                 setIsCodeSent(false);
             }
         }, 1000);
@@ -51,7 +53,7 @@ const ChangePWD: React.FC = () => {
     const handleRequestCode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isValidEmailDomain(email.trim())) {
-            alert("전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.");
+            showAlert({ message: "전북대 이메일(@jbnu.ac.kr)만 사용할 수 있습니다.", type: 'warning' });
             return;
         }
 
@@ -59,14 +61,14 @@ const ChangePWD: React.FC = () => {
         try {
             const result = await requestVerificationCode(email);
             if (result.success) {
-                alert("인증코드가 발송되었습니다. 이메일을 확인해주세요.");
+                showAlert({ message: "인증코드가 발송되었습니다. 이메일을 확인해주세요.", type: 'success' });
                 setIsCodeSent(true);
                 setTimer(300); // 타이머 초기화
             } else {
-                alert(result.message || "인증코드 발송에 실패했습니다.");
+                showAlert({ message: result.message || "인증코드 발송에 실패했습니다.", type: 'error' });
             }
         } catch (error) {
-            alert("인증코드 요청 중 오류가 발생했습니다.");
+            showAlert({ message: "인증코드 요청 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -76,20 +78,20 @@ const ChangePWD: React.FC = () => {
     const handleVerifyCode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!verificationCode.trim()) {
-            alert("인증코드를 입력해주세요.");
+            showAlert({ message: "인증코드를 입력해주세요.", type: 'warning' });
             return;
         }
         setIsLoading(true);
         try {
             const result = await verifyCode(email, verificationCode);
             if (result.success) {
-                alert("인증되었습니다. 새 비밀번호를 입력해주세요.");
+                showAlert({ message: "인증되었습니다. 새 비밀번호를 입력해주세요.", type: 'success' });
                 setIsCodeVerified(true);
             } else {
-                alert(result.message || "인증에 실패했습니다.");
+                showAlert({ message: result.message || "인증에 실패했습니다.", type: 'error' });
             }
         } catch (error) {
-            alert("인증코드 확인 중 오류가 발생했습니다.");
+            showAlert({ message: "인증코드 확인 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -99,11 +101,11 @@ const ChangePWD: React.FC = () => {
     const handleSubmitNewPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isValidPassword(newPassword)) {
-            alert("비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.");
+            showAlert({ message: "비밀번호는 8~16자이며, 영문/숫자 각 1개 이상과 특수문자(!,@)를 포함해야 합니다.", type: 'warning' });
             return;
         }
         if (newPassword !== confirmPassword) {
-            alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+            showAlert({ message: "새 비밀번호와 비밀번호 확인이 일치하지 않습니다.", type: 'warning' });
             return;
         }
 
@@ -114,13 +116,16 @@ const ChangePWD: React.FC = () => {
                 // 비밀번호 변경 성공 시 로그아웃 처리함
                 signOutLocal();
                 setStaffAuth(false);
-                alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
-                navigate("/signin");
+                showAlert({
+                    message: "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.",
+                    type: 'success',
+                    onClose: () => navigate("/signin")
+                });
             } else {
-                alert(result.message || "비밀번호 변경에 실패했습니다.");
+                showAlert({ message: result.message || "비밀번호 변경에 실패했습니다.", type: 'error' });
             }
         } catch (error) {
-            alert("비밀번호 변경 중 오류가 발생했습니다.");
+            showAlert({ message: "비밀번호 변경 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setIsLoading(false);
         }

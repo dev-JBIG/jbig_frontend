@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useUser } from "../Utils/UserContext";
 import { fetchPublicProfile, updateResume, PublicProfile } from "../../API/req";
+import { useAlert } from "../Utils/AlertContext";
 import "./Profile.css";
 
 const formatLastLogin = (isoString: string | null): string => {
@@ -28,6 +29,7 @@ const Profile: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { accessToken } = useUser();
+    const { showAlert } = useAlert();
 
     const username = paramUsername || decodeURIComponent(location.pathname).match(/^\/@(.+)$/)?.[1];
 
@@ -71,7 +73,7 @@ const Profile: React.FC = () => {
             setProfile(prev => prev ? { ...prev, resume: resumeText } : null);
             setEditMode(false);
         } catch {
-            alert("저장에 실패했습니다.");
+            showAlert({ message: "저장에 실패했습니다.", type: 'error' });
         } finally {
             setSaving(false);
         }

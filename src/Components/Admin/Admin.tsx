@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
+import { useAlert } from "../Utils/AlertContext";
 import { fetchSiteSettings, updateSiteSettings } from "../../API/req";
 import { Menu, X } from "lucide-react";
 import "./Admin.css";
@@ -232,6 +233,7 @@ function Dashboard() {
 function Admin() {
     const { user, authReady, accessToken, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState("dashboard");
     const [authorized, setAuthorized] = useState(false);
@@ -240,14 +242,17 @@ function Admin() {
     useEffect(() => {
         if (!authReady) return;
         if (!user || !accessToken) {
-            alert("로그인이 필요합니다.");
+            showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
             signOutLocal();
             navigate("/signin");
             return;
         }
         if (!staffAuth && !user.is_staff) {
-            alert("관리자 권한이 필요합니다.");
-            navigate("/");
+            showAlert({
+                message: "관리자 권한이 필요합니다.",
+                type: 'warning',
+                onClose: () => navigate("/")
+            });
             return;
         }
         setAuthorized(true);

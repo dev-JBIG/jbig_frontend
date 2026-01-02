@@ -9,6 +9,7 @@ import { CalendarEvent}  from "../interfaces";
 import moment from "moment";
 import {deleteCalendarEvent, fetchCalendarEvents} from "../../../API/req";
 import {useUser} from "../UserContext";
+import {useAlert} from "../AlertContext";
 import {useNavigate} from "react-router-dom";
 
 interface CalendarProps {
@@ -17,7 +18,7 @@ interface CalendarProps {
 
 const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
     const { signOutLocal, accessToken } = useUser();
-
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -128,9 +129,14 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                                     const removeKey = calEvent.id ?? calEvent._id;
 
                                     if (!accessToken) {
-                                        alert("로그인이 필요합니다.");
-                                        signOutLocal();
-                                        navigate("/signin");
+                                        showAlert({
+                                            message: "로그인이 필요합니다.",
+                                            type: 'warning',
+                                            onClose: () => {
+                                                signOutLocal();
+                                                navigate("/signin");
+                                            }
+                                        });
                                         return;
                                     }
 
@@ -139,7 +145,7 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                                         ($("#calendar") as any).fullCalendar("removeEvents", removeKey); // UI 반영함
                                         ($("[data-toggle='popover']") as any).popover("hide");
                                     } catch {
-                                        alert("이벤트 삭제 중 오류가 발생했습니다.");
+                                        showAlert({ message: "이벤트 삭제 중 오류가 발생했습니다.", type: 'error' });
                                     }
                                 }
                             });

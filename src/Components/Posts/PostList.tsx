@@ -7,6 +7,7 @@ import { PostItem, Section } from "../Utils/interfaces"
 import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts } from "../../API/req";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import {useAlert} from "../Utils/AlertContext";
 
 /**
  * 게시판 이름을 간단하게 표시하기 위한 포맷터
@@ -59,6 +60,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     const { accessToken, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
+    const { showAlert } = useAlert();
 
     const { boardId: boardIdRaw } = useParams();
     const navigate = useNavigate();
@@ -177,8 +179,11 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                 } else if (isUserPage && userId) { // 사용자의 게시글 정보용
                     if(!accessToken){
                         signOutLocal();
-                        alert("로그인이 필요합니다.");
-                        navigate("/signin");
+                        showAlert({
+                            message: "로그인이 필요합니다.",
+                            type: 'warning',
+                            onClose: () => navigate("/signin")
+                        });
                         return;
                     }
                     response = await fetchUserPosts(userId, 10, page, accessToken);

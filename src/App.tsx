@@ -11,15 +11,17 @@ import Footer from "./Components/Footer/Footer";
 import {refreshTokenAPI} from "./API/req";
 import {useUser} from "./Components/Utils/UserContext";
 import ChangePWD from "./Components/ChangePWD/ChangePWD";
+import { AlertProvider, useAlert } from "./Components/Utils/AlertContext";
 
 const STAFF_AUTH_KEY = "jbig-staff-auth";
 
-function App() {
+function AppContent() {
     const [staffAuth, setStaffAuth] = useState<boolean>(() => {
         return localStorage.getItem(STAFF_AUTH_KEY) === "true";
     });
     const location = useLocation();
     const navigate = useNavigate();
+    const { showAlert } = useAlert();
 
     const { setAuth, signOutLocal, refreshToken, authReady } = useUser();
 
@@ -62,13 +64,19 @@ function App() {
                     setStaffAuth(data.is_staff);
                 } else {
                     signOutLocal();
-                    alert("토큰 갱신 실패, 다시 로그인해주세요.");
-                    navigate("/signin", { replace: true });
+                    showAlert({ 
+                        message: "토큰 갱신 실패, 다시 로그인해주세요.",
+                        type: 'warning',
+                        onClose: () => navigate("/signin", { replace: true })
+                    });
                 }
             } catch {
                 signOutLocal();
-                alert("토큰 갱신 실패, 다시 로그인해주세요.");
-                navigate("/signin", { replace: true });
+                showAlert({ 
+                    message: "토큰 갱신 실패, 다시 로그인해주세요.",
+                    type: 'error',
+                    onClose: () => navigate("/signin", { replace: true })
+                });
             } finally {
                 setRefreshingOnReload(false);
             }
@@ -113,6 +121,14 @@ function App() {
                 )}
             </div>
         </StaffAuthContext.Provider>
+    );
+}
+
+function App() {
+    return (
+        <AlertProvider>
+            <AppContent />
+        </AlertProvider>
     );
 }
 
