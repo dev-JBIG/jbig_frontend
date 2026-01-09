@@ -15,7 +15,6 @@ const parseMarkdownToForm = (md: string) => {
     reportDate: '',
     reportTime: '',
     location: '',
-    title: '',
     description: '',
     reproductionSteps: '',
     expectedBehavior: '',
@@ -37,7 +36,6 @@ const parseMarkdownToForm = (md: string) => {
     reportDate: getValue('발생 날짜') || '',
     reportTime: getValue('발생 시간') || '',
     location: getValue('발생 위치/페이지') || '',
-    title: getValue('제목') || '',
     description: getValue('상세 내용') || '',
     reproductionSteps: getValue('재현 방법') || '',
     expectedBehavior: getValue('기대 동작') || '',
@@ -54,7 +52,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ setContent, initialContent 
 
   // 3. 폼 내용이 변경될 때마다 마크다운 텍스트를 생성하여 부모(PostWrite)의 content state 업데이트
   useEffect(() => {
-    const { reasonType, reportType, reportDate, reportTime, location, title, description, reproductionSteps, expectedBehavior } = formState;
+    const { reasonType, reportType, reportDate, reportTime, location, description, reproductionSteps, expectedBehavior } = formState;
 
     // 4. 입력된 줄바꿈(\n)을 HTML <br /> 태그로 변경 (마크다운 테이블 내 줄바꿈)
     const descriptionWithBreaks = description.replace(/\n/g, '<br />');
@@ -70,7 +68,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ setContent, initialContent 
 | **발생 날짜** | ${reportDate} |
 | **발생 시간** | ${reportTime} |
 | **발생 위치/페이지** | ${location} |
-| **제목** | ${title} |
 | **상세 내용** | ${descriptionWithBreaks} |
 ${reportType === '에러' ? `| **재현 방법** | ${reproductionStepsWithBreaks} |\n| **기대 동작** | ${expectedBehaviorWithBreaks} |` : ''}
 `;
@@ -172,20 +169,6 @@ ${reportType === '에러' ? `| **재현 방법** | ${reproductionStepsWithBreaks
           type="text"
           placeholder="예: 게시판 목록 페이지, 로그인 화면 등"
           value={formState.location}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* 제목 */}
-      <div className="postwrite-row">
-        <label htmlFor="title">제목</label>
-        <input
-          id="title"
-          name="title"
-          className="postwrite-title-input"
-          type="text"
-          placeholder="에러/피드백 제목을 입력하세요"
-          value={formState.title}
           onChange={handleChange}
         />
       </div>

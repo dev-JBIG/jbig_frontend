@@ -364,7 +364,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) { showAlert({ message: "결석 날짜를 입력하세요.", type: 'warning' }); return false; }
             if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "결석 사유를 입력하세요.", type: 'warning' }); return false; }
         } else if (isFeedbackBoard) {
-            if (/\| \*\*제목\*\* \|\s*\|/.test(content)) { showAlert({ message: "제목을 입력하세요.", type: 'warning' }); return false; }
             if (/\| \*\*상세 내용\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "상세 내용을 입력하세요.", type: 'warning' }); return false; }
         } else if (!content.trim()) {
             showAlert({ message: "본문을 입력하세요.", type: 'warning' }); return false;
