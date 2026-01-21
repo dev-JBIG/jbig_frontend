@@ -393,3 +393,25 @@
     font-weight: 500;
     margin-left: 3px;
 }
+
+/* 1. 헤더(제목 줄) 숨기기 - form-style 클래스가 있을 때만! */
+.postdetail-content.form-style thead {
+    display: none !important;
+}
+
+/* 2. 첫 번째 칸(항목명) 스타일링 */
+.postdetail-content.form-style td:first-child {
+    width: 140px;
+    background-color: var(--color-bg-secondary);
+    font-weight: var(--font-weight-medium);
+    text-align: center !important;
+    border-right: 1px solid var(--color-border-light);
+}
+
+/* 3. 모바일 대응 */
+@media (max-width: 480px) {
+    .postdetail-content.form-style td:first-child {
+        width: 100px;
+        font-size: 13px;
+    }
+}

@@ -62,6 +62,7 @@ export interface PostDetailData {
     user_id: string;
     author_semester: number;
     board: string;
+    board_id: number;
     title: string;
     content_html: string;
     content_md: string;

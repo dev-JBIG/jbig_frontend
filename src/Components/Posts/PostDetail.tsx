@@ -17,6 +17,22 @@ import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 
+// Sanitize 스키마: style 속성 허용 (text-align, color만)
+const sanitizeSchema = {
+    ...defaultSchema,
+    attributes: {
+        ...defaultSchema.attributes,
+        div: [
+            ...(defaultSchema.attributes?.div || []),
+            ['style', /^text-align:\s*(left|center|right);?$/i]
+        ],
+        span: [
+            ...(defaultSchema.attributes?.span || []),
+            ['style', /^color:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)|[a-zA-Z]+);?$/i]
+        ]
+    }
+};
+
 // HeartBurst 애니메이션 컴포넌트 (분리하여 리렌더링 최적화)
 const HeartBurst = memo(({ triggerKey }: { triggerKey: number }) => {
     const [active, setActive] = useState(false);
@@ -77,21 +93,7 @@ const PostDetail: React.FC = () => {
     const { staffAuth } = useStaffAuth();
     const { showAlert, showConfirm } = useAlert();
 
-    // Sanitize 스키마: style 속성 허용 (text-align, color만)
-    const sanitizeSchema = {
-        ...defaultSchema,
-        attributes: {
-            ...defaultSchema.attributes,
-            div: [
-                ...(defaultSchema.attributes?.div || []),
-                ['style', /^text-align:\s*(left|center|right);?$/i]
-            ],
-            span: [
-                ...(defaultSchema.attributes?.span || []),
-                ['style', /^color:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)|[a-zA-Z]+);?$/i]
-            ]
-        }
-    };
+    
 
     type OpenMenu =
         | { type: "comment"; id: number }
@@ -226,6 +228,7 @@ const PostDetail: React.FC = () => {
                     id: src.id,
                     board_post_id: src.id,
                     board: src.board?.name || "",
+                    board_id: src.board_id || src.board?.id,
                     author_semester: src.author_semester,
                     title: src.title || "",
                     content_html: src.content_html || "",
@@ -741,6 +744,9 @@ const PostDetail: React.FC = () => {
 
     if (!post) return <div className="postdetail-container">로딩 중...</div>;
 
+    const isFormBoard = 
+    (post.board_id && (Number(post.board_id) === 4 || Number(post.board_id) === 9));
+
     return (
         <div className="postdetail-container has-floating-like">
             <div className="postdetail-header">
@@ -804,7 +810,7 @@ const PostDetail: React.FC = () => {
 
             {/* 본문 */}
                 <div className="content-body">
-                    <div className="postdetail-content">
+                    <div className={`postdetail-content${isFormBoard ? " form-style" : ""}`}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[
