@@ -405,3 +405,9 @@
         font-size: 11px;
     }
 }
+
+
+/* 링크(a태그) 자체에도 약간의 여백 */
+.resume-content a {
+    display: inline-block; /* 여백이 잘 먹도록 설정 */
+}

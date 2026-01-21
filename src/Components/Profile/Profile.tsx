@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { useUser } from "../Utils/UserContext";
 import { fetchPublicProfile, updateResume, PublicProfile } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
@@ -162,7 +163,10 @@ const Profile: React.FC = () => {
                     ) : (
                         <div className="resume-content">
                             {profile.resume ? (
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                <ReactMarkdown 
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeRaw]}
+                                >
                                     {profile.resume}
                                 </ReactMarkdown>
                             ) : (
