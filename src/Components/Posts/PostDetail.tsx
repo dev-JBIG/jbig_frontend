@@ -818,6 +818,12 @@ const PostDetail: React.FC = () => {
                                 [rehypeSanitize, sanitizeSchema],
                                 rehypeKatex
                             ]}
+
+                            components={{
+                                a: ({node, ...props})=>(
+                                    <a {...props} target="_blank" rel="noopener noreferrer" />
+                                )
+                            }}
                         >
                             {post.content_md}
                         </ReactMarkdown>
