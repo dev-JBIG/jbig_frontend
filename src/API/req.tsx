@@ -476,11 +476,19 @@ export const fetchUserPosts = async (
     userId: string,
     pageSize: number,
     page: number,
-    token: string
+    token?: string | null
 ): Promise<{ posts: PostItem[]; totalPages: number; postTypes?: Map<number, number> }> => {
+    const headers: any = {
+        Accept: "application/json",
+    };
+    
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await axios.get(`${BASE_URL}/api/users/${userId}/posts/`, {
         params: { page, page_size: pageSize },
-        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        headers,
         withCredentials: true,
     });
 
@@ -568,6 +576,7 @@ export const createPost = async (
         title: string;
         content_md: string;
         attachment_paths: { path: string; name: string; }[];
+        is_anonymous?: boolean;
     },
     token: string
 ) => {
@@ -640,6 +649,7 @@ export const modifyPost = async (
         content_md: string;
         attachment_paths: { path: string; name: string; }[];
         board_id?: number;
+        is_anonymous?: boolean;
     },
     token: string
 ) => {
@@ -670,7 +680,7 @@ export const deleteComment = async (commentId: number, token: string): Promise<v
 // 댓글 등록
 export const createComment = async (
     postId: number,
-    payload: { content: string; parent: number | null },
+    payload: { content: string; parent: number | null; is_anonymous?: boolean },
     token: string
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;
@@ -845,16 +855,21 @@ export const fetchUserComments = async (
     userId: string,
     pageSize: number,
     page: number,
-    token: string
+    token?: string | null
 ): Promise<{ comments: UserComment[]; totalPages: number }> => {
     const url = `${BASE_URL}/api/users/${userId}/comments/`;
 
+    const headers: any = {
+        Accept: "application/json",
+    };
+    
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await axios.get(url, {
         params: { page, page_size: pageSize },
-        headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-        },
+        headers,
         withCredentials: true,
         responseType: "json",
     });

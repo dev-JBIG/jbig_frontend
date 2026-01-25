@@ -44,6 +44,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     >([]);
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [isAnonymous, setIsAnonymous] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -413,13 +414,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 await modifyPost(postIdNumber, {
                     title, content_md: content, attachment_paths: attachments,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
+                    is_anonymous: isAnonymous,
                 }, accessToken);
                 savedRef.current = true;
                 navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments }, accessToken);
+            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: isAnonymous }, accessToken);
             if (res?.unauthorized) { 
                 showAlert({
                     message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
@@ -549,6 +551,21 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         <input type="file" ref={imageInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
                     </div>
                 )}
+            </div>
+
+            <div className="postwrite-row">
+                <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                        type="checkbox" 
+                        checked={isAnonymous} 
+                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                        style={{ width: 'auto', marginRight: '4px' }}
+                    />
+                    익명으로 작성
+                    <span style={{ fontSize: '0.85em', color: '#666', fontWeight: 'normal' }}>
+                        (로그인한 회원에게는 실명이 표시됩니다)
+                    </span>
+                </label>
             </div>
 
             <div className="postwrite-row">

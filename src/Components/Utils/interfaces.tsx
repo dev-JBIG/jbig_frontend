@@ -13,6 +13,7 @@ export interface PostItem {
     comment_count: number;
     board_id?: number;
     board_name?: string;
+    is_anonymous?: boolean;
 }
 
 export interface Attachment {
@@ -41,6 +42,7 @@ export interface Comment {
     is_deleted: boolean;
     likes: number;
     isLiked: boolean;
+    is_anonymous?: boolean;
 }
 
 export interface Reply {
@@ -54,6 +56,7 @@ export interface Reply {
     is_deleted: boolean;
     likes: number;
     isLiked: boolean;
+    is_anonymous?: boolean;
 }
 
 export interface PostDetailData {
@@ -76,6 +79,7 @@ export interface PostDetailData {
     isLiked?: boolean;
     is_owner: boolean;
     post_type: number;
+    is_anonymous?: boolean;
 }
 
 export interface Board {

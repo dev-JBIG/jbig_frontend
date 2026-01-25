@@ -83,10 +83,12 @@ const PostDetail: React.FC = () => {
 
     const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
+    const [isCommentAnonymous, setIsCommentAnonymous] = useState(false);
     // 답글 입력 대상 댓글 id (하나만)
     const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
+    const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
     // 본문
 
     const { accessToken, authReady, signOutLocal } = useUser();
@@ -183,26 +185,27 @@ const PostDetail: React.FC = () => {
     useEffect(() => {
         if (!authReady || !postId) return;
 
-        if (!accessToken) {
-            showAlert({
-                message: "로그인이 필요합니다.",
-                type: 'info',
-                onClose: () => {
-                    signOutLocal();
-                    navigate("/signin");
-                }
-            });
-            return;
-        }
+        // 비로그인 사용자도 접근 가능하도록 수정
+        // if (!accessToken) {
+        //     showAlert({
+        //         message: "로그인이 필요합니다.",
+        //         type: 'info',
+        //         onClose: () => {
+        //             signOutLocal();
+        //             navigate("/signin");
+        //         }
+        //     });
+        //     return;
+        // }
 
-        const key = `${postId}:${accessToken}`;
+        const key = `${postId}:${accessToken || 'anonymous'}`;
         if (fetchedKeyRef.current === key) return;
         fetchedKeyRef.current = key;
 
         const loadPost = async () => {
             try {
 
-                const raw = await fetchPostDetail(Number(postId), accessToken);
+                const raw = await fetchPostDetail(Number(postId), accessToken || null);
 
                 if (raw.unauthorized === true) {
                     safeAuthRedirect();
@@ -492,12 +495,13 @@ const PostDetail: React.FC = () => {
         }
 
         try {
-            const created = await createComment(post.id, { content, parent: null }, accessToken);
+            const created = await createComment(post.id, { content, parent: null, is_anonymous: isCommentAnonymous }, accessToken);
             setPost({
                 ...post,
                 comments: [ ...(post.comments || []), created ],
             });
             setCommentInput("");
+            setIsCommentAnonymous(false);
         } catch {
             showAlert({ message: "댓글 등록에 실패했습니다.", type: 'error' });
         }
@@ -627,7 +631,7 @@ const PostDetail: React.FC = () => {
         }
 
         try {
-            const created = await createComment(post.id, { content, parent: commentId }, accessToken);
+            const created = await createComment(post.id, { content, parent: commentId, is_anonymous: isReplyAnonymous }, accessToken);
             setPost({
                 ...post,
                 comments: (post.comments || []).map(c =>
@@ -637,6 +641,7 @@ const PostDetail: React.FC = () => {
                 ),
             });
             setReplyInput("");
+            setIsReplyAnonymous(false);
             setReplyTargetId(null);
         } catch {
             showAlert({ message: "답글 등록에 실패했습니다.", type: 'error' });
@@ -790,7 +795,7 @@ const PostDetail: React.FC = () => {
             </div>
             <div className="postdetail-info-row">
             <span className="postdetail-author" onClick={() => navigate(`/@${post.user_id}`)}>
-                {post.author_semester}기 {post.author}
+                {post.author_semester ? `${post.author_semester}기 ` : ""}{post.author}
             </span>
                 <span className="postdetail-dot">·</span>
                 <span className="postdetail-date">
@@ -862,7 +867,7 @@ const PostDetail: React.FC = () => {
                                     <span className={"comment-author" + (c.is_deleted ? " deleted" : "")}
                                         onClick={() => !c.is_deleted && navigate(`/@${c.user_id}`)}
                                     >
-                                        {!c.is_deleted && `${c.author_semester}기 `}  {c.author}
+                                        {!c.is_deleted && c.author_semester ? `${c.author_semester}기 ` : ""}{c.author}
                                         {!c.is_deleted && c.is_owner && (
                                             <span className="comment-owner-badge">
                                                 (나)
@@ -954,7 +959,7 @@ const PostDetail: React.FC = () => {
                                 <span className={"reply-author" + (r.is_deleted ? " deleted" : "")}
                                       onClick={() => !r.is_deleted && navigate(`/@${r.user_id}`)}
                                 >
-                                    {!r.is_deleted && `${r.author_semester}기 `}  {r.author}
+                                    {!r.is_deleted && r.author_semester ? `${r.author_semester}기 ` : ""}{r.author}
                                     {!r.is_deleted && r.is_owner && (
                                         <span className="comment-owner-badge">
                                             (나)
@@ -1045,10 +1050,19 @@ const PostDetail: React.FC = () => {
                                         style={{resize: "none"}}
                                     />
                                     <div className="reply-action-row">
+                                        <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isReplyAnonymous} 
+                                                onChange={(e) => setIsReplyAnonymous(e.target.checked)}
+                                            />
+                                            익명
+                                        </label>
                                         <span
                                             className="reply-cancel-text"
                                             onClick={() => {
                                                 setReplyInput("");
+                                                setIsReplyAnonymous(false);
                                                 setReplyTargetId(null);
                                             }}
                                         >
@@ -1073,14 +1087,24 @@ const PostDetail: React.FC = () => {
                 </ul>
 
                 <div className="postdetail-comment-input-row">
-                    <textarea
-                        className="postdetail-comment-input"
-                        rows={1}
-                        placeholder="댓글을 입력하세요"
-                        value={commentInput}
-                        onChange={e => setCommentInput(e.target.value)}
-                        style={{resize: "none"}}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px' }}>
+                        <textarea
+                            className="postdetail-comment-input"
+                            rows={1}
+                            placeholder="댓글을 입력하세요"
+                            value={commentInput}
+                            onChange={e => setCommentInput(e.target.value)}
+                            style={{resize: "none"}}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={isCommentAnonymous} 
+                                    onChange={(e) => setIsCommentAnonymous(e.target.checked)}
+                                />
+                                익명으로 작성
+                            </label>
                             <button
                                 className="postdetail-comment-btn"
                                 onClick={handleAddComment}
@@ -1088,6 +1112,8 @@ const PostDetail: React.FC = () => {
                             >
                                 등록
                             </button>
+                        </div>
+                    </div>
                         </div>
                     </div>
               <div className={`postdetail-like-floating${isScrolling ? ' scrolling' : ''}`}>
