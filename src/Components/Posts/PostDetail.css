@@ -415,3 +415,63 @@
         font-size: 13px;
     }
 }
+
+
+
+/* 1. 인용문 */
+.postdetail-content blockquote {
+    border-left: 4px solid var(--color-primary, #007bff); /* 왼쪽 굵은 선 */
+    padding-left: 16px;       /* 선과 글자 사이 간격 */
+    margin: 16px 0;           /* 위아래 여백 */
+    background-color: #f8f9fa; /* 연한 회색 배경 */
+    color: #555;              /* 약간 흐린 글자색 */
+    font-style: italic;       /* 기울임꼴 */
+}
+
+/* 2. 헤딩 (#, ##) 구분 명확하게 하기 */
+.postdetail-content h1 {
+    font-size: 2.2em;
+    border-bottom: 1px solid #eee; /* 밑줄로 구분 */
+    padding-bottom: 10px;
+    margin-top: 32px;
+    margin-bottom: 16px;
+}
+
+.postdetail-content h2 {
+    font-size: 1.8em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+
+.postdetail-content h3 {
+    font-size: 1.4em;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+/* 3. 목록 들여쓰기 복구 */
+/* reset.css 때문에 padding이 0이 되어 점이 사라지거나 들여쓰기가 안 된 것임 */
+.postdetail-content ul, 
+.postdetail-content ol {
+    padding-left: 24px !important; /* 강제 들여쓰기 */
+    margin: 10px 0;
+    list-style-position: outside; /* 점이 문단 바깥에 위치 */
+}
+
+.postdetail-content ul li {
+    list-style-type: disc; /* 까만 점 강제 표시 */
+}
+
+.postdetail-content ol li {
+    list-style-type: decimal; /* 숫자 강제 표시 */
+}
+
+/* 중첩된 리스트 (들여쓰기 더 깊게) */
+.postdetail-content ul ul,
+.postdetail-content ol ul,
+.postdetail-content ul ol,
+.postdetail-content ol ol {
+    margin-top: 4px;
+}
