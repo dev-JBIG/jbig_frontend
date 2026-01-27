@@ -3,18 +3,22 @@ import "./JbigInfo.css";
 import { fetchSiteSettings, SiteSettings } from "../../API/req";
 
 const JbigInfo: React.FC = () => {
+    // 하드코딩 제거
     const [settings, setSettings] = useState<SiteSettings>({
         notion_page_id: '',
         quiz_url: '',
-        jbig_description: "'JBIG'(JBNU Big Data & AI Group)은 데이터 사이언스와 딥러닝, 머신러닝을 포함한 AI에 대한 학술 교류를 목표로 2021년 설립된 전북대학교의 학생 학회입니다.",
-        jbig_president: '박성현',
-        jbig_president_dept: '전자공학부',
-        jbig_vice_president: '국환',
-        jbig_vice_president_dept: '사회학과',
-        jbig_email: 'green031234@naver.com',
-        jbig_advisor: '최규빈 교수님',
-        jbig_advisor_dept: '통계학과'
+        jbig_description: '',
+        jbig_president: '',
+        jbig_president_dept: '',
+        jbig_vice_president: '',
+        jbig_vice_president_dept: '',
+        jbig_email: '',
+        jbig_advisor: '',
+        jbig_advisor_dept: ''
     });
+
+    // 2. 로딩 상태 추가
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -23,6 +27,9 @@ const JbigInfo: React.FC = () => {
                 setSettings(data);
             } catch (error) {
                 console.error('Failed to load site settings:', error);
+            } finally {
+                // 3. 데이터 로딩이 끝나면(성공하든 실패하든) 로딩 상태 해제
+                setLoading(false);
             }
         };
         loadSettings();
@@ -51,6 +58,11 @@ const JbigInfo: React.FC = () => {
             );
         });
     }, [settings.jbig_description]);
+
+    // 4. 로딩 중일 때는 화면에 아무것도 보여주지 않거나 로딩 표시
+    if (loading) {
+        return <div className="jbig-info-container" style={{ minHeight: '400px' }}></div>; 
+    }
 
     return (
         <div className="jbig-info-container">
@@ -152,4 +164,3 @@ const JbigInfo: React.FC = () => {
 };
 
 export default JbigInfo;
-
