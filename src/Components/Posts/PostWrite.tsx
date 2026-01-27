@@ -44,7 +44,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     >([]);
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [showRealName, setShowRealName] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -414,14 +414,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 await modifyPost(postIdNumber, {
                     title, content_md: content, attachment_paths: attachments,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
-                    is_anonymous: !isAnonymous,
+                    is_anonymous: !showRealName,
                 }, accessToken);
                 savedRef.current = true;
                 navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: !isAnonymous }, accessToken);
+            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName }, accessToken);
             if (res?.unauthorized) { 
                 showAlert({
                     message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
@@ -555,10 +555,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
             <div className="postwrite-row">
                 <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                        type="checkbox" 
-                        checked={isAnonymous} 
-                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                    <input
+                        type="checkbox"
+                        checked={showRealName}
+                        onChange={(e) => setShowRealName(e.target.checked)}
                         style={{ width: 'auto', marginRight: '4px' }}
                     />
                     비회원에게도 실명이 표시돼요

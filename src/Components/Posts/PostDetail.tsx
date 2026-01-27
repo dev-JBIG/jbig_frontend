@@ -84,12 +84,12 @@ const PostDetail: React.FC = () => {
 
     const [post, setPost] = useState<PostDetailData | null | "not-found">(null);
     const [commentInput, setCommentInput] = useState("");
-    const [isCommentAnonymous, setIsCommentAnonymous] = useState(false);
+    const [showCommentRealName, setShowCommentRealName] = useState(false);
     // 답글 입력 대상 댓글 id (하나만)
     const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
-    const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
+    const [showReplyRealName, setShowReplyRealName] = useState(false);
     // Turnstile CAPTCHA (비회원용)
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const turnstileRef = useRef<TurnstileInstance | null>(null);
@@ -498,10 +498,10 @@ const PostDetail: React.FC = () => {
         try {
             const payload: any = { content, parent: null };
             if (accessToken) {
-                payload.is_anonymous = !isCommentAnonymous;
+                payload.is_anonymous = !showCommentRealName;
             } else {
                 payload.turnstile_token = turnstileToken;
-                payload.is_anonymous = !isCommentAnonymous;
+                payload.is_anonymous = !showCommentRealName;
             }
             const created = await createComment(post.id, payload, accessToken || null);
             setPost({
@@ -509,7 +509,7 @@ const PostDetail: React.FC = () => {
                 comments: [ ...(post.comments || []), created ],
             });
             setCommentInput("");
-            setIsCommentAnonymous(false);
+            setShowCommentRealName(false);
             // Turnstile 리셋
             setTurnstileToken(null);
             turnstileRef.current?.reset();
@@ -644,10 +644,10 @@ const PostDetail: React.FC = () => {
         try {
             const payload: any = { content, parent: commentId };
             if (accessToken) {
-                payload.is_anonymous = !isReplyAnonymous;
+                payload.is_anonymous = !showReplyRealName;
             } else {
                 payload.turnstile_token = turnstileToken;
-                payload.is_anonymous = !isReplyAnonymous;
+                payload.is_anonymous = !showReplyRealName;
             }
             const created = await createComment(post.id, payload, accessToken || null);
             setPost({
@@ -659,7 +659,7 @@ const PostDetail: React.FC = () => {
                 ),
             });
             setReplyInput("");
-            setIsReplyAnonymous(false);
+            setShowReplyRealName(false);
             setReplyTargetId(null);
             // Turnstile 리셋
             setTurnstileToken(null);
@@ -1078,8 +1078,8 @@ const PostDetail: React.FC = () => {
                                             <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
                                                 <input
                                                     type="checkbox"
-                                                    checked={isReplyAnonymous}
-                                                    onChange={(e) => setIsReplyAnonymous(e.target.checked)}
+                                                    checked={showReplyRealName}
+                                                    onChange={(e) => setShowReplyRealName(e.target.checked)}
                                                 />
                                                 비회원에게도 실명이 표시돼요
                                             </label>
@@ -1088,8 +1088,8 @@ const PostDetail: React.FC = () => {
                                                 <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
-                                                        checked={isReplyAnonymous}
-                                                        onChange={(e) => setIsReplyAnonymous(e.target.checked)}
+                                                        checked={showReplyRealName}
+                                                        onChange={(e) => setShowReplyRealName(e.target.checked)}
                                                     />
                                                     비회원에게도 실명이 표시돼요
                                                 </label>
@@ -1104,7 +1104,7 @@ const PostDetail: React.FC = () => {
                                             className="reply-cancel-text"
                                             onClick={() => {
                                                 setReplyInput("");
-                                                setIsReplyAnonymous(false);
+                                                setShowReplyRealName(false);
                                                 setReplyTargetId(null);
                                             }}
                                         >
@@ -1143,8 +1143,8 @@ const PostDetail: React.FC = () => {
                                 <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                                     <input
                                         type="checkbox"
-                                        checked={isCommentAnonymous}
-                                        onChange={(e) => setIsCommentAnonymous(e.target.checked)}
+                                        checked={showCommentRealName}
+                                        onChange={(e) => setShowCommentRealName(e.target.checked)}
                                     />
                                     비회원에게도 실명이 표시돼요
                                 </label>
@@ -1153,8 +1153,8 @@ const PostDetail: React.FC = () => {
                                     <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                                         <input
                                             type="checkbox"
-                                            checked={isCommentAnonymous}
-                                            onChange={(e) => setIsCommentAnonymous(e.target.checked)}
+                                            checked={showCommentRealName}
+                                            onChange={(e) => setShowCommentRealName(e.target.checked)}
                                         />
                                         비회원에게도 실명이 표시돼요
                                     </label>
