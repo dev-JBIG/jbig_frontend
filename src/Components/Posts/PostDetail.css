@@ -466,6 +466,7 @@
 /* 헤딩 (#, ##) 구분 명확하게 하기 */
 .postdetail-content h1 {
     font-size: 2.2em;
+    font-weight: 700;
     border-bottom: 1px solid #eee; /* 밑줄로 구분 */
     padding-bottom: 10px;
     margin-top: 32px;
@@ -474,6 +475,7 @@
 
 .postdetail-content h2 {
     font-size: 1.8em;
+    font-weight: 600;
     border-bottom: 1px solid #eee;
     padding-bottom: 8px;
     margin-top: 24px;
