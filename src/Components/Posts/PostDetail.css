@@ -418,7 +418,7 @@
 
 
 
-/* 1. 인용문 */
+/* 인용문 */
 .postdetail-content blockquote {
     border-left: 4px solid var(--color-primary, #007bff); /* 왼쪽 굵은 선 */
     padding-left: 16px;       /* 선과 글자 사이 간격 */
@@ -428,7 +428,42 @@
     font-style: italic;       /* 기울임꼴 */
 }
 
-/* 2. 헤딩 (#, ##) 구분 명확하게 하기 */
+
+/* 인라인 코드 */
+/* 미리보기처럼 붉은색 글씨에 연한 배경 */
+.postdetail-content p code,
+.postdetail-content li code,
+.postdetail-content blockquote code {
+    color: #e01e5a;                 
+    background-color: #f3f4f6;      
+    padding: 2px 6px;              
+    border-radius: 4px;            
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* 코드 블록 (Box 형태의 코드) */
+/* 전체 회색 박스 */
+.postdetail-content pre {
+    background-color: #f6f8fa;      
+    color: #00000f;                 /* 코드 글자색 */
+    padding: 1.5em;
+    border-radius: 8px;
+    overflow-x: auto;               /* 가로 스크롤 허용 */
+    margin: 1.5em 0;
+    line-height: 1.5;
+}
+
+/* 코드 블록 안의 code 태그는 인라인 스타일을 상속받지 않도록 초기화 */
+.postdetail-content pre code {
+    color: inherit;
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* 헤딩 (#, ##) 구분 명확하게 하기 */
 .postdetail-content h1 {
     font-size: 2.2em;
     border-bottom: 1px solid #eee; /* 밑줄로 구분 */
@@ -451,7 +486,7 @@
     margin-bottom: 12px;
 }
 
-/* 3. 목록 들여쓰기 복구 */
+/* 목록 들여쓰기 복구 */
 /* reset.css 때문에 padding이 0이 되어 점이 사라지거나 들여쓰기가 안 된 것임 */
 .postdetail-content ul, 
 .postdetail-content ol {
@@ -474,4 +509,12 @@
 .postdetail-content ul ol,
 .postdetail-content ol ol {
     margin-top: 4px;
+}
+
+/* 이미지 (본문 내 이미지 크기 조절) */
+.postdetail-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 1em 0;
 }
