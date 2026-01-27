@@ -681,15 +681,18 @@ export const deleteComment = async (commentId: number, token: string): Promise<v
 export const createComment = async (
     postId: number,
     payload: { content: string; parent: number | null; is_anonymous?: boolean },
-    token: string
+    token: string | null
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;
+    const headers: any = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+    };
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
     const res = await axios.post(url, payload, {
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
+        headers,
         withCredentials: true,
         responseType: "json",
     });

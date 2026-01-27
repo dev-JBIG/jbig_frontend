@@ -485,17 +485,12 @@ const PostDetail: React.FC = () => {
         const content = commentInput.trim();
         if (!content) return;
 
-        if (!accessToken) {
-            showAlert({
-                message: "로그인이 필요합니다.",
-                type: 'info',
-                onClose: () => navigate("/signin")
-            });
-            return;
-        }
-
         try {
-            const created = await createComment(post.id, { content, parent: null, is_anonymous: isCommentAnonymous }, accessToken);
+            const payload: any = { content, parent: null };
+            if (accessToken) {
+                payload.is_anonymous = !isCommentAnonymous;
+            }
+            const created = await createComment(post.id, payload, accessToken || null);
             setPost({
                 ...post,
                 comments: [ ...(post.comments || []), created ],
@@ -621,17 +616,12 @@ const PostDetail: React.FC = () => {
         const content = replyInput.trim();
         if (!content) return;
 
-        if (!accessToken) {
-            showAlert({
-                message: "로그인이 필요합니다.",
-                type: 'info',
-                onClose: () => navigate("/signin")
-            });
-            return;
-        }
-
         try {
-            const created = await createComment(post.id, { content, parent: commentId, is_anonymous: isReplyAnonymous }, accessToken);
+            const payload: any = { content, parent: commentId };
+            if (accessToken) {
+                payload.is_anonymous = !isReplyAnonymous;
+            }
+            const created = await createComment(post.id, payload, accessToken || null);
             setPost({
                 ...post,
                 comments: (post.comments || []).map(c =>
@@ -1050,14 +1040,20 @@ const PostDetail: React.FC = () => {
                                         style={{resize: "none"}}
                                     />
                                     <div className="reply-action-row">
-                                        <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={isReplyAnonymous} 
-                                                onChange={(e) => setIsReplyAnonymous(e.target.checked)}
-                                            />
-                                            익명
-                                        </label>
+                                        {accessToken ? (
+                                            <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isReplyAnonymous} 
+                                                    onChange={(e) => setIsReplyAnonymous(e.target.checked)}
+                                                />
+                                                비회원에게도 실명이 표시돼요
+                                            </label>
+                                        ) : (
+                                            <span style={{ fontSize: '0.85em', color: '#666', marginRight: 'auto' }}>
+                                                익명 닉네임으로 작성됩니다
+                                            </span>
+                                        )}
                                         <span
                                             className="reply-cancel-text"
                                             onClick={() => {
@@ -1097,14 +1093,20 @@ const PostDetail: React.FC = () => {
                             style={{resize: "none"}}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={isCommentAnonymous} 
-                                    onChange={(e) => setIsCommentAnonymous(e.target.checked)}
-                                />
-                                익명으로 작성
-                            </label>
+                            {accessToken ? (
+                                <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isCommentAnonymous} 
+                                        onChange={(e) => setIsCommentAnonymous(e.target.checked)}
+                                    />
+                                    비회원에게도 실명이 표시돼요
+                                </label>
+                            ) : (
+                                <span style={{ fontSize: '0.85em', color: '#666' }}>
+                                    익명 닉네임으로 작성됩니다
+                                </span>
+                            )}
                             <button
                                 className="postdetail-comment-btn"
                                 onClick={handleAddComment}

@@ -414,14 +414,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 await modifyPost(postIdNumber, {
                     title, content_md: content, attachment_paths: attachments,
                     ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
-                    is_anonymous: isAnonymous,
+                    is_anonymous: !isAnonymous,
                 }, accessToken);
                 savedRef.current = true;
                 navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: isAnonymous }, accessToken);
+            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: !isAnonymous }, accessToken);
             if (res?.unauthorized) { 
                 showAlert({
                     message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
@@ -561,9 +561,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         onChange={(e) => setIsAnonymous(e.target.checked)}
                         style={{ width: 'auto', marginRight: '4px' }}
                     />
-                    익명으로 작성
+                    비회원에게도 실명이 표시돼요
                     <span style={{ fontSize: '0.85em', color: '#666', fontWeight: 'normal' }}>
-                        (로그인한 회원에게는 실명이 표시됩니다)
+                        (체크 안 하면 회원에게만 실명이 보입니다)
                     </span>
                 </label>
             </div>
