@@ -680,7 +680,7 @@ export const deleteComment = async (commentId: number, token: string): Promise<v
 // 댓글 등록
 export const createComment = async (
     postId: number,
-    payload: { content: string; parent: number | null; is_anonymous?: boolean },
+    payload: { content: string; parent: number | null; is_anonymous?: boolean; turnstile_token?: string },
     token: string | null
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/posts/${postId}/comments/`;

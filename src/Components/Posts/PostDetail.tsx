@@ -16,6 +16,7 @@ import {useUser} from "../Utils/UserContext";
 import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
+import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
 
 // Sanitize 스키마: style 속성 허용 (text-align, color만)
 const sanitizeSchema = {
@@ -89,6 +90,9 @@ const PostDetail: React.FC = () => {
     // 답글 입력값 (하나만)
     const [replyInput, setReplyInput] = useState("");
     const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
+    // Turnstile CAPTCHA (비회원용)
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const turnstileRef = useRef<TurnstileInstance | null>(null);
     // 본문
 
     const { accessToken, authReady, signOutLocal } = useUser();
@@ -485,9 +489,18 @@ const PostDetail: React.FC = () => {
         const content = commentInput.trim();
         if (!content) return;
 
+        // 비회원인 경우 Turnstile 검증 필요
+        if (!accessToken && !turnstileToken) {
+            showAlert({ message: "CAPTCHA 인증을 완료해주세요.", type: 'warning' });
+            return;
+        }
+
         try {
             const payload: any = { content, parent: null };
             if (accessToken) {
+                payload.is_anonymous = !isCommentAnonymous;
+            } else {
+                payload.turnstile_token = turnstileToken;
                 payload.is_anonymous = !isCommentAnonymous;
             }
             const created = await createComment(post.id, payload, accessToken || null);
@@ -497,8 +510,14 @@ const PostDetail: React.FC = () => {
             });
             setCommentInput("");
             setIsCommentAnonymous(false);
+            // Turnstile 리셋
+            setTurnstileToken(null);
+            turnstileRef.current?.reset();
         } catch {
             showAlert({ message: "댓글 등록에 실패했습니다.", type: 'error' });
+            // 실패 시에도 Turnstile 리셋
+            setTurnstileToken(null);
+            turnstileRef.current?.reset();
         }
     };
 
@@ -616,9 +635,18 @@ const PostDetail: React.FC = () => {
         const content = replyInput.trim();
         if (!content) return;
 
+        // 비회원인 경우 Turnstile 검증 필요
+        if (!accessToken && !turnstileToken) {
+            showAlert({ message: "CAPTCHA 인증을 완료해주세요.", type: 'warning' });
+            return;
+        }
+
         try {
             const payload: any = { content, parent: commentId };
             if (accessToken) {
+                payload.is_anonymous = !isReplyAnonymous;
+            } else {
+                payload.turnstile_token = turnstileToken;
                 payload.is_anonymous = !isReplyAnonymous;
             }
             const created = await createComment(post.id, payload, accessToken || null);
@@ -633,8 +661,14 @@ const PostDetail: React.FC = () => {
             setReplyInput("");
             setIsReplyAnonymous(false);
             setReplyTargetId(null);
+            // Turnstile 리셋
+            setTurnstileToken(null);
+            turnstileRef.current?.reset();
         } catch {
             showAlert({ message: "답글 등록에 실패했습니다.", type: 'error' });
+            // 실패 시에도 Turnstile 리셋
+            setTurnstileToken(null);
+            turnstileRef.current?.reset();
         }
     };
 
@@ -1042,17 +1076,29 @@ const PostDetail: React.FC = () => {
                                     <div className="reply-action-row">
                                         {accessToken ? (
                                             <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={isReplyAnonymous} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isReplyAnonymous}
                                                     onChange={(e) => setIsReplyAnonymous(e.target.checked)}
                                                 />
                                                 비회원에게도 실명이 표시돼요
                                             </label>
                                         ) : (
-                                            <span style={{ fontSize: '0.85em', color: '#666', marginRight: 'auto' }}>
-                                                익명 닉네임으로 작성됩니다
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: 'auto' }}>
+                                                <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isReplyAnonymous}
+                                                        onChange={(e) => setIsReplyAnonymous(e.target.checked)}
+                                                    />
+                                                    비회원에게도 실명이 표시돼요
+                                                </label>
+                                                {turnstileToken ? (
+                                                    <span style={{ fontSize: '0.8em', color: '#28a745' }}>CAPTCHA 완료</span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.8em', color: '#dc3545' }}>아래 댓글창에서 CAPTCHA 인증 필요</span>
+                                                )}
+                                            </div>
                                         )}
                                         <span
                                             className="reply-cancel-text"
@@ -1067,10 +1113,10 @@ const PostDetail: React.FC = () => {
                                         <span
                                             className={
                                                 "reply-register-text" +
-                                                (replyInput.trim() ? " active" : "")
+                                                ((replyInput.trim() && (accessToken || turnstileToken)) ? " active" : "")
                                             }
                                             onClick={() => {
-                                                if (replyInput.trim()) handleAddReply(c.id);
+                                                if (replyInput.trim() && (accessToken || turnstileToken)) handleAddReply(c.id);
                                             }}
                                         >
                                             등록
@@ -1095,22 +1141,39 @@ const PostDetail: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             {accessToken ? (
                                 <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={isCommentAnonymous} 
+                                    <input
+                                        type="checkbox"
+                                        checked={isCommentAnonymous}
                                         onChange={(e) => setIsCommentAnonymous(e.target.checked)}
                                     />
                                     비회원에게도 실명이 표시돼요
                                 </label>
                             ) : (
-                                <span style={{ fontSize: '0.85em', color: '#666' }}>
-                                    익명 닉네임으로 작성됩니다
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isCommentAnonymous}
+                                            onChange={(e) => setIsCommentAnonymous(e.target.checked)}
+                                        />
+                                        비회원에게도 실명이 표시돼요
+                                    </label>
+                                    {process.env.REACT_APP_TURNSTILE_SITE_KEY && (
+                                        <Turnstile
+                                            ref={turnstileRef}
+                                            siteKey={process.env.REACT_APP_TURNSTILE_SITE_KEY}
+                                            onSuccess={(token) => setTurnstileToken(token)}
+                                            onExpire={() => setTurnstileToken(null)}
+                                            onError={() => setTurnstileToken(null)}
+                                            options={{ theme: 'light', size: 'compact' }}
+                                        />
+                                    )}
+                                </div>
                             )}
                             <button
                                 className="postdetail-comment-btn"
                                 onClick={handleAddComment}
-                                disabled={!commentInput.trim()}
+                                disabled={!commentInput.trim() || (!accessToken && !turnstileToken)}
                             >
                                 등록
                             </button>

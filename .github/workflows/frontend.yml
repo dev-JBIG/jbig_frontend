@@ -25,7 +25,8 @@ jobs:
           REACT_APP_DEFAULT_NOTION_PAGE_ID: ${{ secrets.REACT_APP_DEFAULT_NOTION_PAGE_ID }}
           REACT_APP_SERVER_HOST: ${{ secrets.REACT_APP_SERVER_HOST }}
           REACT_APP_SERVER_PORT: ${{ secrets.REACT_APP_SERVER_PORT }}
-          REACT_APP_USERID_SECRET: ${{ secrets.REACT_APP_USERID_SECRET }} 
+          REACT_APP_USERID_SECRET: ${{ secrets.REACT_APP_USERID_SECRET }}
+          REACT_APP_TURNSTILE_SITE_KEY: ${{ secrets.REACT_APP_TURNSTILE_SITE_KEY }} 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
