@@ -750,7 +750,7 @@ export const createComment = async (
 // 댓글 수정
 export const updateComment = async (
     commentId: number,
-    payload: { content: string; parent: number | null },
+    payload: { content: string; parent: number | null; is_anonymous?: boolean },
     token: string
 ): Promise<Comment | Reply> => {
     const url = `${BASE_URL}/api/comments/${commentId}/`;

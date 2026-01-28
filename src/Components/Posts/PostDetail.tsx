@@ -110,6 +110,7 @@ const PostDetail: React.FC = () => {
     const [editingCommentId, setEditingCommentId] = useState<number|null>(null);
     const [editingReplyKey, setEditingReplyKey] = useState<{cId:number; rId:number} | null>(null);
     const [editText, setEditText] = useState("");
+    const [editShowRealName, setEditShowRealName] = useState(false);
     const [heartBurstKey, setHeartBurstKey] = useState(0);
     const [likePlusOneKey, setLikePlusOneKey] = useState(0);
     const [isScrolling, setIsScrolling] = useState(false);
@@ -281,6 +282,7 @@ const PostDetail: React.FC = () => {
                         is_deleted: !!c.is_deleted,
                         likes: c.likes || 0,
                         isLiked: c.isLiked || false,
+                        is_anonymous: c.is_anonymous ?? true,
                         replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             user_id: r.user_id,
@@ -292,6 +294,7 @@ const PostDetail: React.FC = () => {
                             is_deleted: !!r.is_deleted,
                             likes: r.likes || 0,
                             isLiked: r.isLiked || false,
+                            is_anonymous: r.is_anonymous ?? true,
                         })),
                     })),
                 };
@@ -501,7 +504,7 @@ const PostDetail: React.FC = () => {
                 payload.is_anonymous = !showCommentRealName;
             } else {
                 payload.turnstile_token = turnstileToken;
-                payload.is_anonymous = !showCommentRealName;
+                // 비회원은 항상 익명
             }
             const created = await createComment(post.id, payload, accessToken || null);
             setPost({
@@ -647,7 +650,7 @@ const PostDetail: React.FC = () => {
                 payload.is_anonymous = !showReplyRealName;
             } else {
                 payload.turnstile_token = turnstileToken;
-                payload.is_anonymous = !showReplyRealName;
+                // 비회원은 항상 익명
             }
             const created = await createComment(post.id, payload, accessToken || null);
             setPost({
@@ -676,26 +679,29 @@ const PostDetail: React.FC = () => {
         setEditingCommentId(null);
         setEditingReplyKey(null);
         setEditText("");
+        setEditShowRealName(false);
     };
 
     const saveEditComment = async (commentId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { 
+        if (!accessToken) {
             showAlert({
                 message: "로그인이 필요합니다.",
                 type: 'warning',
                 onClose: () => navigate("/signin")
             });
-            return; 
+            return;
         }
         const content = editText.trim();
         if (!content) return;
 
+        const is_anonymous = !editShowRealName;
+
         try {
-            await updateComment(commentId, { content, parent: null }, accessToken);
+            await updateComment(commentId, { content, parent: null, is_anonymous }, accessToken);
             setPost({
                 ...post,
-                comments: (post.comments || []).map(c => c.id === commentId ? { ...c, content } : c),
+                comments: (post.comments || []).map(c => c.id === commentId ? { ...c, content, is_anonymous } : c),
             });
             cancelEdit();
         } catch {
@@ -705,24 +711,26 @@ const PostDetail: React.FC = () => {
 
     const saveEditReply = async (cId: number, rId: number) => {
         if (!post || typeof post === "string") return;
-        if (!accessToken) { 
+        if (!accessToken) {
             showAlert({
                 message: "로그인이 필요합니다.",
                 type: 'warning',
                 onClose: () => navigate("/signin")
             });
-            return; 
+            return;
         }
         const content = editText.trim();
         if (!content) return;
 
+        const is_anonymous = !editShowRealName;
+
         try {
-            await updateComment(rId, { content, parent: cId }, accessToken);
+            await updateComment(rId, { content, parent: cId, is_anonymous }, accessToken);
             setPost({
                 ...post,
                 comments: (post.comments || []).map(c =>
                     c.id === cId
-                        ? { ...c, replies: (c.replies || []).map(r => r.id === rId ? { ...r, content } : r) }
+                        ? { ...c, replies: (c.replies || []).map(r => r.id === rId ? { ...r, content, is_anonymous } : r) }
                         : c
                 ),
             });
@@ -743,6 +751,7 @@ const PostDetail: React.FC = () => {
         setEditingReplyKey(null);        // 답글 편집 모드 해제
         setEditingCommentId(commentId);  // 댓글 편집 모드 진입
         setEditText(target.content);     // 현재 내용으로 에디터 채우기
+        setEditShowRealName(!target.is_anonymous);  // 현재 실명 표시 여부 로드
     };
 
     // 답글 수정 시작
@@ -757,6 +766,7 @@ const PostDetail: React.FC = () => {
         setEditingCommentId(null);             // 댓글 편집 모드 해제
         setEditingReplyKey({ cId: commentId, rId: replyId }); // 답글 편집 모드 진입
         setEditText(target.content);           // 현재 내용으로 에디터 채우기
+        setEditShowRealName(!target.is_anonymous);  // 현재 실명 표시 여부 로드
     };
 
     if (post === "not-found") {
@@ -962,6 +972,14 @@ const PostDetail: React.FC = () => {
                                         style={{ resize: "none" }}
                                     />
                                         <div className="reply-action-row">
+                                            <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editShowRealName}
+                                                    onChange={(e) => setEditShowRealName(e.target.checked)}
+                                                />
+                                                비회원에게도 실명이 표시돼요
+                                            </label>
                                             <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
                                             <span
                                                 className={"reply-register-text" + (editText.trim() ? " active" : "")}
@@ -1046,6 +1064,14 @@ const PostDetail: React.FC = () => {
                                                 style={{ resize: "none" }}
                                             />
                                             <div className="reply-action-row">
+                                                <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: 'auto' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editShowRealName}
+                                                        onChange={(e) => setEditShowRealName(e.target.checked)}
+                                                    />
+                                                    비회원에게도 실명이 표시돼요
+                                                </label>
                                                 <span className="reply-cancel-text" onClick={cancelEdit}>취소</span>
                                                 <span
                                                     className={"reply-register-text" + (editText.trim() ? " active" : "")}
@@ -1085,14 +1111,9 @@ const PostDetail: React.FC = () => {
                                             </label>
                                         ) : (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: 'auto' }}>
-                                                <label style={{ fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={showReplyRealName}
-                                                        onChange={(e) => setShowReplyRealName(e.target.checked)}
-                                                    />
-                                                    비회원에게도 실명이 표시돼요
-                                                </label>
+                                                <span style={{ fontSize: '0.85em', color: '#666' }}>
+                                                    비회원은 익명으로 작성됩니다
+                                                </span>
                                                 {turnstileToken ? (
                                                     <span style={{ fontSize: '0.8em', color: '#28a745' }}>CAPTCHA 완료</span>
                                                 ) : (
@@ -1150,14 +1171,9 @@ const PostDetail: React.FC = () => {
                                 </label>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={showCommentRealName}
-                                            onChange={(e) => setShowCommentRealName(e.target.checked)}
-                                        />
-                                        비회원에게도 실명이 표시돼요
-                                    </label>
+                                    <span style={{ fontSize: '0.85em', color: '#666' }}>
+                                        비회원은 익명으로 작성됩니다
+                                    </span>
                                     {process.env.REACT_APP_TURNSTILE_SITE_KEY && (
                                         <Turnstile
                                             ref={turnstileRef}
