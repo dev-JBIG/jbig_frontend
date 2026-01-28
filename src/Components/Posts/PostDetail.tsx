@@ -283,6 +283,7 @@ const PostDetail: React.FC = () => {
                         likes: c.likes || 0,
                         isLiked: c.isLiked || false,
                         is_anonymous: c.is_anonymous ?? true,
+                        can_delete: c.can_delete ?? false,
                         replies: (c.children || []).map((r: any) => ({
                             id: r.id,
                             user_id: r.user_id,
@@ -295,6 +296,7 @@ const PostDetail: React.FC = () => {
                             likes: r.likes || 0,
                             isLiked: r.isLiked || false,
                             is_anonymous: r.is_anonymous ?? true,
+                            can_delete: r.can_delete ?? false,
                         })),
                     })),
                 };
@@ -933,7 +935,7 @@ const PostDetail: React.FC = () => {
                                         답글쓰기
                                         </span>
                                     )}
-                                    {!c.is_deleted && c.is_owner && (
+                                    {!c.is_deleted && (c.is_owner || c.can_delete) && (
                                         <div className="more-wrapper">
                                             <button
                                                 type="button"
@@ -947,10 +949,12 @@ const PostDetail: React.FC = () => {
                                             </button>
                                             {openMenu?.type === "comment" && openMenu.id === c.id && (
                                                 <div className="more-menu" role="menu">
-                                                    <div className="more-menu-item" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleEditComment(c.id); }}>
-                                                        수정
-                                                    </div>
+                                                    {c.is_owner && (
+                                                        <div className="more-menu-item" role="menuitem"
+                                                             onClick={() => { setOpenMenu(null); handleEditComment(c.id); }}>
+                                                            수정
+                                                        </div>
+                                                    )}
                                                     <div className="more-menu-item danger" role="menuitem"
                                                          onClick={() => { setOpenMenu(null); handleDeleteComment(c.id); }}>
                                                         삭제
@@ -1025,7 +1029,7 @@ const PostDetail: React.FC = () => {
                                                     <span className="comment-like-count">{r.likes || 0}</span>
                                                 </button>
                                             )}
-                                            {!r.is_deleted && r.is_owner && (
+                                            {!r.is_deleted && (r.is_owner || r.can_delete) && (
                                                 <div className="more-wrapper">
                                                     <button
                                                         type="button"
@@ -1039,10 +1043,12 @@ const PostDetail: React.FC = () => {
                                             </button>
                                             {openMenu?.type === "reply" && openMenu.cId === c.id && openMenu.rId === r.id && (
                                                 <div className="more-menu" role="menu">
-                                                    <div className="more-menu-item" role="menuitem"
-                                                         onClick={() => { setOpenMenu(null); handleEditReply(c.id, r.id); }}>
-                                                        수정
-                                                    </div>
+                                                    {r.is_owner && (
+                                                        <div className="more-menu-item" role="menuitem"
+                                                             onClick={() => { setOpenMenu(null); handleEditReply(c.id, r.id); }}>
+                                                            수정
+                                                        </div>
+                                                    )}
                                                     <div className="more-menu-item danger" role="menuitem"
                                                          onClick={() => { setOpenMenu(null); handleDeleteReply(c.id, r.id); }}>
                                                         삭제

@@ -43,6 +43,7 @@ export interface Comment {
     likes: number;
     isLiked: boolean;
     is_anonymous?: boolean;
+    can_delete?: boolean;
 }
 
 export interface Reply {
@@ -57,6 +58,7 @@ export interface Reply {
     likes: number;
     isLiked: boolean;
     is_anonymous?: boolean;
+    can_delete?: boolean;
 }
 
 export interface PostDetailData {
