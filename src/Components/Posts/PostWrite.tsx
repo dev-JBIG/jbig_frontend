@@ -14,6 +14,7 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import AbsenceForm from "./AbsenceForm";
 import FeedbackForm from "./FeedbackForm";
+import StudyForm from "./StudyForm";
 
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 const MAX_FILES = 3;
@@ -88,6 +89,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     const isFeedbackBoard = selectedBoard &&
         (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'));
+
+    const isStudyBoard = selectedBoard && (selectedBoard.id === 8 || selectedBoard.name === "스터디/소모임 홍보");
+
 
     // 공통 이미지 업로드 로직
     const uploadInlineImage = useCallback(async (file: File): Promise<boolean> => {
@@ -366,7 +370,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "결석 사유를 입력하세요.", type: 'warning' }); return false; }
         } else if (isFeedbackBoard) {
             if (/\| \*\*상세 내용\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "상세 내용을 입력하세요.", type: 'warning' }); return false; }
-        } else if (!content.trim()) {
+        } 
+        
+        else if (isStudyBoard) {
+        // "소모임 이름"이나 "소모임장 소개"가 비어있는지 정규식으로 체크
+        if (/\| \*\*소모임 이름\*\* \|\s*\|/.test(content)) { showAlert({ message: "소모임 이름을 입력하세요.", type: 'warning' }); return false; }
+        if (/\| \*\*소모임장 소개\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "소모임장 소개를 입력하세요.", type: 'warning' }); return false; }
+        }
+        
+        else if (!content.trim()) {
             showAlert({ message: "본문을 입력하세요.", type: 'warning' }); return false;
         }
         return true;
@@ -524,6 +536,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     <AbsenceForm setContent={setContent} initialContent={content} />
                 ) : isFeedbackBoard ? (
                     <FeedbackForm setContent={setContent} initialContent={content} />
+                ) : isStudyBoard ? (
+                    <StudyForm setContent={setContent} initialContent={content} />
                 ) : (
                     <div className="content-body" onPaste={handlePaste}>
                         <MDEditor value={content} onChange={(v) => setContent(v || "")} data-color-mode="light" height={400} preview="edit"
