@@ -507,3 +507,21 @@
     text-align: center;
     color: #666;
 }
+
+
+/* 3. 제목 스타일  */
+.postlist-title {
+    margin: 0 !important;
+    padding: 0;
+    line-height: 1; 
+    padding-bottom: 2px;
+}
+
+/* 4. 설명 문구 스타일 수정 */
+.board-description {
+    font-size: 14px;
+    color: #888;
+    margin: 0;
+    line-height: 0; 
+    font-weight: 400;
+}

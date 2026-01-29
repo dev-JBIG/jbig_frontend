@@ -9,6 +9,19 @@ import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 
+const BOARD_DESCRIPTIONS: Record<string, string> = {
+    "전체 글 보기": "JBIG의 모든 소식을 한눈에 확인하세요!",
+    "공지사항": "동아리의 주요 일정과 공지사항을 확인하세요!",
+    "자유게시판": "자유롭게 이야기를 나누고 소통하는 공간입니다.",
+    "자료공유": "유용한 학습 자료와 정보를 공유해요!",
+    "논문리뷰": "최신 AI/BigData 논문을 리뷰하고 토론합니다.",
+    "공모전게시판": "공모전 일정부터 팀원 모집, 수상 후기까지!",
+    "정보게시판": "관련 행사, 꿀팁 등 다양한 정보를 확인해보세요!",
+    "스터디/소모임 홍보": "함께 공부할 스터디원과 소모임을 모집해보세요!",
+    "사유서제출": "부득이한 사정으로 활동에 불참할 경우 작성해주세요.",
+    "에러/피드백 제보": "서비스 이용 중 불편한 점이나 에러를 제보해주세요.",
+};
+
 /**
  * 게시판 이름을 간단하게 표시하기 위한 포맷터
  */
@@ -27,6 +40,8 @@ const getDisplayBoardName = (boardName: string): string => {
         "논문리뷰": "논문",
         "공모전게시판": "공모전",
     };
+
+    
 
     // 매핑에 정확히 일치하는 이름이 있으면 반환
     if (boardNameMap[name]) {
@@ -300,11 +315,28 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             <div className="postlist-header">
                 {!isUserPage && !isSearchPage && (
                     <>
-                        <h2
+                        <div className="title-wrapper">
+                            <h2
                             className={`postlist-title ${isHome ? "home" : ""} ${isSearchPage ? "search" : ""}`}
-                        >
-                            {activeBoard ? activeBoard.name : (isHome ? "전체 글 보기" : "전체 글 보기")}
-                        </h2>
+                            >
+                                {(activeBoardID === 0 || isHome)
+                                    ? "전체 글 보기"
+                                    : (activeBoard?.name || "") 
+                                }
+                            </h2>
+
+                            <p className="board-description">
+                                {(isHome || activeBoardID === 0) 
+                                    ? BOARD_DESCRIPTIONS["전체 글 보기"]
+        
+                                    : activeBoard 
+                                        ? BOARD_DESCRIPTIONS[activeBoard.name]
+            
+                                        : "\u00A0" /* 공백 문자(줄 높이 유지용) */
+                                }
+                            </p>
+                        </div>
+                        
 
                         {/* 검색란: 검색페이지가 아니고, 홈도 아니고, 유저페이지도 아니고, 게시글이 '있는' 경우에만 표시 */}
                         {!isHome && !isSearchPage && !isUserPage && displayPosts.length > 0 && (
