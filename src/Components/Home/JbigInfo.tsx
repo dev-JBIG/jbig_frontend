@@ -73,7 +73,7 @@ const JbigInfo: React.FC = () => {
                 <div className="jbig-info-hero-text">
                     <div className="jbig-info-kicker">JBNU Big Data & AI Group</div>
                     <div className="jbig-info-title">
-                        <span className="jbig-info-title-strong">JBIG</span>는 데이터·AI 학술 교류 모임입니다
+                        <span className="jbig-info-title-strong">JBIG</span>은 데이터·AI 학술 교류 모임입니다
                     </div>
                 </div>
                 <div className="jbig-info-hero-icon" aria-hidden="true">
