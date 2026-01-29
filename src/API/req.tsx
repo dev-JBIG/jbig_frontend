@@ -51,6 +51,94 @@ const BASE_URL = ((): string => {
     return "";
 })();
 
+// 토큰 갱신 중복 방지를 위한 플래그
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (error: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else if (token) {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+// Axios Response 인터셉터 설정 (401 에러 시 자동 토큰 갱신)
+axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // 401 에러이고, 재시도가 아닌 경우
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            // 토큰 갱신 API 자체가 실패한 경우는 재시도 안 함
+            if (originalRequest.url?.includes('/token/refresh/')) {
+                return Promise.reject(error);
+            }
+
+            originalRequest._retry = true;
+
+            // 이미 토큰 갱신 중이면 큐에 대기
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return axios(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
+            isRefreshing = true;
+
+            const refreshToken = localStorage.getItem('jbig-refresh');
+            if (!refreshToken) {
+                isRefreshing = false;
+                processQueue(error, null);
+                return Promise.reject(error);
+            }
+
+            try {
+                const result = await refreshTokenAPI(refreshToken);
+
+                if (result.access && result.refresh) {
+                    // 새 토큰 저장
+                    localStorage.setItem('jbig-access', result.access);
+                    localStorage.setItem('jbig-refresh', result.refresh);
+
+                    // 원래 요청 헤더 업데이트
+                    originalRequest.headers.Authorization = `Bearer ${result.access}`;
+
+                    // 대기 중인 요청들 처리
+                    processQueue(null, result.access);
+                    isRefreshing = false;
+
+                    // 원래 요청 재시도
+                    return axios(originalRequest);
+                } else {
+                    throw new Error('Token refresh failed');
+                }
+            } catch (err) {
+                processQueue(err, null);
+                isRefreshing = false;
+
+                // 토큰 갱신 실패 시 로그아웃 처리
+                localStorage.removeItem('jbig-access');
+                localStorage.removeItem('jbig-refresh');
+                localStorage.removeItem('jbig-profile');
+
+                return Promise.reject(err);
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 // API 응답에서 results 배열 추출
 interface PaginatedResponse<T> {
     results?: T[];

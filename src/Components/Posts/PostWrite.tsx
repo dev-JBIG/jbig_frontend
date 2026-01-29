@@ -7,7 +7,7 @@ import '@uiw/react-markdown-preview/markdown.css';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft, refreshTokenAPI} from "../../API/req"
 import {Board, Section, UploadFile} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
@@ -58,7 +58,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isEdit = !!postId;
     const postIdNumber = postId ? Number(postId) : null;
     const navigate = useNavigate();
-    const { signOutLocal, accessToken, user } = useUser();
+    const { signOutLocal, accessToken, refreshToken, user, setAuth } = useUser();
     const { staffAuth } = useStaffAuth();
     const { showAlert, showConfirm } = useAlert();
 
@@ -242,6 +242,64 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         }, 2000);
         return () => clearTimeout(handler);
     }, [title, content, selectedBoard, canUseDraft, accessToken]);
+
+    // 주기적 토큰 갱신 (활동 감지 시 45분마다 자동 갱신)
+    useEffect(() => {
+        if (!accessToken || !refreshToken || !user) return;
+
+        let lastActivity = Date.now();
+        let tokenRefreshTimer: NodeJS.Timeout | null = null;
+
+        // 토큰 갱신 함수
+        const refreshTokenIfNeeded = async () => {
+            const now = Date.now();
+            const timeSinceActivity = now - lastActivity;
+
+            // 최근 5분 이내에 활동이 있었다면 토큰 갱신
+            if (timeSinceActivity < 5 * 60 * 1000) {
+                try {
+                    console.log('[Token] Refreshing token due to user activity');
+                    const result = await refreshTokenAPI(refreshToken);
+
+                    if (result.access && result.refresh) {
+                        // 새 토큰으로 업데이트
+                        setAuth(user, result.access, result.refresh);
+                        console.log('[Token] Token refreshed successfully');
+                    }
+                } catch (err) {
+                    console.error('[Token] Token refresh failed:', err);
+                }
+            }
+        };
+
+        // 활동 감지 핸들러
+        const handleActivity = () => {
+            lastActivity = Date.now();
+        };
+
+        // 활동 이벤트 리스너 등록
+        const activityEvents = ['keydown', 'click', 'mousemove', 'scroll'];
+        activityEvents.forEach(event => {
+            window.addEventListener(event, handleActivity);
+        });
+
+        // 45분마다 토큰 갱신 체크
+        tokenRefreshTimer = setInterval(refreshTokenIfNeeded, 45 * 60 * 1000);
+
+        // 초기 활동 기록
+        handleActivity();
+
+        return () => {
+            // 이벤트 리스너 제거
+            activityEvents.forEach(event => {
+                window.removeEventListener(event, handleActivity);
+            });
+            // 타이머 정리
+            if (tokenRefreshTimer) {
+                clearInterval(tokenRefreshTimer);
+            }
+        };
+    }, [accessToken, refreshToken, user, setAuth]);
 
     // 수정 모드: 기존 게시글 로드
     useEffect(() => {
