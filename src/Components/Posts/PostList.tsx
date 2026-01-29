@@ -1,6 +1,6 @@
 // PostList.tsx
 import React, {useEffect, useMemo, useRef, useState} from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import "./PostList.css";
 import "./PostList-mobile.css";
 import { PostItem, Section } from "../Utils/interfaces"
@@ -8,6 +8,19 @@ import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
+
+const BOARD_DESCRIPTIONS: Record<string, string> = {
+    "전체 글 보기": "JBIG의 모든 소식을 한눈에 확인하세요!",
+    "공지사항": "동아리의 주요 일정과 공지사항을 확인하세요!",
+    "자유게시판": "자유롭게 이야기를 나누고 소통하는 공간입니다.",
+    "자료공유": "유용한 학습 자료와 정보를 공유해요!",
+    "논문리뷰": "최신 AI/BigData 논문을 리뷰하고 토론합니다.",
+    "공모전게시판": "공모전 일정부터 팀원 모집, 수상 후기까지!",
+    "정보게시판": "관련 행사, 꿀팁 등 다양한 정보를 확인해보세요!",
+    "스터디/소모임 홍보": "함께 공부할 스터디원과 소모임을 모집해보세요!",
+    "사유서제출": "부득이한 사정으로 활동에 불참할 경우 작성해주세요.",
+    "에러/피드백 제보": "서비스 이용 중 불편한 점이나 에러를 제보해주세요.",
+};
 
 /**
  * 게시판 이름을 간단하게 표시하기 위한 포맷터
@@ -27,6 +40,8 @@ const getDisplayBoardName = (boardName: string): string => {
         "논문리뷰": "논문",
         "공모전게시판": "공모전",
     };
+
+    
 
     // 매핑에 정확히 일치하는 이름이 있으면 반환
     if (boardNameMap[name]) {
@@ -51,7 +66,15 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [posts, setPosts] = useState<PostItem[] | null>(null);
     const [announcementPosts, setAnnouncementPosts] = useState<PostItem[]>([]);
     const [totalPages, setTotalPages] = useState(1);
-    const [page, setPage] = useState(1);
+    //const [page, setPage] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = parseInt(searchParams.get('page') || '1', 10);
+
+    const handlePageChange = (newPage: number) => {
+        searchParams.set('page', String(newPage));
+        setSearchParams(searchParams);
+    };
+
     const [searchKeyword, setSearchKeyword] = useState("");
     const [postPermission, setPostPermission] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -89,7 +112,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     useEffect(() => {
         if (isSearchPage && prevPerPageUrlRef.current !== perPageFromUrl) {
             prevPerPageUrlRef.current = perPageFromUrl;
-            setPage(1);
+            handlePageChange(1);
         }
     }, [isSearchPage, perPageFromUrl]);
 
@@ -112,27 +135,39 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     const reqSeqRef = useRef(0);
 
-    // 공지사항 최신 3개 가져오기 (전체 글 보기일 때만)
+    // [수정] 공지사항 가져오기 useEffect (여기에도 캐싱 기능 추가!)
     useEffect(() => {
-        // 전체 글 보기가 아니거나, 검색 페이지이거나, 유저 페이지면 공지사항 가져오지 않음
+        // 전체 글 보기가 아니거나, 검색/유저 페이지면 공지사항 안 띄움
         if (activeBoardID !== 0 || isSearchPage || isUserPage) {
             setAnnouncementPosts([]);
             return;
         }
 
+        // 1. 공지사항용 캐시 키 생성 & 확인
+        const annoCacheKey = `jbig_anno_cache_${location.pathname}`;
+        const cachedAnno = sessionStorage.getItem(annoCacheKey);
+
+        // 2. 캐시 있으면 딜레이 없이 즉시 보여주기!
+        if (cachedAnno) {
+            try {
+                setAnnouncementPosts(JSON.parse(cachedAnno));
+            } catch (err) {
+                console.error("Announcement cache error", err);
+            }
+        }
+
         const getAnnouncements = async () => {
             try {
-                // boards에서 "공지사항" 게시판 찾기
                 const announcementBoard = boards
                     ?.flatMap(section => section.boards)
                     .find(board => board.name === "공지사항");
 
                 if (!announcementBoard) {
-                    setAnnouncementPosts([]);
+                    // [중요] 보드 정보가 아직 안 왔더라도, 캐시된 게 있으면 지우지 않고 버팀
+                    if (!cachedAnno) setAnnouncementPosts([]);
                     return;
                 }
 
-                // 공지사항 게시판의 최신 글 3개 가져오기
                 const response = await fetchBoardPosts(
                     String(announcementBoard.id),
                     3,
@@ -141,30 +176,60 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     accessToken ?? undefined
                 );
 
+                // 3. 최신 데이터 받아오면 상태 업데이트 & 저장
                 setAnnouncementPosts(response.posts);
+                sessionStorage.setItem(annoCacheKey, JSON.stringify(response.posts));
             } catch {
-                setAnnouncementPosts([]);
+                // 에러 나도 캐시가 있으면 그거라도 계속 보여줌
+                if (!cachedAnno) setAnnouncementPosts([]);
             }
         };
 
         getAnnouncements();
-    }, [boards, activeBoardID, isSearchPage, isUserPage, accessToken]);
+        
+    }, [boards, activeBoardID, isSearchPage, isUserPage, accessToken, location.pathname]);
 
+    // [수정] 데이터 가져오기 useEffect (캐싱 기능 추가됨)
     useEffect(() => {
         const seq = ++reqSeqRef.current;
-        setLoading(true);
+        
+        // 1. 현재 페이지 주소(URL)를 열쇠(Key)로 사용
+        // 예: "jbig_cache_/board/1_?page=2"
+        const cacheKey = `jbig_cache_${location.pathname}_${location.search}`;
+        const cachedData = sessionStorage.getItem(cacheKey);
+
+        // 2. [핵심] 캐시가 있으면 로딩 없이 즉시 보여줌!
+        if (cachedData) {
+            try {
+                const parsed = JSON.parse(cachedData);
+                setPosts(parsed.posts);
+                setTotalPages(parsed.totalPages);
+                setPostPermission(parsed.postPermission);
+                
+                // Map 객체는 JSON으로 저장하면 깨지므로 복구 과정 필요
+                if (parsed.postTypes) {
+                    setPostTypes(new Map(parsed.postTypes));
+                }
+                setLoading(false); // 로딩 화면 끄기
+            } catch (err) {
+                console.error("Cache parsing error", err);
+                setLoading(true); // 에러나면 로딩 켜고 서버 요청 대기
+            }
+        } else {
+            // 캐시가 없으면 로딩 화면 켜기
+            setLoading(true);
+        }
 
         const getPosts = async () => {
             try {
                 let response: { posts: PostItem[]; totalPages: number; postPermission?: boolean; postTypes?: Map<number, number> };
 
-                if (isSearchPage) { // 검색 페이지용
+                if (isSearchPage) { 
                     if (!q.trim()) {
                         if (seq !== reqSeqRef.current) return;
                         setPosts([]); setTotalPages(1); setLoading(false);
                         return;
                     }
-
                     const scope = boardIdRaw ?? "all";
                     if (scope === "all") {
                         response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
@@ -176,18 +241,18 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
                         }
                     }
-                } else if (isUserPage && userId) { // 사용자의 게시글 정보용
+                } else if (isUserPage && userId) { 
                     if(!accessToken){
                         signOutLocal();
                         showAlert({
                             message: "로그인이 필요합니다.",
                             type: 'warning',
                             onClose: () => navigate("/signin")
-                        });
+                        })
                         return;
                     }
                     response = await fetchUserPosts(userId, 10, page, accessToken);
-                } else { // 일반 게시글 반환용
+                } else { 
                     response = await fetchBoardPosts(
                         isHome ? undefined : (activeBoardID !== 0 ? String(activeBoardID) : undefined),
                         isHome ? 10 : effectivePerPage,
@@ -197,36 +262,40 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     );
                 }
 
-                // 여기서 마지막 요청만 반영
                 if (seq !== reqSeqRef.current) return;
+
+                // 3. 서버에서 받아온 최신 데이터로 화면 업데이트 (혹시 새 글이 올라왔을 수 있으니)
                 setPosts(response.posts);
                 setPostPermission(response.postPermission ?? false);
                 setTotalPages(response.totalPages);
-                // post_type 정보 저장
                 if (response.postTypes) {
                     setPostTypes(response.postTypes);
                 }
+
+                // 4. [핵심] 받아온 데이터를 다음번을 위해 저장 (SessionStorage)
+                // Map 객체는 JSON 저장이 안 되어서 배열로 변환해서 저장해야 함
+                const dataToSave = {
+                    posts: response.posts,
+                    totalPages: response.totalPages,
+                    postPermission: response.postPermission,
+                    postTypes: response.postTypes ? Array.from(response.postTypes.entries()) : []
+                };
+                sessionStorage.setItem(cacheKey, JSON.stringify(dataToSave));
+
             } catch (e) {
                 if (seq !== reqSeqRef.current) return;
-                setTotalPages(0);
+                // 에러 발생 시, 캐시 데이터가 없다면 0페이지 처리
+                if (!cachedData) setTotalPages(0); 
             } finally {
                 if (seq === reqSeqRef.current) setLoading(false);
             }
         };
 
         getPosts();
+
     }, [
-        boards,
-        boardIdRaw,
-        location.pathname,
-        location.search,
-        isHome,
-        isUserPage,
-        isSearchPage,
-        q,
-        page,
-        effectivePerPage,
-        allBoardIds
+        boards, boardIdRaw, location.pathname, location.search,
+        isHome, isUserPage, isSearchPage, q, page, effectivePerPage, allBoardIds, accessToken
     ]);
 
     const displayPosts = posts ?? [];
@@ -246,11 +315,28 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             <div className="postlist-header">
                 {!isUserPage && !isSearchPage && (
                     <>
-                        <h2
+                        <div className="title-wrapper">
+                            <h2
                             className={`postlist-title ${isHome ? "home" : ""} ${isSearchPage ? "search" : ""}`}
-                        >
-                            {activeBoard ? activeBoard.name : (isHome ? "전체 글 보기" : "전체 글 보기")}
-                        </h2>
+                            >
+                                {(activeBoardID === 0 || isHome)
+                                    ? "전체 글 보기"
+                                    : (activeBoard?.name || "") 
+                                }
+                            </h2>
+
+                            <p className="board-description">
+                                {(isHome || activeBoardID === 0) 
+                                    ? BOARD_DESCRIPTIONS["전체 글 보기"]
+        
+                                    : activeBoard 
+                                        ? BOARD_DESCRIPTIONS[activeBoard.name]
+            
+                                        : "\u00A0" /* 공백 문자(줄 높이 유지용) */
+                                }
+                            </p>
+                        </div>
+                        
 
                         {/* 검색란: 검색페이지가 아니고, 홈도 아니고, 유저페이지도 아니고, 게시글이 '있는' 경우에만 표시 */}
                         {!isHome && !isSearchPage && !isUserPage && displayPosts.length > 0 && (
@@ -551,7 +637,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
-                                        onClick={() => setPage(1)}
+                                        onClick={() => handlePageChange(1)}
                                         disabled={page === 1}
                                     >
                                         처음으로
@@ -560,7 +646,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                                 <button
                                     className="pagination-btn"
-                                    onClick={() => setPage(hasPrevGroup ? start - 1 : 1)}
+                                    onClick={() => handlePageChange(hasPrevGroup ? start - 1 : 1)}
                                     disabled={!hasPrevGroup}
                                 >
                                     이전
@@ -570,7 +656,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     <button
                                         key={n}
                                         className={`pagination-btn ${n === page ? "active" : ""}`}
-                                        onClick={() => setPage(n)}
+                                        onClick={() => handlePageChange(n)}
                                     >
                                         {n}
                                     </button>
@@ -578,7 +664,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                                 <button
                                     className="pagination-btn"
-                                    onClick={() => setPage(hasNextGroup ? end + 1 : totalPages)}
+                                    onClick={() => handlePageChange(hasNextGroup ? end + 1 : totalPages)}
                                     disabled={!hasNextGroup}
                                 >
                                     다음
@@ -587,7 +673,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 {totalPages > GROUP_SIZE && (
                                     <button
                                         className="pagination-btn"
-                                        onClick={() => setPage(totalPages)}
+                                        onClick={() => handlePageChange(totalPages)}
                                         disabled={page === totalPages}
                                     >
                                         끝으로
