@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useUser } from "../Utils/UserContext";
-import { fetchPublicProfile, updateResume, PublicProfile } from "../../API/req";
+import { fetchPublicProfile, updateResume, PublicProfile, deleteAccount } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
 import "./Profile.css";
 
@@ -29,7 +29,7 @@ const Profile: React.FC = () => {
     const { username: paramUsername } = useParams<{ username: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { accessToken } = useUser();
+    const { accessToken, signOutLocal } = useUser();
     const { showAlert } = useAlert();
 
     const username = paramUsername || decodeURIComponent(location.pathname).match(/^\/@(.+)$/)?.[1];
@@ -41,6 +41,10 @@ const Profile: React.FC = () => {
     const [editMode, setEditMode] = useState(false);
     const [resumeText, setResumeText] = useState("");
     const [saving, setSaving] = useState(false);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deleting, setDeleting] = useState(false);
 
     const loadProfile = useCallback(async () => {
         if (!username) return;
@@ -83,6 +87,35 @@ const Profile: React.FC = () => {
     const handleCancelEdit = () => {
         setResumeText(profile?.resume || "");
         setEditMode(false);
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!accessToken || !deletePassword) {
+            showAlert({ message: "비밀번호를 입력해주세요.", type: 'error' });
+            return;
+        }
+
+        if (!window.confirm("정말로 회원 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+            return;
+        }
+
+        setDeleting(true);
+        try {
+            const result = await deleteAccount(deletePassword, accessToken);
+            if (result.success) {
+                showAlert({ message: result.message || "회원 탈퇴가 완료되었습니다.", type: 'success' });
+                signOutLocal();
+                navigate("/");
+            } else {
+                showAlert({ message: result.message || "회원 탈퇴에 실패했습니다.", type: 'error' });
+            }
+        } catch {
+            showAlert({ message: "회원 탈퇴 중 오류가 발생했습니다.", type: 'error' });
+        } finally {
+            setDeleting(false);
+            setShowDeleteModal(false);
+            setDeletePassword("");
+        }
     };
 
     if (loading) {
@@ -225,9 +258,56 @@ const Profile: React.FC = () => {
                         <button className="btn-password" onClick={() => navigate("/changepwd")}>
                             비밀번호 변경
                         </button>
+                        <button className="btn-delete-account" onClick={() => setShowDeleteModal(true)}>
+                            회원 탈퇴
+                        </button>
                     </section>
                 )}
             </div>
+
+            {showDeleteModal && (
+                <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>회원 탈퇴</h3>
+                        <p className="modal-warning">
+                            회원 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
+                            <br />
+                            계속하시려면 비밀번호를 입력해주세요.
+                        </p>
+                        <input
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            placeholder="비밀번호"
+                            className="modal-input"
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleDeleteAccount();
+                                }
+                            }}
+                        />
+                        <div className="modal-actions">
+                            <button
+                                className="modal-btn modal-btn-cancel"
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setDeletePassword("");
+                                }}
+                                disabled={deleting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="modal-btn modal-btn-delete"
+                                onClick={handleDeleteAccount}
+                                disabled={deleting || !deletePassword}
+                            >
+                                {deleting ? "처리 중..." : "탈퇴"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -66,6 +66,9 @@ const processQueue = (error: any, token: string | null = null) => {
     failedQueue = [];
 };
 
+// BroadcastChannel for logout
+const authChannel = new BroadcastChannel("jbig-auth");
+
 // Axios Response 인터셉터 설정 (401 에러 시 자동 토큰 갱신)
 axios.interceptors.response.use(
     (response) => response,
@@ -130,6 +133,9 @@ axios.interceptors.response.use(
                 localStorage.removeItem('jbig-access');
                 localStorage.removeItem('jbig-refresh');
                 localStorage.removeItem('jbig-profile');
+
+                // BroadcastChannel을 통해 모든 탭에 로그아웃 알림
+                authChannel.postMessage({ type: "SIGN_OUT" });
 
                 return Promise.reject(err);
             }
@@ -1290,4 +1296,23 @@ export const deleteDraft = async (token: string): Promise<void> => {
     await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` },
     });
+};
+
+// 회원 탈퇴
+export const deleteAccount = async (password: string, token: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+        const res = await axios.post(
+            `${BASE_URL}/api/users/delete-account/`,
+            { password },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+        return { success: true, message: res.data?.message || "회원 탈퇴가 완료되었습니다." };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "회원 탈퇴에 실패했습니다.") };
+    }
 };

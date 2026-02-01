@@ -1184,7 +1184,7 @@ const PostDetail: React.FC = () => {
                                         <Turnstile
                                             ref={turnstileRef}
                                             siteKey={process.env.REACT_APP_TURNSTILE_SITE_KEY}
-                                            onSuccess={(token) => setTurnstileToken(token)}
+                                            onSuccess={(token: string) => setTurnstileToken(token)}
                                             onExpire={() => setTurnstileToken(null)}
                                             onError={() => setTurnstileToken(null)}
                                             options={{ theme: 'light', size: 'compact' }}
