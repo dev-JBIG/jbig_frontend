@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Home from "./Components/Home/Home";
 import "./App.css";
@@ -28,44 +28,45 @@ function AppContent() {
     const authRoutes = ["/signin", "/signup", "/changepwd"];
     const isAuthRoute = authRoutes.includes(location.pathname);
 
-    const [refreshingOnReload, setRefreshingOnReload] = useState<boolean>(() => {
-        let isReload = false;
-        const nav = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
-        if (nav && nav.length > 0) {
-            isReload = nav[0].type === "reload";
-        } else {
-            // @ts-ignore (deprecated fallback)
-            isReload = performance.navigation?.type === performance.navigation?.TYPE_RELOAD;
-        }
-        return isReload;
-    });
-
+    const [isRefreshingToken, setIsRefreshingToken] = useState<boolean>(false);
     const didRunRef = useRef(false);
 
-    useEffect(() => {
-        if (!refreshingOnReload) return;
-        if (!authReady) return;
-        if (didRunRef.current) return;
-        didRunRef.current = true;
-        if (!refreshToken) {
-            setRefreshingOnReload(false);
-            return;
+    const handleSetStaffAuth = useCallback((value: boolean) => {
+        setStaffAuth(value);
+        if (value) {
+            localStorage.setItem(STAFF_AUTH_KEY, "true");
+        } else {
+            localStorage.removeItem(STAFF_AUTH_KEY);
         }
+    }, []);
+
+    useEffect(() => {
+        // authReady가 false면 아직 localStorage 복원 중이므로 대기
+        if (!authReady) return;
+        // 이미 실행했으면 중복 실행 방지
+        if (didRunRef.current) return;
+        // refreshToken이 없으면 토큰 갱신할 필요 없음
+        if (!refreshToken) return;
+        // 인증 라우트에서는 토큰 갱신 안 함
+        if (isAuthRoute) return;
+
+        didRunRef.current = true;
+        setIsRefreshingToken(true);
 
         (async () => {
             try {
                 const data = await refreshTokenAPI(refreshToken);
                 if (data?.isSuccess) {
                     setAuth(
-                        { username: data.username, semester: data.semester, email: data.email },
+                        { username: data.username, semester: data.semester, email: data.email, is_staff: data.is_staff },
                         data.access,
                         data.refresh
                     );
-                    setStaffAuth(data.is_staff);
+                    handleSetStaffAuth(data.is_staff);
                 } else {
                     signOutLocal();
                     showAlert({ 
-                        message: "토큰 갱신 실패, 다시 로그인해주세요.",
+                        message: "세션이 만료되었습니다. 다시 로그인해주세요.",
                         type: 'warning',
                         onClose: () => navigate("/signin", { replace: true })
                     });
@@ -73,24 +74,15 @@ function AppContent() {
             } catch {
                 signOutLocal();
                 showAlert({ 
-                    message: "토큰 갱신 실패, 다시 로그인해주세요.",
+                    message: "세션이 만료되었습니다. 다시 로그인해주세요.",
                     type: 'error',
                     onClose: () => navigate("/signin", { replace: true })
                 });
             } finally {
-                setRefreshingOnReload(false);
+                setIsRefreshingToken(false);
             }
         })();
-    }, [authReady, refreshingOnReload, refreshToken, setAuth, signOutLocal, navigate]);
-
-    const handleSetStaffAuth = (value: boolean) => {
-        setStaffAuth(value);
-        if (value) {
-            localStorage.setItem(STAFF_AUTH_KEY, "true");
-        } else {
-            localStorage.removeItem(STAFF_AUTH_KEY);
-        }
-    };
+    }, [authReady, refreshToken, isAuthRoute, setAuth, signOutLocal, navigate, showAlert, handleSetStaffAuth]);
 
     return (
         <StaffAuthContext.Provider value={{ staffAuth, setStaffAuth: handleSetStaffAuth }}>
@@ -103,7 +95,7 @@ function AppContent() {
                     </Routes>
                 ) : (
                     <div className="app-container">
-                        {refreshingOnReload ? (
+                        {isRefreshingToken ? (
                             <div className="app-loading" />
                         ) : (
                             <>
