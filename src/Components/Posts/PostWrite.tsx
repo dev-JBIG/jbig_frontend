@@ -54,6 +54,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const draftLoadedRef = useRef(false);
     const inFlightRef = useRef(false);
     const imageUrlMapRef = useRef<Map<string, string>>(new Map());
+    const editorRef = useRef<any>(null);
+    const cursorPosRef = useRef<number>(0);
 
     const { category, id: postId } = useParams();
     const isEdit = !!postId;
@@ -111,7 +113,30 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return false;
             }
 
-            setContent(prev => prev + `\n![${res.name}](ncp-key://${res.path})\n`);
+            const imageMarkdown = `![${res.name}](ncp-key://${res.path})`;
+            
+            // 커서 위치에 이미지 삽입
+            setContent(prev => {
+                const pos = cursorPosRef.current;
+                const before = prev.substring(0, pos);
+                const after = prev.substring(pos);
+                
+                // 앞뒤로 줄바꿈 추가 (필요한 경우)
+                const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
+                const needsNewlineAfter = after.length > 0 && !after.startsWith('\n');
+                
+                const newContent = before + 
+                    (needsNewlineBefore ? '\n' : '') + 
+                    imageMarkdown + 
+                    (needsNewlineAfter ? '\n' : '') + 
+                    after;
+                
+                // 커서 위치 업데이트
+                cursorPosRef.current = pos + (needsNewlineBefore ? 1 : 0) + imageMarkdown.length + (needsNewlineAfter ? 1 : 0);
+                
+                return newContent;
+            });
+            
             uploadedPathsRef.current.add(res.path);
             imageUrlMapRef.current.set(res.path, URL.createObjectURL(file));
             return true;
@@ -598,7 +623,41 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     <StudyForm setContent={setContent} initialContent={content} />
                 ) : (
                     <div className="content-body" onPaste={handlePaste}>
-                        <MDEditor value={content} onChange={(v) => setContent(v || "")} data-color-mode="light" height={400} preview="edit"
+                        <MDEditor 
+                            ref={editorRef}
+                            value={content} 
+                            onChange={(v, event) => {
+                                setContent(v || "");
+                                // 커서 위치 업데이트
+                                if (event) {
+                                    const target = event.target as HTMLTextAreaElement;
+                                    if (target?.selectionStart !== undefined) {
+                                        cursorPosRef.current = target.selectionStart;
+                                    }
+                                }
+                            }}
+                            onBlur={(e) => {
+                                // blur 시에도 커서 위치 저장
+                                const target = e.target as HTMLTextAreaElement;
+                                if (target?.selectionStart !== undefined) {
+                                    cursorPosRef.current = target.selectionStart;
+                                }
+                            }}
+                            onClick={(e) => {
+                                // 클릭 시에도 커서 위치 업데이트
+                                const target = e.target as HTMLTextAreaElement;
+                                if (target?.selectionStart !== undefined) {
+                                    cursorPosRef.current = target.selectionStart;
+                                }
+                            }}
+                            onKeyUp={(e) => {
+                                // 키보드 입력 후에도 커서 위치 업데이트
+                                const target = e.target as HTMLTextAreaElement;
+                                if (target?.selectionStart !== undefined) {
+                                    cursorPosRef.current = target.selectionStart;
+                                }
+                            }}
+                            data-color-mode="light" height={400} preview="edit"
                             previewOptions={{
                                 remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex],
                                 components: {

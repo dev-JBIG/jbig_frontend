@@ -84,11 +84,43 @@
 /* 팝업 푸터 (슬라이드 네비게이션) */
 .popup-footer {
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.popup-footer-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.popup-footer-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #34495e;
+    user-select: none;
+}
+
+.popup-footer-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.popup-footer-checkbox span {
+    line-height: 1;
+}
+
+.popup-footer-nav {
+    display: flex;
     justify-content: center;
     align-items: center;
     gap: 16px;
-    padding: 16px 24px;
-    border-top: 1px solid #e0e0e0;
 }
 
 .popup-nav-btn {
@@ -163,6 +195,11 @@
 
     .popup-footer {
         padding: 14px 20px;
+        gap: 10px;
+    }
+
+    .popup-footer-checkbox label {
+        font-size: 13px;
     }
 
     .popup-indicator {
