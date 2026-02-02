@@ -147,6 +147,26 @@
     white-space: nowrap;
 }
 
+.admin-table thead tr {
+    background-color: var(--background-color);
+}
+
+.admin-table th {
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--border-color);
+    text-align: left;
+    color: var(--text-light-color);
+}
+
+.admin-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
 .admin-table-header {
     background-color: var(--background-color);
     font-weight: 600;
@@ -167,6 +187,27 @@
 .table-actions {
     display: flex;
     gap: 8px;
+}
+
+/* --- 아이콘 버튼 --- */
+.admin-icon-button {
+    padding: 6px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light-color);
+}
+
+.admin-icon-button:hover {
+    background-color: var(--background-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
 }
 
 /* --- 버튼 --- */

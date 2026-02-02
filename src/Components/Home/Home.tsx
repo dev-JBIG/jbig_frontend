@@ -29,6 +29,7 @@ import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import Profile from "../Profile/Profile";
 import JbigInfo from "./JbigInfo";
+import PopupSlider from "../Utils/PopupSlider";
 import $ from "jquery";
 
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
@@ -250,8 +251,29 @@ const Home: React.FC = () => {
     const handleNotificationClick = async (notification: NotificationItem) => {
         if (!accessToken) return;
         
-        // 먼저 페이지 이동
         setNotificationOpen(false);
+        
+        // 게시글이나 게시판이 삭제된 경우 처리
+        if (!notification.board_id || !notification.post_id) {
+            showAlert({ 
+                message: "삭제된 게시글입니다.", 
+                type: 'warning' 
+            });
+            
+            // 읽음 처리만 진행
+            try {
+                await markNotificationRead(accessToken, notification.id);
+                setUnreadCount(prev => Math.max(0, prev - 1));
+                setNotifications(prev =>
+                    prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
+                );
+            } catch (err) {
+                console.error('[Notification] Failed to mark as read:', err);
+            }
+            return;
+        }
+        
+        // 페이지 이동
         navigate(`/board/${notification.board_id}/${notification.post_id}`);
         
         // 읽음 처리는 백그라운드에서
@@ -391,7 +413,7 @@ const Home: React.FC = () => {
                                                 >
                                                     <div className="notification-content">
                                                         <span className="notification-actor">
-                                                            {n.actor_semester}기 {n.actor_name}
+                                                            {n.actor_semester > 0 ? `${n.actor_semester}기 ` : ''}{n.actor_name}
                                                         </span>
                                                         <span className="notification-text">
                                                             님이 {n.notification_type === 1 && '회원님의 글에 댓글을 남겼습니다'}
@@ -401,7 +423,7 @@ const Home: React.FC = () => {
                                                         </span>
                                                     </div>
                                                     <div className="notification-post-title">
-                                                        {n.post_title.length > 25 ? n.post_title.slice(0, 25) + '...' : n.post_title}
+                                                        {n.post_title && n.post_title.length > 25 ? n.post_title.slice(0, 25) + '...' : (n.post_title || '삭제된 게시글')}
                                                     </div>
                                                     {n.comment_content && (
                                                         <div className="notification-comment">
@@ -528,6 +550,9 @@ const Home: React.FC = () => {
             {isVastOpen && (
                 <VastModal onClose={() => setVastOpen(false)} />
             )}
+            
+            {/* 팝업 슬라이더 */}
+            <PopupSlider />
         </div>
     );
 };

@@ -1195,9 +1195,9 @@ export interface NotificationItem {
     notification_type_display: string;
     actor_name: string;
     actor_semester: number;
-    post_id: number;
-    post_title: string;
-    board_id: number;
+    post_id: number | null;
+    post_title: string | null;
+    board_id: number | null;
     comment_content: string | null;
     is_read: boolean;
     created_at: string;
@@ -1299,4 +1299,76 @@ export const deleteAccount = async (password: string, token: string): Promise<{ 
     } catch (error: unknown) {
         return { success: false, message: getErrorMessage(error, "회원 탈퇴에 실패했습니다.") };
     }
+};
+
+// 팝업 관련 API
+export interface PopupItem {
+    id: number;
+    title: string;
+    content: string;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    created_by: number | null;
+    created_by_username: string;
+    order: number;
+}
+
+export interface PopupCreate {
+    title: string;
+    content: string;
+    start_date: string;
+    end_date: string;
+    is_active?: boolean;
+    order?: number;
+}
+
+// 활성 팝업 조회 (사용자용)
+export const fetchActivePopups = async (): Promise<PopupItem[]> => {
+    const url = `${BASE_URL}/api/popups/`;
+    const res = await axios.get(url);
+    return res.data;
+};
+
+// 모든 팝업 조회 (관리자용)
+export const fetchAllPopups = async (token: string): Promise<PopupItem[]> => {
+    const url = `${BASE_URL}/api/popups/`;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+};
+
+// 팝업 생성
+export const createPopup = async (data: PopupCreate, token: string): Promise<PopupItem> => {
+    const url = `${BASE_URL}/api/popups/`;
+    const res = await axios.post(url, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+        }
+    });
+    return res.data;
+};
+
+// 팝업 수정
+export const updatePopup = async (id: number, data: Partial<PopupCreate>, token: string): Promise<PopupItem> => {
+    const url = `${BASE_URL}/api/popups/${id}/`;
+    const res = await axios.patch(url, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+        }
+    });
+    return res.data;
+};
+
+// 팝업 삭제
+export const deletePopup = async (id: number, token: string): Promise<void> => {
+    const url = `${BASE_URL}/api/popups/${id}/`;
+    await axios.delete(url, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
 };
