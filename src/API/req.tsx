@@ -1205,38 +1205,22 @@ export interface NotificationItem {
 
 export const fetchNotifications = async (token: string): Promise<NotificationItem[]> => {
     const url = `${BASE_URL}/api/notifications/`;
-    try {
-        const res = await axios.get(url, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        // 페이지네이션 응답일 경우 results 배열 반환, 아니면 그대로 반환
-        if (Array.isArray(res.data)) {
-            return res.data;
-        }
-        return res.data.results || [];
-    } catch (err) {
-        // 토큰 만료/무효 시 빈 배열 반환
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-            return [];
-        }
-        throw err;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    // 페이지네이션 응답일 경우 results 배열 반환, 아니면 그대로 반환
+    if (Array.isArray(res.data)) {
+        return res.data;
     }
+    return res.data.results || [];
 };
 
 export const fetchUnreadNotificationCount = async (token: string): Promise<number> => {
     const url = `${BASE_URL}/api/notifications/unread-count/`;
-    try {
-        const res = await axios.get(url, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        return res.data.unread_count;
-    } catch (err) {
-        // 토큰 만료/무효 시 0 반환
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-            return 0;
-        }
-        throw err;
-    }
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.unread_count;
 };
 
 export const markNotificationRead = async (token: string, notificationId?: number): Promise<void> => {

@@ -201,24 +201,47 @@ const Home: React.FC = () => {
             try {
                 const count = await fetchUnreadNotificationCount(accessToken);
                 setUnreadCount(count);
-            } catch {
-                // 무시
+            } catch (err) {
+                console.error('[Notification] Failed to fetch unread count:', err);
             }
         };
 
+        // 초기 로드
         loadUnreadCount();
+
+        // 30초마다 알림 개수 갱신
+        const interval = setInterval(loadUnreadCount, 30000);
+
+        return () => clearInterval(interval);
     }, [accessToken, isLogin]);
 
     // 알림 드롭다운 열 때 알림 목록 조회
     const handleOpenNotifications = async () => {
-        if (!accessToken) return;
+        if (!accessToken) {
+            showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
+            navigate("/signin");
+            return;
+        }
+        
+        const wasOpen = notificationOpen;
         setNotificationOpen(prev => !prev);
-        if (!notificationOpen) {
+        
+        if (!wasOpen) {
             try {
                 const data = await fetchNotifications(accessToken);
                 setNotifications(data);
-            } catch {
-                // 무시
+                
+                // 빈 배열이지만 unreadCount가 있다면 재조회 시도
+                if (data.length === 0 && unreadCount > 0) {
+                    console.warn('[Notification] Empty notifications but unreadCount > 0, rechecking...');
+                    // 알림 개수 다시 확인
+                    const newCount = await fetchUnreadNotificationCount(accessToken);
+                    setUnreadCount(newCount);
+                }
+            } catch (err) {
+                console.error('[Notification] Failed to fetch notifications:', err);
+                // 토큰 갱신 실패로 로그아웃된 경우는 이미 interceptor에서 처리됨
+                setNotificationOpen(false);
             }
         }
     };
@@ -226,17 +249,21 @@ const Home: React.FC = () => {
     // 알림 클릭 시 해당 게시글로 이동
     const handleNotificationClick = async (notification: NotificationItem) => {
         if (!accessToken) return;
+        
+        // 먼저 페이지 이동
+        setNotificationOpen(false);
+        navigate(`/board/${notification.board_id}/${notification.post_id}`);
+        
+        // 읽음 처리는 백그라운드에서
         try {
             await markNotificationRead(accessToken, notification.id);
             setUnreadCount(prev => Math.max(0, prev - 1));
             setNotifications(prev =>
                 prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
             );
-        } catch {
-            // 무시
+        } catch (err) {
+            console.error('[Notification] Failed to mark as read:', err);
         }
-        setNotificationOpen(false);
-        navigate(`/board/${notification.board_id}/${notification.post_id}`);
     };
 
     // 전체 읽음 처리
@@ -246,8 +273,8 @@ const Home: React.FC = () => {
             await markNotificationRead(accessToken);
             setUnreadCount(0);
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-        } catch {
-            // 무시
+        } catch (err) {
+            console.error('[Notification] Failed to mark all as read:', err);
         }
     };
 
