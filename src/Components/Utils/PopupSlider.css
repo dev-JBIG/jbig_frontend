@@ -1,0 +1,191 @@
+/* 팝업 오버레이 */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 팝업 컨테이너 */
+.popup-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 9999;
+    animation: slideUp 0.3s ease-in-out;
+}
+
+/* 팝업 헤더 */
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.popup-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+    flex: 1;
+}
+
+.popup-close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7f8c8d;
+    transition: all 0.2s ease-in-out;
+    border-radius: 4px;
+}
+
+.popup-close-btn:hover {
+    background-color: #f4f6f9;
+    color: #2c3e50;
+}
+
+/* 팝업 내용 */
+.popup-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    line-height: 1.7;
+    color: #34495e;
+    font-size: 15px;
+}
+
+.popup-content p {
+    margin: 0 0 12px 0;
+}
+
+.popup-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* 팝업 푸터 (슬라이드 네비게이션) */
+.popup-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.popup-nav-btn {
+    background: transparent;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7f8c8d;
+    transition: all 0.2s ease-in-out;
+}
+
+.popup-nav-btn:hover {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.popup-indicator {
+    font-size: 14px;
+    font-weight: 500;
+    color: #7f8c8d;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .popup-container {
+        width: 95%;
+        max-height: 85vh;
+        border-radius: 8px;
+    }
+
+    .popup-header {
+        padding: 16px 20px;
+    }
+
+    .popup-title {
+        font-size: 18px;
+    }
+
+    .popup-content {
+        padding: 20px;
+        font-size: 14px;
+    }
+
+    .popup-footer {
+        padding: 14px 20px;
+    }
+
+    .popup-indicator {
+        font-size: 13px;
+        min-width: 50px;
+    }
+}
+
+/* 스크롤바 스타일 */
+.popup-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.popup-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.popup-content::-webkit-scrollbar-thumb {
+    background: #bdc3c7;
+    border-radius: 3px;
+}
+
+.popup-content::-webkit-scrollbar-thumb:hover {
+    background: #95a5a6;
+}
