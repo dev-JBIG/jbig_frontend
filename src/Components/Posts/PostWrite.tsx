@@ -630,32 +630,34 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 setContent(v || "");
                                 // 커서 위치 업데이트
                                 if (event) {
-                                    const target = event.target as HTMLTextAreaElement;
+                                    const target = event.target as unknown as HTMLTextAreaElement;
                                     if (target?.selectionStart !== undefined) {
                                         cursorPosRef.current = target.selectionStart;
                                     }
                                 }
                             }}
-                            onBlur={(e) => {
-                                // blur 시에도 커서 위치 저장
-                                const target = e.target as HTMLTextAreaElement;
-                                if (target?.selectionStart !== undefined) {
-                                    cursorPosRef.current = target.selectionStart;
-                                }
-                            }}
-                            onClick={(e) => {
-                                // 클릭 시에도 커서 위치 업데이트
-                                const target = e.target as HTMLTextAreaElement;
-                                if (target?.selectionStart !== undefined) {
-                                    cursorPosRef.current = target.selectionStart;
-                                }
-                            }}
-                            onKeyUp={(e) => {
-                                // 키보드 입력 후에도 커서 위치 업데이트
-                                const target = e.target as HTMLTextAreaElement;
-                                if (target?.selectionStart !== undefined) {
-                                    cursorPosRef.current = target.selectionStart;
-                                }
+                            textareaProps={{
+                                onBlur: (e) => {
+                                    // blur 시에도 커서 위치 저장
+                                    const target = e.target;
+                                    if (target?.selectionStart !== undefined) {
+                                        cursorPosRef.current = target.selectionStart;
+                                    }
+                                },
+                                onClick: (e) => {
+                                    // 클릭 시에도 커서 위치 업데이트
+                                    const target = e.target;
+                                    if (target?.selectionStart !== undefined) {
+                                        cursorPosRef.current = target.selectionStart;
+                                    }
+                                },
+                                onKeyUp: (e) => {
+                                    // 키보드 입력 후에도 커서 위치 업데이트
+                                    const target = e.target;
+                                    if (target?.selectionStart !== undefined) {
+                                        cursorPosRef.current = target.selectionStart;
+                                    }
+                                },
                             }}
                             data-color-mode="light" height={400} preview="edit"
                             previewOptions={{
