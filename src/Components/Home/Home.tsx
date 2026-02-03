@@ -153,13 +153,12 @@ const Home: React.FC = () => {
                 if (!url) {
                     setQuizURL("");
                 } else if(url === "401") {
+                    // 토큰 만료 시 조용히 로그아웃 처리 (리다이렉션 없음)
                     setQuizURL("");
                     signOutLocal();
-                    showAlert({
-                        message: "로그인이 필요합니다.",
-                        type: 'warning',
-                        onClose: () => navigate("/signin")
-                    });
+                    setUserName("");
+                    setUserSemester(null);
+                    setLogin(false);
                 } else{
                     setQuizURL(url);
                 }
