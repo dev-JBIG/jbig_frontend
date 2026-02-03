@@ -11,7 +11,8 @@ import {
     updatePopup,
     deletePopup,
     PopupItem,
-    PopupCreate
+    PopupCreate,
+    uploadAttachment
 } from "../../API/req";
 import { Menu, X, Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import "./Admin.css";
@@ -249,10 +250,16 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
     // 폼 상태
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [imageUrl, setImageUrl] = useState("");
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>("");
+    const [uploading, setUploading] = useState(false);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [order, setOrder] = useState(0);
+    
+    const imageInputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadPopups();
@@ -274,18 +281,27 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
     const resetForm = () => {
         setTitle("");
         setContent("");
+        setImageUrl("");
+        setImageFile(null);
+        setImagePreview("");
         setStartDate("");
         setEndDate("");
         setIsActive(true);
         setOrder(0);
         setEditingPopup(null);
         setShowForm(false);
+        if (imageInputRef.current) {
+            imageInputRef.current.value = "";
+        }
     };
 
     const handleEdit = (popup: PopupItem) => {
         setEditingPopup(popup);
         setTitle(popup.title);
         setContent(popup.content);
+        setImageUrl(popup.image_url || "");
+        setImageFile(null);
+        setImagePreview(popup.image_url || "");
         setStartDate(popup.start_date.slice(0, 16));
         setEndDate(popup.end_date.slice(0, 16));
         setIsActive(popup.is_active);
@@ -293,24 +309,90 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
         setShowForm(true);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-        if (!title.trim() || !content.trim() || !startDate || !endDate) {
-            showAlert({ message: "모든 필드를 입력해주세요.", type: 'warning' });
+        // 이미지 파일 검증
+        if (!file.type.startsWith('image/')) {
+            showAlert({ message: '이미지 파일만 업로드할 수 있습니다.', type: 'warning' });
+            if (imageInputRef.current) {
+                imageInputRef.current.value = "";
+            }
             return;
         }
 
-        const data: PopupCreate = {
-            title: title.trim(),
-            content: content.trim(),
-            start_date: startDate,
-            end_date: endDate,
-            is_active: isActive,
-            order
+        // 10MB 제한
+        if (file.size > 10 * 1024 * 1024) {
+            showAlert({ message: '이미지 파일은 10MB 이하만 업로드할 수 있습니다.', type: 'warning' });
+            if (imageInputRef.current) {
+                imageInputRef.current.value = "";
+            }
+            return;
+        }
+
+        setImageFile(file);
+        
+        // 미리보기 생성
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
         };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview("");
+        setImageUrl("");
+        if (imageInputRef.current) {
+            imageInputRef.current.value = "";
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // 제목, 시작일, 종료일은 필수
+        if (!title.trim() || !startDate || !endDate) {
+            showAlert({ message: "제목, 시작일, 종료일은 필수 항목입니다.", type: 'warning' });
+            return;
+        }
+
+        // 내용과 이미지 중 하나는 있어야 함
+        if (!content.trim() && !imageFile && !imageUrl) {
+            showAlert({ message: "내용 또는 이미지 중 하나는 입력해야 합니다.", type: 'warning' });
+            return;
+        }
+
+        setUploading(true);
+        let finalImagePath = imageUrl;
 
         try {
+            // 새로운 이미지 파일이 있으면 NCP Object Storage에 업로드
+            if (imageFile) {
+                const uploadResult = await uploadAttachment(imageFile, accessToken);
+                console.log('[Popup] Upload result:', uploadResult);
+                if (uploadResult.message || !uploadResult.path) {
+                    showAlert({ message: `이미지 업로드 실패: ${uploadResult.message || '알 수 없는 오류'}`, type: 'error' });
+                    setUploading(false);
+                    return;
+                }
+                // path를 저장 (게시글과 동일한 방식)
+                finalImagePath = uploadResult.path;
+                console.log('[Popup] Image path to save:', finalImagePath);
+            }
+
+            const data: PopupCreate = {
+                title: title.trim(),
+                content: content.trim(),
+                image_path: finalImagePath || undefined,
+                start_date: startDate,
+                end_date: endDate,
+                is_active: isActive,
+                order
+            };
+
             if (editingPopup) {
                 await updatePopup(editingPopup.id, data, accessToken);
                 showAlert({ message: "팝업이 수정되었습니다.", type: 'success' });
@@ -326,6 +408,8 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
                 message: editingPopup ? "팝업 수정에 실패했습니다." : "팝업 생성에 실패했습니다.", 
                 type: 'error' 
             });
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -393,16 +477,63 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
                             />
                         </div>
                         <div className="form-group">
-                            <label className="form-label">내용 *</label>
+                            <label className="form-label">내용</label>
                             <textarea
                                 className="admin-input"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                placeholder="팝업 내용"
+                                placeholder="팝업 내용 (이미지만 있어도 생성 가능)"
                                 rows={6}
-                                required
                                 style={{ resize: 'vertical', fontFamily: 'inherit' }}
                             />
+                            <small style={{ color: '#666', fontSize: '0.9em', display: 'block', marginTop: '4px' }}>
+                                내용 또는 이미지 중 하나는 필수입니다.
+                            </small>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">이미지 (선택)</label>
+                            <input
+                                ref={imageInputRef}
+                                className="admin-input"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                style={{ padding: '8px' }}
+                            />
+                            <small style={{ color: '#666', fontSize: '0.9em', display: 'block', marginTop: '4px' }}>
+                                이미지를 업로드하면 팝업 상단에 표시됩니다. (최대 10MB)
+                            </small>
+                            {imagePreview && (
+                                <div style={{ marginTop: '12px', position: 'relative' }}>
+                                    <img 
+                                        src={imagePreview} 
+                                        alt="미리보기" 
+                                        style={{ 
+                                            maxWidth: '300px', 
+                                            maxHeight: '200px', 
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            display: 'block'
+                                        }} 
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoveImage}
+                                        style={{
+                                            marginTop: '8px',
+                                            padding: '4px 12px',
+                                            backgroundColor: '#e74c3c',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9em'
+                                        }}
+                                    >
+                                        이미지 제거
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                             <div className="form-group">
@@ -454,8 +585,8 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                            <button className="admin-button button-primary" type="submit">
-                                {editingPopup ? '수정' : '생성'}
+                            <button className="admin-button button-primary" type="submit" disabled={uploading}>
+                                {uploading ? '업로드 중...' : (editingPopup ? '수정' : '생성')}
                             </button>
                             <button
                                 className="admin-button button-secondary"

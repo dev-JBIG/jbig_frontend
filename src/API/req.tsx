@@ -601,7 +601,7 @@ export const fetchUserPosts = async (
 // 첨부파일 업로드
 
 // 첨부파일 업로드 (NCP Presigned URL 방식)
-export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; download_url?: string; message?: string }> => {
+export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; url?: string; download_url?: string; message?: string }> => {
     let generateUrlResponse;
     try {
         generateUrlResponse = await axios.post(
@@ -613,8 +613,8 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
         return { path: "", name: file.name, download_url: "", message: getErrorMessage(error, "업로드 URL 요청에 실패했습니다.") };
     }
 
-    const { upload_url, file_key, download_url } = generateUrlResponse.data;
-    if (!upload_url || !file_key || !download_url) {
+    const { upload_url, file_key, download_url, url } = generateUrlResponse.data;
+    if (!upload_url || !file_key) {
         return { path: "", name: file.name, download_url: "", message: "서버에서 유효한 업로드 URL을 받지 못했습니다." };
     }
 
@@ -626,7 +626,12 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
         return { path: "", name: file.name, download_url: "", message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
     }
 
-    return { path: file_key, name: file.name, download_url: `ncp-key://${file_key}` };
+    return { 
+        path: file_key, 
+        name: file.name, 
+        url: url,  // 영구적인 public URL
+        download_url: download_url || `ncp-key://${file_key}` 
+    };
 };
 
 // 업로드된 파일 삭제 (NCP)
@@ -1306,6 +1311,7 @@ export interface PopupItem {
     id: number;
     title: string;
     content: string;
+    image_url?: string;
     start_date: string;
     end_date: string;
     is_active: boolean;
@@ -1319,6 +1325,7 @@ export interface PopupItem {
 export interface PopupCreate {
     title: string;
     content: string;
+    image_path?: string;  // 생성/수정 시 NCP key 경로 전송
     start_date: string;
     end_date: string;
     is_active?: boolean;
