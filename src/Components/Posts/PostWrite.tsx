@@ -637,23 +637,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 }
                             }}
                             textareaProps={{
-                                onBlur: (e) => {
+                                onBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => {
                                     // blur 시에도 커서 위치 저장
                                     const target = e.target;
                                     if (target?.selectionStart !== undefined) {
                                         cursorPosRef.current = target.selectionStart;
                                     }
                                 },
-                                onClick: (e) => {
+                                onClick: (e: React.MouseEvent<HTMLTextAreaElement>) => {
                                     // 클릭 시에도 커서 위치 업데이트
-                                    const target = e.target;
+                                    const target = e.target as HTMLTextAreaElement;
                                     if (target?.selectionStart !== undefined) {
                                         cursorPosRef.current = target.selectionStart;
                                     }
                                 },
-                                onKeyUp: (e) => {
+                                onKeyUp: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                                     // 키보드 입력 후에도 커서 위치 업데이트
-                                    const target = e.target;
+                                    const target = e.target as HTMLTextAreaElement;
                                     if (target?.selectionStart !== undefined) {
                                         cursorPosRef.current = target.selectionStart;
                                     }
