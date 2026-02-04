@@ -25,6 +25,7 @@ import { useUser } from "../Utils/UserContext";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
 import VastModal from "../Utils/Vast/VastModal";
+import LoginModal from "../Utils/LoginModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import Profile from "../Profile/Profile";
@@ -71,6 +72,7 @@ const Home: React.FC = () => {
     const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
     const [initialEvent, setInitialEvent] = useState<any>(null);
     const [isVastOpen, setVastOpen] = useState(false);
+    const [isLoginModalOpen, setLoginModalOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -118,7 +120,7 @@ const Home: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (isModalOpen) {
+        if (isModalOpen || isLoginModalOpen) {
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
             document.body.style.paddingRight = `${scrollbarWidth}px`;
             document.body.classList.add('modal-open');
@@ -131,7 +133,7 @@ const Home: React.FC = () => {
             document.body.style.paddingRight = '';
             document.body.classList.remove('modal-open');
         };
-    }, [isModalOpen]);
+    }, [isModalOpen, isLoginModalOpen]);
 
     useEffect(() => {
         if (!authReady) return;
@@ -459,7 +461,7 @@ const Home: React.FC = () => {
                                 </span>
                             </div>
                         ) : (
-                            <button className="login-button" onClick={() => navigate('/signin')}>
+                            <button className="login-button" onClick={() => setLoginModalOpen(true)}>
                                 로그인
                             </button>
                         )}
@@ -548,6 +550,9 @@ const Home: React.FC = () => {
             )}
             {isVastOpen && (
                 <VastModal onClose={() => setVastOpen(false)} />
+            )}
+            {isLoginModalOpen && (
+                <LoginModal onClose={() => setLoginModalOpen(false)} />
             )}
             
             {/* 팝업 슬라이더 */}

@@ -1,0 +1,225 @@
+/* 모달 배경 */
+.login-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 모달 컨테이너 */
+.login-modal-container {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 닫기 버튼 */
+.login-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.login-modal-close:hover {
+    color: #333;
+}
+
+/* 헤더 */
+.login-modal-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-modal-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+/* 폼 */
+.login-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-modal-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: -8px;
+}
+
+.login-modal-input {
+    padding: 12px 16px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-modal-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.login-modal-input.input-error {
+    border-color: #e74c3c;
+}
+
+.login-modal-input.input-error:focus {
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* 비밀번호 행 */
+.login-modal-password-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.login-modal-toggle {
+    position: absolute;
+    right: 16px;
+    font-size: 13px;
+    color: #4a90e2;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+}
+
+.login-modal-toggle:hover {
+    color: #357abd;
+}
+
+/* 에러 메시지 */
+.login-modal-field-error {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: -8px;
+}
+
+.login-modal-error {
+    background-color: #fef2f2;
+    color: #e74c3c;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #fecaca;
+}
+
+/* 로그인 버튼 */
+.login-modal-button {
+    margin-top: 12px;
+    padding: 14px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-modal-button:hover:not(:disabled) {
+    background-color: #357abd;
+}
+
+.login-modal-button:disabled {
+    background-color: #b0c4de;
+    cursor: not-allowed;
+}
+
+/* 링크 영역 */
+.login-modal-links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 12px;
+}
+
+.login-modal-link {
+    background: none;
+    border: none;
+    color: #4a90e2;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.login-modal-link:hover {
+    color: #357abd;
+    text-decoration: underline;
+}
+
+/* 모바일 대응 */
+@media (max-width: 500px) {
+    .login-modal-container {
+        padding: 30px 24px;
+        width: 95%;
+        max-width: none;
+    }
+
+    .login-modal-title {
+        font-size: 22px;
+    }
+
+    .login-modal-links {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+}
