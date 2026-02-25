@@ -80,6 +80,15 @@
     color: #aaa;
     margin-top: 3px;
 }
+.postwrite-photo-hint {
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5f5;
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
 .postwrite-submit {
     margin-top: 18px;
     width: 100%;

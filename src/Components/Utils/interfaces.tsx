@@ -87,6 +87,7 @@ export interface PostDetailData {
 export interface Board {
     id: number;
     name: string;
+    board_type?: number;
 }
 
 export interface Section {

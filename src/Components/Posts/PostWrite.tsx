@@ -18,6 +18,7 @@ import StudyForm from "./StudyForm";
 
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 const MAX_FILES = 3;
+const MAX_PHOTO_FILES = 12;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const BLOCKED_BOARD_KEYWORDS = ["공지사항", "admin", "어드민", "운영진", "관리자"];
 
@@ -66,6 +67,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const { showAlert, showConfirm } = useAlert();
 
     const BOARD_LIST = useMemo(() => boards.flatMap((sec) => sec.boards), [boards]);
+    const isPhotoBoard = !!(selectedBoard && (selectedBoard.board_type === 4 || selectedBoard.name === "사진첩"));
 
     const filteredBoardList = useMemo(() => {
         if (staffAuth) return BOARD_LIST;
@@ -84,7 +86,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         () => existingAttachments.filter(a => attachments.some(att => att.path === a.path)).length,
         [existingAttachments, attachments]
     );
-    const remainingSlots = Math.max(0, MAX_FILES - keptExistingCount - files.length);
+    const maxFiles = isPhotoBoard ? MAX_PHOTO_FILES : MAX_FILES;
+    const remainingSlots = Math.max(0, maxFiles - keptExistingCount - files.length);
 
     const isImageFileName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
     const formatBytes = (n?: number) => n ? `${(n / 1024 / 1024).toFixed(2)} MB` : "";
@@ -93,6 +96,12 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'));
 
     const isStudyBoard = selectedBoard && (selectedBoard.id === 8 || selectedBoard.name === "스터디/소모임 홍보");
+
+    useEffect(() => {
+        if (isPhotoBoard && content.trim()) {
+            setContent("");
+        }
+    }, [isPhotoBoard]);
 
 
     // 공통 이미지 업로드 로직
@@ -389,6 +398,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const ext = file.name.split(".").pop()?.toLowerCase() || "";
             if (BLOCKED_EXTENSIONS.includes(ext)) { blockedFile = true; continue; }
             if (file.size > MAX_FILE_SIZE) { overSize = true; continue; }
+            if (isPhotoBoard && !file.type.startsWith("image/")) {
+                blockedFile = true;
+                continue;
+            }
             if (!accessToken) { 
                 showAlert({
                     message: "로그인이 필요합니다.",
@@ -416,10 +429,17 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             }
         }
 
-        if (blockedFile) showAlert({ message: "jsp, php, asp, cgi 확장자 파일은 첨부할 수 없습니다.", type: 'warning' });
+        if (blockedFile) {
+            showAlert({
+                message: isPhotoBoard
+                    ? "사진첩에는 이미지 파일만 업로드할 수 있습니다."
+                    : "jsp, php, asp, cgi 확장자 파일은 첨부할 수 없습니다.",
+                type: 'warning'
+            });
+        }
         if (overSize) showAlert({ message: `${MAX_FILE_SIZE / 1024 / 1024}MB를 초과하는 파일은 첨부할 수 없습니다.`, type: 'warning' });
         if (candidates.length > willProcess.length) {
-            showAlert({ message: `최대 ${MAX_FILES}개까지 가능해서 ${candidates.length - willProcess.length}개는 제외되었습니다.`, type: 'info' });
+            showAlert({ message: `최대 ${maxFiles}개까지 가능해서 ${candidates.length - willProcess.length}개는 제외되었습니다.`, type: 'info' });
         }
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
@@ -447,6 +467,18 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     // 유효성 검사
     const validateForm = (): boolean => {
         if (!title.trim()) { showAlert({ message: "제목을 입력하세요.", type: 'warning' }); return false; }
+
+        if (isPhotoBoard) {
+            if (attachments.length === 0) {
+                showAlert({ message: "사진을 최소 1장 이상 업로드하세요.", type: 'warning' });
+                return false;
+            }
+            if (content.trim()) {
+                showAlert({ message: "사진첩 게시판은 본문을 작성할 수 없습니다.", type: 'warning' });
+                return false;
+            }
+            return true;
+        }
 
         if (category === '4') {
             if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) { showAlert({ message: "결석 날짜를 입력하세요.", type: 'warning' }); return false; }
@@ -610,12 +642,24 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 <label style={{ fontWeight: 'bold' }}>제목</label>
                 <input className="postwrite-title-input" type="text" value={title} onChange={e => setTitle(e.target.value)}
                     maxLength={120} required
-                    placeholder={category === '4' ? "[X주차] 결석사유서 OOO" : isFeedbackBoard ? "에러/피드백 제보 제목을 입력하세요" : "제목을 입력하세요"} />
+                    placeholder={
+                        isPhotoBoard
+                            ? "사진 제목을 입력하세요"
+                            : category === '4'
+                                ? "[X주차] 결석사유서 OOO"
+                                : isFeedbackBoard
+                                    ? "에러/피드백 제보 제목을 입력하세요"
+                                    : "제목을 입력하세요"
+                    } />
             </div>
 
             <div className="postwrite-row">
                 <label style={{ fontWeight: 'bold' }}>본문</label>
-                {category === '4' ? (
+                {isPhotoBoard ? (
+                    <div className="postwrite-photo-hint">
+                        사진첩은 제목과 사진만 등록됩니다. 본문은 작성되지 않습니다.
+                    </div>
+                ) : category === '4' ? (
                     <AbsenceForm setContent={setContent} initialContent={content} />
                 ) : isFeedbackBoard ? (
                     <FeedbackForm setContent={setContent} initialContent={content} />
@@ -703,7 +747,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
             <div className="postwrite-row">
                 <label className="attachments-top">첨부 파일</label>
-                <input type="file" ref={fileInputRef} multiple disabled={remainingSlots === 0} onChange={handleFileChange} style={{marginBottom: 8}} />
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    multiple
+                    accept={isPhotoBoard ? "image/*" : undefined}
+                    disabled={remainingSlots === 0}
+                    onChange={handleFileChange}
+                    style={{marginBottom: 8}}
+                />
                 <div className="postwrite-files">
                     {existingAttachments.filter(a => attachments.some(att => att.path === a.path)).map((a) => (
                         <div className="postwrite-file-preview" key={`ex-${a.path}`}>
@@ -725,7 +777,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         </div>
                     ))}
                 </div>
-                <div className="postwrite-img-hint">(최대 {MAX_FILES}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)</div>
+                <div className="postwrite-img-hint">(최대 {maxFiles}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)</div>
             </div>
 
             <button className="postwrite-submit" type="submit" disabled={submitting} aria-busy={submitting}>등록하기</button>

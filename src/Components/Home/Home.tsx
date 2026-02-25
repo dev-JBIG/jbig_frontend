@@ -31,6 +31,7 @@ import {useAlert} from "../Utils/AlertContext";
 import Profile from "../Profile/Profile";
 import JbigInfo from "./JbigInfo";
 import PopupSlider from "../Utils/PopupSlider";
+import PhotoAlbumSlider from "./PhotoAlbumSlider";
 import $ from "jquery";
 
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
@@ -518,6 +519,7 @@ const Home: React.FC = () => {
                                 )}
                             </div>
                             <PostList boards={boards} isHome={true}/>
+                            <PhotoAlbumSlider boards={boards} />
                         </MainLayout>
                     }/>
                     <Route path="board/:boardId" element={

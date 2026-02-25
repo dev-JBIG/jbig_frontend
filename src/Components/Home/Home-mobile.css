@@ -134,4 +134,28 @@
         width: calc(100vw - 32px);
         max-width: 360px;
     }
+
+    /* 사진첩 슬라이더 */
+    .photo-album-section {
+        margin-top: var(--space-xl);
+        padding: var(--space-md);
+    }
+
+    .photo-album-slider {
+        min-height: 220px;
+    }
+
+    .photo-album-frame {
+        max-width: 100%;
+    }
+
+    .photo-album-image {
+        height: 220px;
+    }
+
+    .photo-album-nav {
+        width: 32px;
+        height: 32px;
+        font-size: 20px;
+    }
 }

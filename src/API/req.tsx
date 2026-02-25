@@ -6,7 +6,8 @@ import {
     UserProfile,
     UserComment,
     CalendarEvent,
-    CalendarEventCreate
+    CalendarEventCreate,
+    AttachmentData
 } from "../Components/Utils/interfaces";
 
 // API 에러 응답 타입
@@ -149,6 +150,13 @@ axios.interceptors.response.use(
 interface PaginatedResponse<T> {
     results?: T[];
     count?: number;
+}
+
+export interface PhotoPostItem {
+    id: number;
+    title: string;
+    created_at?: string;
+    attachment_paths?: AttachmentData[];
 }
 
 function extractResults<T>(data: PaginatedResponse<T> | T[]): T[] {
@@ -392,6 +400,24 @@ export const fetchBoardPosts = async (
         postPermission: Boolean(res.data?.board?.post_permission),
         postTypes: postTypesMap,
     };
+};
+
+// 사진첩 게시글 조회 (첨부 이미지 포함)
+export const fetchPhotoAlbumPosts = async (
+    boardId: number,
+    limit: number = 20
+): Promise<PhotoPostItem[]> => {
+    const response = await axios.get(`${BASE_URL}/api/boards/${boardId}/posts/`, {
+        params: { page_size: limit, page: 1 },
+    });
+    const raw = response.data?.results ?? response.data ?? [];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        created_at: item.created_at,
+        attachment_paths: item.attachment_paths || [],
+    }));
 };
 
 // 퀴즈 url 반환
