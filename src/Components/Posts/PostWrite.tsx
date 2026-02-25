@@ -36,6 +36,8 @@ const extractKeyFromUrl = (url: string, fallback: string): string => {
     }
 };
 
+const isImageByName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+
 const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
@@ -89,7 +91,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const maxFiles = isPhotoBoard ? MAX_PHOTO_FILES : MAX_FILES;
     const remainingSlots = Math.max(0, maxFiles - keptExistingCount - files.length);
 
-    const isImageFileName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+    const isImageFileName = (name: string) => isImageByName(name);
     const formatBytes = (n?: number) => n ? `${(n / 1024 / 1024).toFixed(2)} MB` : "";
 
     const isFeedbackBoard = selectedBoard &&
@@ -398,7 +400,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const ext = file.name.split(".").pop()?.toLowerCase() || "";
             if (BLOCKED_EXTENSIONS.includes(ext)) { blockedFile = true; continue; }
             if (file.size > MAX_FILE_SIZE) { overSize = true; continue; }
-            if (isPhotoBoard && !file.type.startsWith("image/")) {
+            if (isPhotoBoard && !(file.type.startsWith("image/") || isImageByName(file.name))) {
                 blockedFile = true;
                 continue;
             }
@@ -745,40 +747,85 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 </label>
             </div>
 
-            <div className="postwrite-row">
-                <label className="attachments-top">첨부 파일</label>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    multiple
-                    accept={isPhotoBoard ? "image/*" : undefined}
-                    disabled={remainingSlots === 0}
-                    onChange={handleFileChange}
-                    style={{marginBottom: 8}}
-                />
-                <div className="postwrite-files">
-                    {existingAttachments.filter(a => attachments.some(att => att.path === a.path)).map((a) => (
-                        <div className="postwrite-file-preview" key={`ex-${a.path}`}>
-                            {isImageFileName(a.filename)
-                                ? <img src={a.url} alt={a.filename} style={{width: 48, height: 48, objectFit: "cover", marginRight: 8}} />
-                                : <span style={{marginRight: 8, fontSize: 24}}>📄</span>}
-                            <span className="file-name">{a.filename}</span>
-                            {a.sizeBytes && <span className="file-size">({formatBytes(a.sizeBytes)})</span>}
-                            <button type="button" onClick={() => handleRemoveExistingAttachment(a.path)} style={{marginLeft: 8}}>삭제</button>
+            {isPhotoBoard ? (
+                <div className="postwrite-row">
+                    <label className="attachments-top">사진</label>
+                    <div className="photo-upload-panel">
+                        <button
+                            type="button"
+                            className="photo-upload-button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={remainingSlots === 0}
+                        >
+                            사진 선택
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            multiple
+                            accept="image/*"
+                            disabled={remainingSlots === 0}
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                        />
+                        <div className="postwrite-img-hint">
+                            (최대 {maxFiles}장, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)
                         </div>
-                    ))}
-                    {files.map((item, idx) => (
-                        <div className="postwrite-file-preview" key={`new-${idx}`}>
-                            {item.url ? <img src={item.url} alt="미리보기" style={{width: 48, height: 48, objectFit: "cover", marginRight: 8}} />
-                                : <span style={{marginRight: 8, fontSize: 24}}>📄</span>}
-                            <span className="file-name">{item.file.name}</span>
-                            <span className="file-size">({(item.file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                            <button type="button" onClick={() => handleRemoveFile(idx)} style={{marginLeft: 8}}>삭제</button>
+                        <div className="photo-grid">
+                            {existingAttachments.filter(a => attachments.some(att => att.path === a.path)).map((a) => (
+                                <div className="photo-card" key={`ex-${a.path}`}>
+                                    <img src={a.url} alt={a.filename} className="photo-card-image" />
+                                    <button type="button" className="photo-card-remove" onClick={() => handleRemoveExistingAttachment(a.path)}>
+                                        삭제
+                                    </button>
+                                </div>
+                            ))}
+                            {files.map((item, idx) => (
+                                <div className="photo-card" key={`new-${idx}`}>
+                                    <img src={item.url} alt={item.file.name} className="photo-card-image" />
+                                    <button type="button" className="photo-card-remove" onClick={() => handleRemoveFile(idx)}>
+                                        삭제
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
-                <div className="postwrite-img-hint">(최대 {maxFiles}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)</div>
-            </div>
+            ) : (
+                <div className="postwrite-row">
+                    <label className="attachments-top">첨부 파일</label>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        multiple
+                        disabled={remainingSlots === 0}
+                        onChange={handleFileChange}
+                        style={{marginBottom: 8}}
+                    />
+                    <div className="postwrite-files">
+                        {existingAttachments.filter(a => attachments.some(att => att.path === a.path)).map((a) => (
+                            <div className="postwrite-file-preview" key={`ex-${a.path}`}>
+                                {isImageFileName(a.filename)
+                                    ? <img src={a.url} alt={a.filename} style={{width: 48, height: 48, objectFit: "cover", marginRight: 8}} />
+                                    : <span style={{marginRight: 8, fontSize: 24}}>📄</span>}
+                                <span className="file-name">{a.filename}</span>
+                                {a.sizeBytes && <span className="file-size">({formatBytes(a.sizeBytes)})</span>}
+                                <button type="button" onClick={() => handleRemoveExistingAttachment(a.path)} style={{marginLeft: 8}}>삭제</button>
+                            </div>
+                        ))}
+                        {files.map((item, idx) => (
+                            <div className="postwrite-file-preview" key={`new-${idx}`}>
+                                {item.url ? <img src={item.url} alt="미리보기" style={{width: 48, height: 48, objectFit: "cover", marginRight: 8}} />
+                                    : <span style={{marginRight: 8, fontSize: 24}}>📄</span>}
+                                <span className="file-name">{item.file.name}</span>
+                                <span className="file-size">({(item.file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                <button type="button" onClick={() => handleRemoveFile(idx)} style={{marginLeft: 8}}>삭제</button>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="postwrite-img-hint">(최대 {maxFiles}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)</div>
+                </div>
+            )}
 
             <button className="postwrite-submit" type="submit" disabled={submitting} aria-busy={submitting}>등록하기</button>
         </form>
