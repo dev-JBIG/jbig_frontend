@@ -237,6 +237,7 @@ const PostDetail: React.FC = () => {
                     board_post_id: src.id,
                     board: src.board?.name || "",
                     board_id: src.board_id || src.board?.id,
+                    board_type: src.board?.board_type ?? 1,
                     author_semester: src.author_semester,
                     title: src.title || "",
                     content_html: src.content_html || "",
@@ -868,27 +869,45 @@ const PostDetail: React.FC = () => {
                         >
                             {post.content_md}
                         </ReactMarkdown>
+
+                        {/* 사진첩 게시글: 이미지 첨부파일을 인라인으로 표시 */}
+                        {post.board_type === 4 && post.attachments?.filter(att =>
+                            /^(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(att.fileType || "")
+                        ).map(att => (
+                            <img
+                                key={att.id}
+                                src={att.fileUrl}
+                                alt={att.fileName}
+                                className="photo-album-inline-image"
+                                loading="lazy"
+                            />
+                        ))}
                     </div>
                 </div>
 
-            {/* 첨부파일 */}
-            {post.attachments && post.attachments.length > 0 && (
-                <div className="postdetail-attachments">
-                    <div className="postdetail-attachments-title">첨부파일</div>
-                    <ul>
-                        {post.attachments.map(att => (
-                            <li key={att.id}>
-                                <a href={att.fileUrl} target="_blank" rel="noopener noreferrer">
-                                    {att.fileName}
-                                    {att.fileType && (
-                                        <span className="file-type"> ({att.fileType})</span>
-                                    )}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            {/* 첨부파일 (사진첩 게시글은 이미지 제외) */}
+            {post.attachments && post.attachments.length > 0 && (() => {
+                const filtered = post.board_type === 4
+                    ? post.attachments.filter(att => !/^(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(att.fileType || ""))
+                    : post.attachments;
+                return filtered.length > 0 ? (
+                    <div className="postdetail-attachments">
+                        <div className="postdetail-attachments-title">첨부파일</div>
+                        <ul>
+                            {filtered.map(att => (
+                                <li key={att.id}>
+                                    <a href={att.fileUrl} target="_blank" rel="noopener noreferrer">
+                                        {att.fileName}
+                                        {att.fileType && (
+                                            <span className="file-type"> ({att.fileType})</span>
+                                        )}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : null;
+            })()}
 
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">
