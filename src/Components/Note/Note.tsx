@@ -5,8 +5,16 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { useAlert } from "../Utils/AlertContext";
 import { fetchSiteSettings } from "../../API/req";
+import { Code } from 'react-notion-x/build/third-party/code'
+import { Collection } from 'react-notion-x/build/third-party/collection'
+import { Equation } from 'react-notion-x/build/third-party/equation'
 
 import "react-notion-x/src/styles.css";
+import "prismjs/themes/prism.css";
+
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-sql";
+
 import "./Note.css";
 
 async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
@@ -192,6 +200,11 @@ const Note: React.FC = () => {
                         fullPage={true}
                         darkMode={false}
                         mapPageUrl={mapPageUrl}
+                        components={{
+                            Code,
+                            Collection,
+                            Equation
+                        }}
                     />
                 )}
             </div>

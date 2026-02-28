@@ -100,20 +100,31 @@
     padding: 20px !important;
 }
 
+
 .notion-title {
-    font-size: 2rem !important;
+    font-size: 2.2rem !important; 
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important; 
+    margin-bottom: 1.5rem !important;
 }
 
 .notion-h1 {
     font-size: 1.75rem !important;
+    font-weight: 600 !important; 
+    letter-spacing: -0.015em !important;
+    margin-top: 2rem !important; 
 }
 
 .notion-h2 {
     font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
 }
 
 .notion-h3 {
     font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
 }
 
 /* 이미지 스타일 */
@@ -163,4 +174,82 @@
     .notion-page-content {
         padding: 15px !important;
     }
+}
+
+
+
+/* 1. 노션 오리지널 폰트 및 기본 글자색 강제 적용 */
+.notion {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    color: #37352f !important; 
+    font-size: 16px !important;
+}
+
+
+/* 여백 조정 */
+.notion-page {
+    padding-top: 30px !important;
+    padding-bottom: 10vh !important;
+}
+
+
+.notion-link:hover {
+    border-bottom-color: #37352f;
+    opacity: 1;
+}
+
+
+
+
+/* 1. 노션 전체 화면이 JBIG 하얀 박스 너비를 절대 넘지 않게 */
+.notion,
+.notion-frame,
+.notion-page {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. 들여쓰기, 텍스트, 리스트가 박스를 뚫고 나가는 것 차단 */
+.notion-block,
+.notion-list,
+.notion-list-item,
+.notion-text,
+.notion-asset-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* --------------------------------------
+들여쓰기 디자인
+-------------------------------------- */
+
+.notion-list {
+    list-style-type: disc !important;
+}
+
+.notion-list .notion-list {
+    list-style-type: circle !important;
+}
+
+.notion-list .notion-list .notion-list {
+    list-style-type: square !important;
+}
+
+/* 홈으로 버튼 디자인 */
+
+.refresh-button {
+    background-image: none !important; 
+    background-color: var(--color-primary) !important; 
+    border: none !important;
+    color: var(--color-text-inverse, white) !important; 
+    
+    border-radius: 8px; 
+    transition: background-color 0.2s ease-in-out !important; 
+}
+
+.refresh-button:hover {
+    background-color: var(--color-primary-hover) !important;
+    transform: none !important; 
 }
