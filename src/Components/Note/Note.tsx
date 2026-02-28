@@ -10,7 +10,13 @@ import "react-notion-x/src/styles.css";
 import "./Note.css";
 
 async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
-    const res = await fetch(`https://notion-api.splitbee.io/v1/page/${pageId}`);
+    // [수정] URL 끝에 현재 시간(timestamp)을 붙여서 매번 새로운 요청인 것처럼 서버를 속입니다.
+    // 추가로 fetch 옵션에 'no-store'를 주어 캐시를 아예 사용하지 않도록 강제합니다.
+    const timestamp = new Date().getTime();
+    const res = await fetch(`https://notion-api.splitbee.io/v1/page/${pageId}?t=${timestamp}`, {
+        cache: 'no-store', // 브라우저 및 중간 프록시 캐시 방지
+    });
+    
     if (!res.ok) {
         throw new Error(`Failed to fetch page: ${res.status}`);
     }
