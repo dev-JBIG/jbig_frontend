@@ -84,6 +84,18 @@
     overflow: hidden;
     box-shadow: var(--shadow-lg);
     background-color: #fff;
+    cursor: pointer;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.photo-album-frame:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-xl);
+}
+
+.photo-album-frame:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
 }
 
 .photo-album-image {

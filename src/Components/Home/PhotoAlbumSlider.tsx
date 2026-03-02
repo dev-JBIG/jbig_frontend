@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchPhotoAlbumPosts, PhotoPostItem } from "../../API/req";
 import { Section } from "../Utils/interfaces";
 
@@ -9,6 +10,7 @@ interface PhotoAlbumSliderProps {
 interface PhotoSlide {
     url: string;
     title: string;
+    postId: number;
 }
 
 const PHOTO_BOARD_TYPE = 4;
@@ -19,6 +21,7 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
     const [slides, setSlides] = useState<PhotoSlide[]>([]);
     const [index, setIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
+    const navigate = useNavigate();
 
     const photoBoard = useMemo(() => {
         return boards.flatMap((sec) => sec.boards).find((b) =>
@@ -38,7 +41,7 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
                     const attachments = Array.isArray(post.attachment_paths) ? post.attachment_paths : [];
                     attachments.forEach((att) => {
                         if (att?.url && isImageName(att.name || att.url)) {
-                            images.push({ url: att.url, title: post.title });
+                            images.push({ url: att.url, title: post.title, postId: post.id });
                         }
                     });
                 });
@@ -64,6 +67,11 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
 
     const current = slides[index];
 
+    const handleOpenPost = () => {
+        if (!current || !photoBoard?.id) return;
+        navigate(`/board/${photoBoard.id}/${current.postId}`);
+    };
+
     if (!photoBoard) return null;
 
     return (
@@ -82,7 +90,15 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
                     >
                         ‹
                     </button>
-                    <div className="photo-album-frame">
+                    <div
+                        className="photo-album-frame"
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleOpenPost}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") handleOpenPost();
+                        }}
+                    >
                         <img
                             key={current.url}
                             src={current.url}
