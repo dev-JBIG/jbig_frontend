@@ -193,6 +193,16 @@
 
 
 
+/* MDEditor 커서-텍스트 정렬 수정
+   index.css의 `textarea { font-size: inherit; line-height: inherit }` 규칙으로 인해
+   textarea가 body의 font-size(16px)와 line-height(24px)를 상속받지만,
+   MDEditor 오버레이(.w-md-editor-text-pre > code)는 font-size: 14px, line-height: 18px로 고정됨.
+   .w-md-editor에 동일한 값을 명시하면 textarea가 이를 상속받아 오버레이와 정렬이 맞아짐. */
+.w-md-editor {
+    font-size: 14px;
+    line-height: 18px;
+}
+
 /* --- 사유서 폼 안내 문구 스타일 --- */
 .absence-form-notice {
   font-size: 13px; /* "작게" */
