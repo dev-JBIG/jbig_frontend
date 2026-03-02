@@ -194,6 +194,17 @@
 
 
 /* --- 사유서 폼 안내 문구 스타일 --- */
+/* MDEditor 내부 textarea의 폰트를 global-adaptive.css 오버라이드에서 보호 */
+/* global-adaptive.css의 textarea { font-family: inherit } 가 덮어써서
+   하이라이트 오버레이와 실제 textarea의 폰트가 달라지면 커서 위치가 어긋남 */
+.w-md-editor .w-md-editor-text-input,
+.w-md-editor textarea {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    letter-spacing: 0 !important;
+}
+
 .absence-form-notice {
   font-size: 13px; /* "작게" */
   color: #666; /* 너무 튀지 않는 회색 */

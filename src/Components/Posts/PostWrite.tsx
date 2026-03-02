@@ -131,20 +131,30 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 const pos = cursorPosRef.current;
                 const before = prev.substring(0, pos);
                 const after = prev.substring(pos);
-                
+
                 // 앞뒤로 줄바꿈 추가 (필요한 경우)
                 const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
                 const needsNewlineAfter = after.length > 0 && !after.startsWith('\n');
-                
-                const newContent = before + 
-                    (needsNewlineBefore ? '\n' : '') + 
-                    imageMarkdown + 
-                    (needsNewlineAfter ? '\n' : '') + 
+
+                const newContent = before +
+                    (needsNewlineBefore ? '\n' : '') +
+                    imageMarkdown +
+                    (needsNewlineAfter ? '\n' : '') +
                     after;
-                
+
                 // 커서 위치 업데이트
-                cursorPosRef.current = pos + (needsNewlineBefore ? 1 : 0) + imageMarkdown.length + (needsNewlineAfter ? 1 : 0);
-                
+                const newPos = pos + (needsNewlineBefore ? 1 : 0) + imageMarkdown.length + (needsNewlineAfter ? 1 : 0);
+                cursorPosRef.current = newPos;
+
+                // setContent로 MDEditor value가 바뀌면 textarea 커서가 초기화되므로 복원
+                requestAnimationFrame(() => {
+                    const textarea = document.querySelector<HTMLTextAreaElement>('.w-md-editor-text-input');
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.setSelectionRange(newPos, newPos);
+                    }
+                });
+
                 return newContent;
             });
             
@@ -699,6 +709,13 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 },
                                 onKeyUp: (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                                     // 키보드 입력 후에도 커서 위치 업데이트
+                                    const target = e.target as HTMLTextAreaElement;
+                                    if (target?.selectionStart !== undefined) {
+                                        cursorPosRef.current = target.selectionStart;
+                                    }
+                                },
+                                onSelect: (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+                                    // 마우스 드래그 선택, 방향키 이동 등 모든 커서 변경 시 업데이트
                                     const target = e.target as HTMLTextAreaElement;
                                     if (target?.selectionStart !== undefined) {
                                         cursorPosRef.current = target.selectionStart;
