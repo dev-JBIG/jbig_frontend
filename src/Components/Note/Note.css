@@ -253,3 +253,54 @@
     background-color: var(--color-primary-hover) !important;
     transform: none !important; 
 }
+
+
+/* 코드 기본 폰트 및 정렬 설정 (먹색) */
+.notion-code code[class*="language-"],
+.notion-code pre[class*="language-"] {
+    color: #37352f !important; /* 노션 기본 먹색 */
+    font-family: Consolas, Monaco, 'Andale Mono', monospace !important;
+    text-shadow: none !important;
+    background: transparent !important;
+    text-align: left !important;
+    white-space: pre !important;
+    word-spacing: normal !important;
+    word-break: normal !important;
+    line-height: 1.5 !important;
+}
+
+/* 1. 주석 (차분한 회색) */
+.notion-code .token.comment,
+.notion-code .token.prolog,
+.notion-code .token.doctype,
+.notion-code .token.cdata { color: #8c8c8c !important; font-style: normal !important; }
+
+/* 2. 키워드 (노션 특유의 파란색) - import, as, from 등 */
+.notion-code .token.keyword,
+.notion-code .token.operator,
+.notion-code .token.boolean,
+.notion-code .token.number,
+.notion-code .token.atrule,
+.notion-code .token.selector { color: #007acc !important; }
+
+/* 3. 문자열 (붉은 갈색) - '데이터이름.csv' 등 */
+.notion-code .token.string,
+.notion-code .token.char,
+.notion-code .token.attr-value,
+.notion-code .token.regex,
+.notion-code .token.inserted { color: #b00020 !important; }
+
+/* 4. 함수 및 클래스 (보라색 포인트) */
+.notion-code .token.function,
+.notion-code .token.class-name,
+.notion-code .token.tag { color: #6f42c1 !important; }
+
+/* 5. 변수, 기호, 일반 텍스트 (기본 먹색) - pd, df, pandas 등 */
+.notion-code .token.punctuation,
+.notion-code .token.variable,
+.notion-code .token.property,
+.notion-code .token.constant,
+.notion-code .token.symbol,
+.notion-code .token.entity,
+.notion-code .token.url,
+.notion-code .token.deleted { color: #37352f !important; }

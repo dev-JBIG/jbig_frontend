@@ -10,10 +10,10 @@ import { Collection } from 'react-notion-x/build/third-party/collection'
 import { Equation } from 'react-notion-x/build/third-party/equation'
 
 import "react-notion-x/src/styles.css";
-import "prismjs/themes/prism.css";
-
+import Prism from "prismjs"; 
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-sql";
+
 
 import "./Note.css";
 
