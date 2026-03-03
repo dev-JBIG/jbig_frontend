@@ -8,14 +8,14 @@ button:not(.custom-button) {
 
 /* 입력 필드 공통 스타일 */
 input:not([type="checkbox"]):not([type="radio"]),
-textarea,
+textarea:not(.w-md-editor-text-input),
 select {
     font-family: inherit;
     transition: border-color var(--transition-fast);
 }
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
-textarea:focus,
+textarea:not(.w-md-editor-text-input):focus,
 select:focus {
     outline: none;
     border-color: var(--color-primary);

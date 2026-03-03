@@ -164,7 +164,7 @@ a {
 }
 
 /* 입력 필드 기본 스타일 */
-input, textarea, select {
+input, textarea:not(.w-md-editor-text-input), select {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
