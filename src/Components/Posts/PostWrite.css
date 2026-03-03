@@ -131,6 +131,31 @@
     padding-top: 25px;
 }
 
+/* MDEditor 입력 레이어/표시 레이어 정렬 안정화 */
+.content-body .w-md-editor {
+    --md-editor-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+.content-body .w-md-editor-text {
+    font-feature-settings: normal !important;
+    font-variant-ligatures: none !important;
+    letter-spacing: normal !important;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+.content-body .w-md-editor-text-input,
+.content-body .w-md-editor-text-pre,
+.content-body .w-md-editor-text-pre > code {
+    font-family: var(--md-editor-font-family) !important;
+    font-feature-settings: normal !important;
+    font-variant-ligatures: none !important;
+    letter-spacing: normal !important;
+    line-height: 18px !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
 
 
 
