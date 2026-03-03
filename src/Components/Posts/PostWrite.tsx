@@ -682,6 +682,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         <MDEditor 
                             ref={editorRef}
                             value={content} 
+                            enableScroll={false} //스크롤 동기화 해제
                             onChange={(v, event) => {
                                 setContent(v || "");
                                 // 커서 위치 업데이트
