@@ -36,24 +36,6 @@ import $ from "jquery";
 
 const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
 
-// WidgetBot 로드 함수 (모바일 메인페이지에서만 사용)
-const loadWidgetBot = () => {
-    if ((window as any).__widgetBotLoaded) return;
-    (window as any).__widgetBotLoaded = true;
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@widgetbot/crate@3';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-        new (window as any).Crate({
-            server: '1441687190953267252',
-            channel: '1441687191620419657',
-        });
-    };
-    document.head.appendChild(script);
-};
-
 const removeWidgetBot = () => {
     const crateElement = document.querySelector('widgetbot-crate');
     if (crateElement) {
@@ -87,22 +69,14 @@ const Home: React.FC = () => {
     const location = useLocation();
 
     const isProfilePage = decodeURIComponent(location.pathname).startsWith('/@');
-    const isMainPage = location.pathname === '/';
 
-    // 모바일 메인페이지에서만 WidgetBot 표시
+    // WidgetBot 채팅 위젯 제거 (모바일/PC 공통)
     useEffect(() => {
-        const isMobile = window.innerWidth <= 768;
-
-        if (isMobile && isMainPage) {
-            loadWidgetBot();
-        } else {
-            removeWidgetBot();
-        }
-
+        removeWidgetBot();
         return () => {
             removeWidgetBot();
         };
-    }, [isMainPage]);
+    }, []);
 
     useEffect(() => {
         const openHandler = (e: any) => {
