@@ -1405,3 +1405,90 @@ export const deletePopup = async (id: number, token: string): Promise<void> => {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
+
+// ========== 모집 시스템 API ==========
+
+// 모집 상세 조회
+export const fetchRecruitmentDetail = async (postId: number, token?: string): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/`;
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await axios.get(url, { headers });
+    return res.data;
+};
+
+// 모집 정보 수정
+export const updateRecruitment = async (postId: number, data: any, token: string): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/`;
+    const res = await axios.patch(url, data, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    return res.data;
+};
+
+// 모집 상태 변경 (close, reopen, complete, cancel)
+export const changeRecruitmentStatus = async (postId: number, action: string, token: string): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/${action}/`;
+    const res = await axios.post(url, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.data;
+};
+
+// 모집에 지원
+export const applyToRecruitment = async (postId: number, message: string, token: string): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/apply/`;
+    const res = await axios.post(url, { message }, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    return res.data;
+};
+
+// 내 지원 상태 조회
+export const fetchMyApplication = async (postId: number, token: string): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/my-application/`;
+    try {
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        return res.data;
+    } catch {
+        return null;
+    }
+};
+
+// 지원 철회
+export const withdrawApplication = async (postId: number, token: string): Promise<void> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/my-application/`;
+    await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+};
+
+// 지원자 목록 조회
+export const fetchApplications = async (postId: number, token: string): Promise<any[]> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/applications/`;
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+};
+
+// 지원 수락/거절
+export const updateApplicationStatus = async (
+    postId: number, appId: number, action: string, recruiterNote: string, token: string
+): Promise<any> => {
+    const url = `${BASE_URL}/api/recruitments/${postId}/applications/${appId}/${action}/`;
+    const res = await axios.post(url, { recruiter_note: recruiterNote }, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    return res.data;
+};
+
+// 내가 만든 모집 목록
+export const fetchMyRecruitments = async (token: string): Promise<any[]> => {
+    const url = `${BASE_URL}/api/recruitments/my-recruitments/`;
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+};
+
+// 내가 지원한 목록
+export const fetchMyApplications = async (token: string): Promise<any[]> => {
+    const url = `${BASE_URL}/api/recruitments/my-applications/`;
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+};

@@ -392,10 +392,15 @@ const Home: React.FC = () => {
                                                             {n.actor_semester > 0 ? `${n.actor_semester}기 ` : ''}{n.actor_name}
                                                         </span>
                                                         <span className="notification-text">
-                                                            님이 {n.notification_type === 1 && '회원님의 글에 댓글을 남겼습니다'}
+                                                            {n.notification_type <= 5 && '님이 '}
+                                                            {n.notification_type === 1 && '회원님의 글에 댓글을 남겼습니다'}
                                                             {n.notification_type === 2 && '회원님의 댓글에 답글을 남겼습니다'}
                                                             {n.notification_type === 3 && '회원님의 글을 좋아합니다'}
                                                             {n.notification_type === 4 && '회원님의 댓글을 좋아합니다'}
+                                                            {n.notification_type === 5 && '회원님의 모집에 지원했습니다'}
+                                                            {n.notification_type === 6 && '모집에 합류가 확정되었습니다!'}
+                                                            {n.notification_type === 7 && '모집에 선발되지 않았습니다'}
+                                                            {n.notification_type === 8 && '모집이 마감되었습니다'}
                                                         </span>
                                                     </div>
                                                     <div className="notification-post-title">

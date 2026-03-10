@@ -17,6 +17,7 @@ import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
+import RecruitmentDetailSection from './RecruitmentDetail';
 
 // Sanitize 스키마: style 속성 허용 (text-align, color만)
 const sanitizeSchema = {
@@ -849,6 +850,24 @@ const PostDetail: React.FC = () => {
                 <span>좋아요 {post.likes}</span>
             </div>
             <div className="postdetail-divider"/>
+
+            {/* 모집 정보 */}
+            {post.recruitment && (
+                <RecruitmentDetailSection
+                    recruitment={post.recruitment}
+                    postId={post.id}
+                    onUpdate={() => {
+                        // 게시글 다시 로드
+                        fetchPostDetail(post.id, accessToken ?? undefined).then(raw => {
+                            const src = raw.post_data ?? raw;
+                            setPost(prev => {
+                                if (!prev || typeof prev === "string") return prev;
+                                return { ...prev, recruitment: src.recruitment };
+                            });
+                        }).catch(() => {});
+                    }}
+                />
+            )}
 
             {/* 본문 */}
                 <div className="content-body">

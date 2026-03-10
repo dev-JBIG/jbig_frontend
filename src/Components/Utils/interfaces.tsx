@@ -14,6 +14,8 @@ export interface PostItem {
     board_id?: number;
     board_name?: string;
     is_anonymous?: boolean;
+    tag?: string;
+    recruitment_info?: RecruitmentInfo | null;
 }
 
 export interface Attachment {
@@ -83,12 +85,73 @@ export interface PostDetailData {
     is_owner: boolean;
     post_type: number;
     is_anonymous?: boolean;
+    tag?: string;
+    recruitment?: RecruitmentDetail | null;
 }
 
 export interface Board {
     id: number;
     name: string;
     board_type?: number;
+    available_tags?: string[];
+}
+
+// 모집 시스템 관련 인터페이스
+export interface RecruitmentInfo {
+    recruitment_type: number;
+    recruitment_type_display: string;
+    status: number;
+    status_display: string;
+    max_members: number;
+    accepted_count: number;
+    deadline: string | null;
+}
+
+export interface RecruitmentDetail extends RecruitmentInfo {
+    spots_remaining: number | null;
+    required_skills: string[];
+    contact_info: string | null;
+    show_applicants: boolean;
+    has_applied: boolean;
+    my_application_status: number | null;
+    is_owner: boolean;
+    total_applicants: number | null;
+}
+
+export interface RecruitmentFormData {
+    recruitment_type: number;
+    max_members: number;
+    deadline: string;
+    required_skills: string[];
+    contact_info: string;
+    show_applicants: boolean;
+}
+
+export interface ApplicationItem {
+    id: number;
+    applicant_name: string;
+    applicant_username?: string;
+    applicant_semester: number;
+    applicant_resume?: string;
+    status: number;
+    status_display: string;
+    message?: string;
+    recruiter_note?: string;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface MyApplicationItem {
+    id: number;
+    post_id: number;
+    post_title: string;
+    board_id: number;
+    recruitment_type: number;
+    recruitment_type_display: string;
+    recruitment_status: number;
+    status: number;
+    status_display: string;
+    created_at: string;
 }
 
 export interface Section {

@@ -8,13 +8,14 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft, refreshTokenAPI} from "../../API/req"
-import {Board, Section, UploadFile} from "../Utils/interfaces";
+import {Board, Section, UploadFile, RecruitmentFormData} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import AbsenceForm from "./AbsenceForm";
 import FeedbackForm from "./FeedbackForm";
 import StudyForm from "./StudyForm";
+import RecruitmentForm from "./RecruitmentForm";
 
 const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 const MAX_FILES = 3;
@@ -49,6 +50,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [showRealName, setShowRealName] = useState(false);
+    const [selectedTag, setSelectedTag] = useState('');
+    const [recruitmentData, setRecruitmentData] = useState<RecruitmentFormData | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +100,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isFeedbackBoard = selectedBoard &&
         (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'));
 
-    const isStudyBoard = selectedBoard && (selectedBoard.id === 8 || selectedBoard.name === "스터디/소모임 홍보");
+    const boardTags = selectedBoard?.available_tags ?? [];
+    const hasTags = boardTags.length > 0;
+    const isRecruitmentTag = selectedTag === '팀원모집';
+
+    const isStudyBoard = !isRecruitmentTag && selectedBoard && (selectedBoard.id === 8 || selectedBoard.name === "스터디/소모임 홍보");
 
     useEffect(() => {
         if (isPhotoBoard && content.trim()) {
@@ -203,6 +210,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     useEffect(() => {
         if (!category) return;
         setSelectedBoard(BOARD_LIST.find((b) => b.id === Number(category)) || null);
+        setSelectedTag(''); // 게시판 변경 시 태그 초기화
+        setRecruitmentData(null);
     }, [category, BOARD_LIST]);
 
     // 초안 불러오기 (DB - 단일 버퍼)
@@ -560,7 +569,20 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return;
             }
 
-            const res = await createPost(selectedBoard!.id, { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName }, accessToken);
+            const postPayload: any = { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName };
+            if (selectedTag) postPayload.tag = selectedTag;
+            if (isRecruitmentTag && recruitmentData) {
+                postPayload.is_anonymous = false; // 모집글은 실명
+                postPayload.recruitment = {
+                    recruitment_type: recruitmentData.recruitment_type,
+                    max_members: recruitmentData.max_members,
+                    deadline: recruitmentData.deadline ? new Date(recruitmentData.deadline + 'T23:59:59').toISOString() : null,
+                    required_skills: recruitmentData.required_skills,
+                    contact_info: recruitmentData.contact_info,
+                    show_applicants: recruitmentData.show_applicants,
+                };
+            }
+            const res = await createPost(selectedBoard!.id, postPayload, accessToken);
             if (res?.unauthorized) { 
                 showAlert({
                     message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
@@ -650,6 +672,28 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 </div>
             )}
 
+            {hasTags && (
+                <div className="postwrite-row">
+                    <label>글 태그</label>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: 1 }}>
+                        <button type="button"
+                            className={`pagination-btn ${selectedTag === '' ? 'active' : ''}`}
+                            style={{ fontSize: '13px', padding: '5px 12px' }}
+                            onClick={() => { setSelectedTag(''); setRecruitmentData(null); }}>
+                            일반
+                        </button>
+                        {boardTags.map(tag => (
+                            <button key={tag} type="button"
+                                className={`pagination-btn ${selectedTag === tag ? 'active' : ''}`}
+                                style={{ fontSize: '13px', padding: '5px 12px' }}
+                                onClick={() => setSelectedTag(tag)}>
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="postwrite-row">
                 <label style={{ fontWeight: 'bold' }}>제목</label>
                 <input className="postwrite-title-input" type="text" value={title} onChange={e => setTitle(e.target.value)}
@@ -671,6 +715,13 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     <div className="postwrite-photo-hint">
                         사진첩은 제목과 사진만 등록됩니다. 본문은 작성되지 않습니다.
                     </div>
+                ) : isRecruitmentTag ? (
+                    <RecruitmentForm
+                        setContent={setContent}
+                        initialContent={content}
+                        setRecruitmentData={setRecruitmentData}
+                        initialRecruitmentData={recruitmentData}
+                    />
                 ) : category === '4' ? (
                     <AbsenceForm setContent={setContent} initialContent={content} />
                 ) : isFeedbackBoard ? (

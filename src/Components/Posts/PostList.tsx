@@ -8,6 +8,7 @@ import {fetchBoardPosts, fetchSearchPosts, fetchUserPosts, fetchBoardSearchPosts
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
+import RecruitmentBadge from "./RecruitmentBadge";
 
 const BOARD_DESCRIPTIONS: Record<string, string> = {
     "전체 글 보기": "JBIG의 모든 소식을 한눈에 확인하세요!",
@@ -78,6 +79,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const [searchKeyword, setSearchKeyword] = useState("");
     const [postPermission, setPostPermission] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [selectedTag, setSelectedTag] = useState("");
     // 게시글 ID별 post_type 저장 (사유서 게시글 식별용)
     const [postTypes, setPostTypes] = useState<Map<number, number>>(new Map());
 
@@ -302,9 +304,14 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
     // 공지사항이 있는 경우, 전체 글 보기에서는 공지사항을 제외한 일반 게시글 필터링
     // (공지사항은 별도로 상단에 표시하므로 중복 방지)
-    const filteredPosts = (activeBoardID === 0 && !isSearchPage && !isUserPage && announcementPosts.length > 0)
+    let filteredPosts = (activeBoardID === 0 && !isSearchPage && !isUserPage && announcementPosts.length > 0)
         ? displayPosts.filter(post => !announcementPosts.some(ann => ann.id === post.id))
         : displayPosts;
+
+    // 태그 필터 적용
+    if (selectedTag) {
+        filteredPosts = filteredPosts.filter(post => post.tag === selectedTag);
+    }
 
     const handleWrite = () => {
         navigate(`/board/${boardIdRaw ?? 0}/write`);
@@ -337,6 +344,24 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             </p>
                         </div>
                         
+
+                        {/* 태그 필터 탭 */}
+                        {!isHome && activeBoard?.available_tags && activeBoard.available_tags.length > 0 && (
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                                <button
+                                    className={`pagination-btn ${selectedTag === '' ? 'active' : ''}`}
+                                    style={{ fontSize: '13px', padding: '4px 12px' }}
+                                    onClick={() => { setSelectedTag(''); handlePageChange(1); }}
+                                >전체</button>
+                                {activeBoard.available_tags.map((tag: string) => (
+                                    <button key={tag}
+                                        className={`pagination-btn ${selectedTag === tag ? 'active' : ''}`}
+                                        style={{ fontSize: '13px', padding: '4px 12px' }}
+                                        onClick={() => { setSelectedTag(tag); handlePageChange(1); }}
+                                    >{tag}</button>
+                                ))}
+                            </div>
+                        )}
 
                         {/* 검색란: 검색페이지가 아니고, 홈도 아니고, 유저페이지도 아니고, 게시글이 '있는' 경우에만 표시 */}
                         {!isHome && !isSearchPage && !isUserPage && displayPosts.length > 0 && (
@@ -572,7 +597,15 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                     </td>
                                 )}
                                 <td className="title-cell th-title">
+                                    {p.tag && (
+                                        <span className="category-badge" style={{ marginRight: '6px', fontSize: '11px' }}>
+                                            {p.tag}
+                                        </span>
+                                    )}
                                     {p.title}
+                                    {p.recruitment_info && (
+                                        <RecruitmentBadge info={p.recruitment_info} />
+                                    )}
                                     {p.comment_count > 0 && (
                                         <span className="comment-count">[{p.comment_count}]</span>
                                     )}
