@@ -646,7 +646,10 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
 
     try {
         await axios.put(upload_url, file, {
-            headers: { "Content-Type": file.type || "application/octet-stream" },
+            headers: {
+                "Content-Type": file.type || "application/octet-stream",
+                "x-amz-acl": "public-read",
+            },
         });
     } catch {
         return { path: "", name: file.name, download_url: "", message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };

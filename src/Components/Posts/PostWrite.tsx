@@ -131,7 +131,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return false;
             }
 
-            const imageMarkdown = `![${res.name}](ncp-key://${res.path})`;
+            const imageMarkdown = `![${res.name}](${res.url || `ncp-key://${res.path}`})`;
             
             // 커서 위치에 이미지 삽입
             setContent(prev => {
