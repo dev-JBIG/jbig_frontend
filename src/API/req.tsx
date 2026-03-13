@@ -627,7 +627,7 @@ export const fetchUserPosts = async (
 // 첨부파일 업로드
 
 // 첨부파일 업로드 (NCP Presigned URL 방식)
-export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; url?: string; download_url?: string; message?: string }> => {
+export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; url?: string; message?: string }> => {
     let generateUrlResponse;
     try {
         generateUrlResponse = await axios.post(
@@ -636,12 +636,12 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
             { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
         );
     } catch (error: unknown) {
-        return { path: "", name: file.name, download_url: "", message: getErrorMessage(error, "업로드 URL 요청에 실패했습니다.") };
+        return { path: "", name: file.name, message: getErrorMessage(error, "업로드 URL 요청에 실패했습니다.") };
     }
 
-    const { upload_url, file_key, download_url, url } = generateUrlResponse.data;
+    const { upload_url, file_key, url } = generateUrlResponse.data;
     if (!upload_url || !file_key) {
-        return { path: "", name: file.name, download_url: "", message: "서버에서 유효한 업로드 URL을 받지 못했습니다." };
+        return { path: "", name: file.name, message: "서버에서 유효한 업로드 URL을 받지 못했습니다." };
     }
 
     try {
@@ -652,14 +652,13 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
             },
         });
     } catch {
-        return { path: "", name: file.name, download_url: "", message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
+        return { path: "", name: file.name, message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
     }
 
-    return { 
-        path: file_key, 
-        name: file.name, 
-        url: url,  // 영구적인 public URL
-        download_url: download_url || `ncp-key://${file_key}` 
+    return {
+        path: file_key,
+        name: file.name,
+        url: url,
     };
 };
 
