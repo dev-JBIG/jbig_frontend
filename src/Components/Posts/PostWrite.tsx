@@ -525,7 +525,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (uploadedPathsRef.current.size === 0 || !accessToken) return;
 
         const usedKeys = new Set<string>();
+        // ncp-key:// 형식과 퍼블릭 URL 형식 모두 매칭
         Array.from(content.matchAll(/ncp-key:\/\/(uploads\/[^\s\)]+)/g)).forEach(m => usedKeys.add(m[1]));
+        Array.from(content.matchAll(/ncloudstorage\.com\/[^/]+\/(uploads\/[^\s\)]+)/g)).forEach(m => usedKeys.add(m[1]));
         attachments.forEach(a => usedKeys.add(a.path));
 
         uploadedPathsRef.current.forEach(path => {
