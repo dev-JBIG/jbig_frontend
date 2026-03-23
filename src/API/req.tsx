@@ -646,13 +646,21 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
 
     try {
         await axios.put(upload_url, file, {
-            headers: {
-                "Content-Type": file.type || "application/octet-stream",
-                "x-amz-acl": "public-read",
-            },
+            headers: { "Content-Type": file.type || "application/octet-stream" },
         });
     } catch {
         return { path: "", name: file.name, message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
+    }
+
+    // 업로드 완료 후 public-read ACL 적용
+    try {
+        await axios.post(
+            `${BASE_URL}/api/boards/files/confirm-upload/`,
+            { file_key },
+            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+        );
+    } catch {
+        // ACL 적용 실패해도 파일 자체는 업로드됨
     }
 
     return {
