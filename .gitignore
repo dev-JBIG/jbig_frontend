@@ -22,3 +22,4 @@ jbig_backend.env
 
 build/
 node_modules/
+.idea/
