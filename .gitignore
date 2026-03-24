@@ -15,6 +15,7 @@ jbig_backend.env
 # 임시 스크립트
 *.sh
 !deploy.sh
+!run-local.sh
 
 # 로그 파일
 *.log

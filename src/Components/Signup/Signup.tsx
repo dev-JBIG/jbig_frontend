@@ -100,7 +100,7 @@ const Signup: React.FC = () => {
             const result = await verifyAuthEmail(email.trim(), emailCode.trim());
             if (result.success || result.status === 200) {
                 showAlert({
-                    message: "운영진 승인 이후 회원가입이 완료됩니다.",
+                    message: "회원가입이 완료되었습니다.",
                     type: 'success',
                     onClose: () => navigate("/")
                 });
