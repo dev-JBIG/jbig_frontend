@@ -163,16 +163,6 @@ const MobileNav: React.FC<MobileNavProps> = ({
 
               <div className="mobile-nav-divider" />
 
-              <button
-                className="mobile-nav-button mobile-nav-gpu"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('OPEN_VAST_MODAL'));
-                  setIsOpen(false);
-                }}
-              >
-                GPU 인스턴스 대여
-              </button>
-
               <a
                 href="https://discord.gg/knpBCvvfGa"
                 target="_blank"

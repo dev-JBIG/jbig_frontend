@@ -666,14 +666,6 @@
     height: 18px;
 }
 
-.sidebar-gpu-button {
-    background-color: var(--color-accent);
-}
-
-.sidebar-gpu-button:hover {
-    background-color: var(--color-accent-hover);
-}
-
 .main-banner {
     max-width: 100%;
 }

@@ -24,7 +24,6 @@ import {CalendarEventCreate, Section} from "../Utils/interfaces";
 import { useUser } from "../Utils/UserContext";
 import Calendar from "../Utils/Calendar/Calendar";
 import EventModal from "../Utils/Calendar/EventModal";
-import VastModal from "../Utils/Vast/VastModal";
 import LoginModal from "../Utils/LoginModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
@@ -54,7 +53,6 @@ const Home: React.FC = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create'|'edit'>('create');
     const [initialEvent, setInitialEvent] = useState<any>(null);
-    const [isVastOpen, setVastOpen] = useState(false);
     const [isLoginModalOpen, setLoginModalOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -86,11 +84,8 @@ const Home: React.FC = () => {
             setModalOpen(true);
         };
         window.addEventListener('OPEN_EVENT_MODAL', openHandler);
-        const openVastHandler = () => setVastOpen(true);
-        window.addEventListener('OPEN_VAST_MODAL', openVastHandler);
         return () => {
             window.removeEventListener('OPEN_EVENT_MODAL', openHandler);
-            window.removeEventListener('OPEN_VAST_MODAL', openVastHandler);
         }
     }, []);
 
@@ -528,9 +523,6 @@ const Home: React.FC = () => {
                     onClose={handleCloseModal}
                     onSave={handleSaveEvent}
                 />
-            )}
-            {isVastOpen && (
-                <VastModal onClose={() => setVastOpen(false)} />
             )}
             {isLoginModalOpen && (
                 <LoginModal onClose={() => setLoginModalOpen(false)} />

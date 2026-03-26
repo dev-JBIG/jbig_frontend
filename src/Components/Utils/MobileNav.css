@@ -137,14 +137,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.mobile-nav-gpu {
-  background-color: var(--color-accent);
-}
-
-.mobile-nav-gpu:hover {
-  background-color: var(--color-accent-hover);
-}
-
 .mobile-nav-discord {
   background-color: #5865F2;
   text-decoration: none;
