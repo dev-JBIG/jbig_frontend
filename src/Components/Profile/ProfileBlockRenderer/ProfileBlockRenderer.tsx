@@ -7,6 +7,14 @@ import DividerBlockView from './views/DividerBlockView';
 import ProjectBlockView from './views/ProjectBlockView';
 import ExperienceBlockView from './views/ExperienceBlockView';
 import SkillsBlockView from './views/SkillsBlockView';
+import HeaderBlockView from './views/HeaderBlockView';
+import AwardBlockView from './views/AwardBlockView';
+import CertificationBlockView from './views/CertificationBlockView';
+import EducationBlockView from './views/EducationBlockView';
+import ActivityBlockView from './views/ActivityBlockView';
+import PublicationBlockView from './views/PublicationBlockView';
+import ContactBlockView from './views/ContactBlockView';
+import StatsBlockView from './views/StatsBlockView';
 import './ProfileBlockRenderer.css';
 
 interface Props {
@@ -21,6 +29,14 @@ const BLOCK_COMPONENTS: Record<string, React.FC<{ block: any }>> = {
   project: ProjectBlockView,
   experience: ExperienceBlockView,
   skills: SkillsBlockView,
+  header: HeaderBlockView,
+  award: AwardBlockView,
+  certification: CertificationBlockView,
+  education: EducationBlockView,
+  activity: ActivityBlockView,
+  publication: PublicationBlockView,
+  contact: ContactBlockView,
+  stats: StatsBlockView,
 };
 
 const ProfileBlockRenderer: React.FC<Props> = ({ blocks }) => {

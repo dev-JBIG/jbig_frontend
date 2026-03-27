@@ -13,6 +13,14 @@ import DividerBlockEditor from './editors/DividerBlockEditor';
 import ProjectBlockEditor from './editors/ProjectBlockEditor';
 import ExperienceBlockEditor from './editors/ExperienceBlockEditor';
 import SkillsBlockEditor from './editors/SkillsBlockEditor';
+import HeaderBlockEditor from './editors/HeaderBlockEditor';
+import AwardBlockEditor from './editors/AwardBlockEditor';
+import CertificationBlockEditor from './editors/CertificationBlockEditor';
+import EducationBlockEditor from './editors/EducationBlockEditor';
+import ActivityBlockEditor from './editors/ActivityBlockEditor';
+import PublicationBlockEditor from './editors/PublicationBlockEditor';
+import ContactBlockEditor from './editors/ContactBlockEditor';
+import StatsBlockEditor from './editors/StatsBlockEditor';
 import './ProfileBlockEditor.css';
 
 const EDITOR_MAP: Record<string, React.FC<{ block: any; onChange: (b: any) => void }>> = {
@@ -23,6 +31,14 @@ const EDITOR_MAP: Record<string, React.FC<{ block: any; onChange: (b: any) => vo
   project: ProjectBlockEditor,
   experience: ExperienceBlockEditor,
   skills: SkillsBlockEditor,
+  header: HeaderBlockEditor,
+  award: AwardBlockEditor,
+  certification: CertificationBlockEditor,
+  education: EducationBlockEditor,
+  activity: ActivityBlockEditor,
+  publication: PublicationBlockEditor,
+  contact: ContactBlockEditor,
+  stats: StatsBlockEditor,
 };
 
 interface Props {

@@ -68,4 +68,93 @@ export interface SkillsBlock extends BlockBase {
   style: { layout?: 'tags' | 'bars' };
 }
 
-export type ProfileBlock = TextBlock | ImageBlock | LinksBlock | DividerBlock | ProjectBlock | ExperienceBlock | SkillsBlock;
+export interface AwardBlock extends BlockBase {
+  type: 'award';
+  data: {
+    title: string;
+    organizer: string;
+    date: string;
+    rank: string;
+    description: string;
+  };
+}
+
+export interface CertificationBlock extends BlockBase {
+  type: 'certification';
+  data: {
+    name: string;
+    issuer: string;
+    date: string;
+    credentialId: string;
+    url: string;
+  };
+}
+
+export interface EducationBlock extends BlockBase {
+  type: 'education';
+  data: {
+    school: string;
+    degree: string;
+    field: string;
+    startDate: string;
+    endDate: string | null;
+    isCurrent: boolean;
+    description: string;
+  };
+}
+
+export interface ActivityBlock extends BlockBase {
+  type: 'activity';
+  data: {
+    title: string;
+    organization: string;
+    role: string;
+    startDate: string;
+    endDate: string | null;
+    isCurrent: boolean;
+    description: string;
+  };
+}
+
+export interface PublicationBlock extends BlockBase {
+  type: 'publication';
+  data: {
+    title: string;
+    venue: string;
+    authors: string;
+    date: string;
+    url: string;
+    description: string;
+  };
+}
+
+export interface ContactBlock extends BlockBase {
+  type: 'contact';
+  data: {
+    email: string;
+    phone: string;
+    location: string;
+    website: string;
+  };
+}
+
+export interface StatItem {
+  label: string;
+  value: string;
+}
+
+export interface StatsBlock extends BlockBase {
+  type: 'stats';
+  data: { items: StatItem[] };
+}
+
+export interface HeaderBlock extends BlockBase {
+  type: 'header';
+  data: {
+    title: string;
+    subtitle: string;
+  };
+  style: { align?: 'left' | 'center' };
+}
+
+export type ProfileBlock = TextBlock | ImageBlock | LinksBlock | DividerBlock | ProjectBlock | ExperienceBlock | SkillsBlock | AwardBlock | CertificationBlock | EducationBlock | ActivityBlock | PublicationBlock | ContactBlock | StatsBlock | HeaderBlock;

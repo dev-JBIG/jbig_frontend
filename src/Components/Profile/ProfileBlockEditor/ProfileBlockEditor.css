@@ -489,6 +489,18 @@
   margin-bottom: 0;
 }
 
+/* Stats Editor */
+.block-stat-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.block-stat-edit-row input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
 /* Text Editor */
 .block-text-editor .w-md-editor {
   border-radius: 6px !important;
