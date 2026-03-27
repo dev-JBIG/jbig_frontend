@@ -523,3 +523,11 @@
 .resume-content a {
     display: inline-block; /* 여백이 잘 먹도록 설정 */
 }
+
+/* 빈 블록 영역 */
+.profile-empty-blocks {
+    text-align: center;
+    padding: 48px 20px;
+    color: #94a3b8;
+    font-size: 0.95em;
+}

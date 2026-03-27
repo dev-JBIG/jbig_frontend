@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { useUser } from "../Utils/UserContext";
-import { fetchPublicProfile, updateResume, PublicProfile, deleteAccount } from "../../API/req";
+import { fetchPublicProfile, updateProfileBlocks, PublicProfile, deleteAccount } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
+import { ProfileBlock } from "./types";
+import ProfileBlockRenderer from "./ProfileBlockRenderer/ProfileBlockRenderer";
 import "./Profile.css";
+
+const ProfileBlockEditor = lazy(() => import("./ProfileBlockEditor/ProfileBlockEditor"));
 
 const formatLastLogin = (isoString: string | null): string => {
     if (!isoString) return "";
@@ -39,7 +40,6 @@ const Profile: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [editMode, setEditMode] = useState(false);
-    const [resumeText, setResumeText] = useState("");
     const [saving, setSaving] = useState(false);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -53,7 +53,6 @@ const Profile: React.FC = () => {
         try {
             const data = await fetchPublicProfile(username, accessToken || undefined);
             setProfile(data);
-            setResumeText(data.resume || "");
         } catch (err: unknown) {
             const axiosErr = err as { response?: { status?: number } };
             if (axiosErr.response?.status === 404) {
@@ -70,13 +69,14 @@ const Profile: React.FC = () => {
         loadProfile();
     }, [loadProfile]);
 
-    const handleSaveResume = async () => {
+    const handleSaveBlocks = async (blocks: ProfileBlock[]) => {
         if (!accessToken) return;
         setSaving(true);
         try {
-            await updateResume(resumeText, accessToken);
-            setProfile(prev => prev ? { ...prev, resume: resumeText } : null);
+            await updateProfileBlocks(blocks, accessToken);
+            setProfile(prev => prev ? { ...prev, profile_blocks: blocks } : null);
             setEditMode(false);
+            showAlert({ message: "프로필이 저장되었습니다.", type: 'success' });
         } catch {
             showAlert({ message: "저장에 실패했습니다.", type: 'error' });
         } finally {
@@ -85,7 +85,6 @@ const Profile: React.FC = () => {
     };
 
     const handleCancelEdit = () => {
-        setResumeText(profile?.resume || "");
         setEditMode(false);
     };
 
@@ -141,8 +140,11 @@ const Profile: React.FC = () => {
         );
     }
 
+    const blocks = (profile.profile_blocks || []) as ProfileBlock[];
+
     return (
         <div className="profile-container">
+            {/* 프로필 헤더 (고정) */}
             <div className="profile-header">
                 <div className="profile-avatar">
                     {profile.username.charAt(0).toUpperCase()}
@@ -160,57 +162,41 @@ const Profile: React.FC = () => {
                         )}
                     </p>
                 </div>
-                {profile.is_self && (
+                {profile.is_self && !editMode && (
                     <div className="profile-actions">
-                        {!editMode ? (
-                            <button className="btn-edit" onClick={() => setEditMode(true)}>
-                                프로필 편집
-                            </button>
-                        ) : (
-                            <>
-                                <button className="btn-save" onClick={handleSaveResume} disabled={saving}>
-                                    {saving ? "저장 중..." : "저장"}
-                                </button>
-                                <button className="btn-cancel" onClick={handleCancelEdit}>
-                                    취소
-                                </button>
-                            </>
-                        )}
+                        <button className="btn-edit" onClick={() => setEditMode(true)}>
+                            프로필 편집
+                        </button>
                     </div>
                 )}
             </div>
 
+            {/* 블록 영역 (자유 편집) */}
             <div className="profile-content">
-                <section className="profile-section">
-                    <h2 className="section-title">소개</h2>
-                    {editMode ? (
-                        <div className="resume-editor">
-                            <textarea
-                                value={resumeText}
-                                onChange={(e) => setResumeText(e.target.value)}
-                                placeholder="자기소개를 작성해보세요. Markdown을 지원합니다."
-                                rows={10}
-                            />
-                            <p className="editor-hint">Markdown 문법을 지원합니다.</p>
-                        </div>
-                    ) : (
-                        <div className="resume-content">
-                            {profile.resume ? (
-                                <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm]}
-                                    rehypePlugins={[rehypeRaw]}
-                                >
-                                    {profile.resume}
-                                </ReactMarkdown>
-                            ) : (
-                                <p className="empty-text">
-                                    {profile.is_self ? "프로필 편집을 눌러 자기소개를 작성해보세요." : "아직 작성된 소개가 없습니다."}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </section>
+                {editMode ? (
+                    <Suspense fallback={<div className="profile-loading"><div className="loading-spinner" /><p>에디터 로딩 중...</p></div>}>
+                        <ProfileBlockEditor
+                            blocks={blocks}
+                            onSave={handleSaveBlocks}
+                            onCancel={handleCancelEdit}
+                            saving={saving}
+                        />
+                    </Suspense>
+                ) : (
+                    <>
+                        {blocks.length > 0 ? (
+                            <ProfileBlockRenderer blocks={blocks} />
+                        ) : (
+                            <div className="profile-empty-blocks">
+                                <p>{profile.is_self ? "프로필 편집을 눌러 나만의 프로필을 꾸며보세요!" : "아직 작성된 프로필이 없습니다."}</p>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
 
+            {/* 활동 기록 (고정) */}
+            <div className="profile-content">
                 <section className="profile-section">
                     <h2 className="section-title">작성한 게시글</h2>
                     {profile.posts.length > 0 ? (

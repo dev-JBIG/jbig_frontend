@@ -1182,11 +1182,19 @@ export const deleteCalendarEvent = async (
 };
 
 // 공개 프로필
+export interface ProfileBlockData {
+    id: string;
+    type: string;
+    data: Record<string, any>;
+    style: Record<string, any>;
+}
+
 export interface PublicProfile {
     username: string;
     email_id: string;
     semester: number;
     resume: string;
+    profile_blocks: ProfileBlockData[];
     date_joined: string;
     last_login: string | null;
     is_self: boolean;
@@ -1220,6 +1228,18 @@ export const fetchPublicProfile = async (username: string, token?: string): Prom
 export const updateResume = async (resume: string, token: string): Promise<{ resume: string }> => {
     const url = `${BASE_URL}/api/users/profile/`;
     const res = await axios.patch(url, { resume }, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    return res.data;
+};
+
+export const updateProfileBlocks = async (blocks: ProfileBlockData[], token: string): Promise<{ profile_blocks: ProfileBlockData[] }> => {
+    const url = `${BASE_URL}/api/users/profile/blocks/`;
+    const res = await axios.patch(url, { profile_blocks: blocks }, {
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
