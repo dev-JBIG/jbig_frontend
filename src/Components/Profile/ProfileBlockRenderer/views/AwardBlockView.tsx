@@ -5,7 +5,7 @@ import { AwardBlock } from '../../types';
 interface Props { block: AwardBlock; }
 
 const AwardBlockView: React.FC<Props> = ({ block }) => {
-  const { title, organizer, date, rank, description } = block.data;
+  const { title, organizer, date, rank, honor, description } = block.data;
   if (!title) return null;
   return (
     <div className="block-view block-award-view">
@@ -15,6 +15,7 @@ const AwardBlockView: React.FC<Props> = ({ block }) => {
         <div className="block-award-meta">
           {organizer && <span>{organizer}</span>}
           {rank && <span className="block-award-rank">{rank}</span>}
+          {honor && <span className="block-award-honor">{honor}</span>}
           {date && <span className="block-award-date">{date}</span>}
         </div>
         {description && <p className="block-award-desc">{description}</p>}

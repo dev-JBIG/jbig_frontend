@@ -75,6 +75,7 @@ export interface AwardBlock extends BlockBase {
     organizer: string;
     date: string;
     rank: string;
+    honor: string;
     description: string;
   };
 }

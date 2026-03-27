@@ -70,7 +70,7 @@ export const BLOCK_TYPES: BlockTypeInfo[] = [
     label: '수상내역',
     icon: 'Trophy',
     description: '대회/공모전 수상 기록',
-    defaultData: () => ({ type: 'award' as const, data: { title: '', organizer: '', date: '', rank: '', description: '' }, style: {} }),
+    defaultData: () => ({ type: 'award' as const, data: { title: '', organizer: '', date: '', rank: '', honor: '', description: '' }, style: {} }),
   },
   {
     type: 'certification',

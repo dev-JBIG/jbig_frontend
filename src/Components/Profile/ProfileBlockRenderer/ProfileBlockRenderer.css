@@ -319,6 +319,7 @@
 .block-award-title { font-size: 1em; font-weight: 600; margin: 0 0 4px; color: #92400e; }
 .block-award-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85em; color: #a16207; margin-bottom: 4px; }
 .block-award-rank { font-weight: 600; color: #b45309; }
+.block-award-honor { font-weight: 500; color: #b45309; font-style: italic; }
 .block-award-date { color: #ca8a04; }
 .block-award-desc { font-size: 0.88em; color: #78716c; margin: 4px 0 0; line-height: 1.5; }
 
