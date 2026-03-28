@@ -22,8 +22,6 @@ const MAX_FILES = 3;
 const MAX_PHOTO_FILES = 12;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const BLOCKED_BOARD_KEYWORDS = ["공지사항", "admin", "어드민", "운영진", "관리자"];
-const BRAG_BOARD_NAME = "자랑게시판";
-const STUDY_BOARD_NAME_KEYWORDS = ["스터디", "소모임"];
 
 interface PostWriteProps {
     boards?: Section[];
@@ -103,12 +101,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'));
 
     const boardTags = selectedBoard?.available_tags ?? [];
-    const isBragBoard = selectedBoard?.name === BRAG_BOARD_NAME;
-    const hasTags = boardTags.length > 0 && !isBragBoard;
+    const hasTags = boardTags.length > 0;
     const isRecruitmentTag = selectedTag === '팀원모집';
 
-    const isStudyBoard = !isRecruitmentTag && !!selectedBoard?.name &&
-        STUDY_BOARD_NAME_KEYWORDS.every((keyword) => selectedBoard.name.includes(keyword));
+    const isStudyBoard = !isRecruitmentTag && selectedBoard && (selectedBoard.id === 8 || selectedBoard.name === "스터디/소모임 홍보");
 
     useEffect(() => {
         if (isPhotoBoard && content.trim()) {
@@ -217,14 +213,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         setSelectedTag(''); // 게시판 변경 시 태그 초기화
         setRecruitmentData(null);
     }, [category, BOARD_LIST]);
-
-    // 자랑게시판에서는 태그/모집 상태 비활성화
-    useEffect(() => {
-        if (selectedBoard?.name === BRAG_BOARD_NAME && selectedTag) {
-            setSelectedTag('');
-            setRecruitmentData(null);
-        }
-    }, [selectedBoard, selectedTag]);
 
     // 초안 불러오기 (DB - 단일 버퍼)
     useEffect(() => {
@@ -584,7 +572,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             }
 
             const postPayload: any = { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName };
-            if (hasTags && selectedTag) postPayload.tag = selectedTag;
+            if (selectedTag) postPayload.tag = selectedTag;
             if (isRecruitmentTag && recruitmentData) {
                 postPayload.is_anonymous = false; // 모집글은 실명
                 postPayload.recruitment = {
