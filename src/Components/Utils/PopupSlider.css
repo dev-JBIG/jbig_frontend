@@ -51,6 +51,11 @@
     color: #2c3e50;
 }
 
+.popup-close-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* 팝업 내용 */
 .popup-content {
     flex: 1;
@@ -104,6 +109,40 @@
     gap: 12px;
     padding: 16px 24px;
     border-top: 1px solid #e0e0e0;
+}
+
+.popup-congrats-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.popup-congrats-box label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.popup-congrats-box input {
+    width: 100%;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    color: #2c3e50;
+    outline: none;
+}
+
+.popup-congrats-box input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.12);
+}
+
+.popup-congrats-error {
+    margin: 0;
+    font-size: 12px;
+    color: #dc2626;
+    line-height: 1.4;
 }
 
 .popup-footer-checkbox {
@@ -212,6 +251,11 @@
     .popup-footer {
         padding: 14px 20px;
         gap: 10px;
+    }
+
+    .popup-congrats-box input {
+        font-size: 13px;
+        padding: 7px 9px;
     }
 
     .popup-footer-checkbox label {
