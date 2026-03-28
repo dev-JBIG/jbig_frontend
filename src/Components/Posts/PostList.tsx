@@ -14,6 +14,7 @@ const BOARD_DESCRIPTIONS: Record<string, string> = {
     "전체 글 보기": "JBIG의 모든 소식을 한눈에 확인하세요!",
     "공지사항": "동아리의 주요 일정과 공지사항을 확인하세요!",
     "자유게시판": "자유롭게 이야기를 나누고 소통하는 공간입니다.",
+    "자랑게시판": "수상, 합격, 성과를 함께 축하해요!",
     "자료공유": "유용한 학습 자료와 정보를 공유해요!",
     "논문리뷰": "최신 AI/BigData 논문을 리뷰하고 토론합니다.",
     "공모전게시판": "공모전 일정부터 팀원 모집, 수상 후기까지!",
@@ -22,6 +23,8 @@ const BOARD_DESCRIPTIONS: Record<string, string> = {
     "사유서제출": "부득이한 사정으로 활동에 불참할 경우 작성해주세요.",
     "에러/피드백 제보": "서비스 이용 중 불편한 점이나 에러를 제보해주세요.",
 };
+
+const BRAG_BOARD_NAME = "자랑게시판";
 
 /**
  * 게시판 이름을 간단하게 표시하기 위한 포맷터
@@ -346,7 +349,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                         
 
                         {/* 태그 필터 탭 */}
-                        {!isHome && activeBoard?.available_tags && activeBoard.available_tags.length > 0 && (
+                        {!isHome && activeBoard?.name !== BRAG_BOARD_NAME && activeBoard?.available_tags && activeBoard.available_tags.length > 0 && (
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
                                 <button
                                     className={`pagination-btn ${selectedTag === '' ? 'active' : ''}`}

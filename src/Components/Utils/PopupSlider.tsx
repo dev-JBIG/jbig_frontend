@@ -1,9 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { fetchActivePopups, PopupItem } from "../../API/req";
+import { fetchActivePopups, PopupItem, createComment } from "../../API/req";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useUser } from "./UserContext";
 import "./PopupSlider.css";
 
 const POPUP_HIDE_UNTIL_KEY = "jbig-popup-hide-until";
+const AUTO_CONGRATS_IMAGE_PATH = "/JBIG-Congratulation.png";
+
+const extractCongratsPostTitle = (popup: PopupItem): string => {
+    const rawContent = popup.content || "";
+    const titleLine = rawContent
+        .split("\n")
+        .map((line) => line.trim())
+        .find((line) => line.startsWith("제목:"));
+
+    if (titleLine) {
+        const extracted = titleLine.replace(/^제목:\s*/, "").trim();
+        if (extracted) {
+            return extracted;
+        }
+    }
+
+    const fallbackTitle = popup.title.replace(/^축하해주세요!\s*/, "").trim();
+    return fallbackTitle || popup.title;
+};
 
 const PopupSlider: React.FC = () => {
     const [popups, setPopups] = useState<PopupItem[]>([]);
@@ -11,6 +31,10 @@ const PopupSlider: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hideFor3Days, setHideFor3Days] = useState(false);
+    const [congratsLine, setCongratsLine] = useState("");
+    const [closeError, setCloseError] = useState("");
+    const [isClosing, setIsClosing] = useState(false);
+    const { accessToken } = useUser();
 
     useEffect(() => {
         // 기존 방식의 localStorage 키 제거 (마이그레이션)
@@ -55,9 +79,41 @@ const PopupSlider: React.FC = () => {
         }
     };
 
-    const handleClose = () => {
-        // "3일 동안 보지 않기" 옵션이 체크되어 있으면
-        if (hideFor3Days) {
+    const handleClose = async () => {
+        const popupToClose = popups[currentIndex];
+        if (!popupToClose) {
+            return;
+        }
+        const requiresCongrats = Boolean(popupToClose.auto_generated || popupToClose.source_post_id);
+        const message = congratsLine.trim();
+        if (requiresCongrats) {
+            if (!message) {
+                setCloseError("팝업을 닫으려면 축하 한 줄을 입력해주세요.");
+                return;
+            }
+            if (message.includes('\n')) {
+                setCloseError("축하 메시지는 한 줄로만 입력해주세요.");
+                return;
+            }
+        }
+
+        setIsClosing(true);
+
+        // 자동 생성 팝업 + 로그인 상태면 축하 문구를 댓글로 남김
+        if (requiresCongrats && popupToClose.source_post_id && accessToken) {
+            try {
+                await createComment(
+                    popupToClose.source_post_id,
+                    { content: message, parent: null, is_anonymous: false },
+                    accessToken
+                );
+            } catch (err) {
+                console.error('[PopupSlider] Failed to create congratulation comment:', err);
+            }
+        }
+
+        // 일반 팝업에서만 "3일 동안 보지 않기" 적용
+        if (!requiresCongrats && hideFor3Days) {
             // 3일 후 타임스탬프 계산 (밀리초 단위)
             const threeDaysLater = Date.now() + (3 * 24 * 60 * 60 * 1000);
             localStorage.setItem(POPUP_HIDE_UNTIL_KEY, threeDaysLater.toString());
@@ -66,6 +122,9 @@ const PopupSlider: React.FC = () => {
         // 체크하지 않으면 현재 세션에서만 닫힘 (localStorage에 저장하지 않음)
         
         setIsVisible(false);
+        setCongratsLine("");
+        setCloseError("");
+        setIsClosing(false);
         console.log('[PopupSlider] Popup closed, hideFor3Days:', hideFor3Days);
     };
 
@@ -82,24 +141,34 @@ const PopupSlider: React.FC = () => {
     }
 
     const currentPopup = popups[currentIndex];
+    const requiresCongrats = Boolean(currentPopup.auto_generated || currentPopup.source_post_id);
+    const popupImageSrc = requiresCongrats ? AUTO_CONGRATS_IMAGE_PATH : currentPopup.image_url;
+    const popupText = requiresCongrats
+        ? extractCongratsPostTitle(currentPopup)
+        : currentPopup.content;
 
     return (
         <div className="popup-container">
             <div className="popup-header">
                 <h3 className="popup-title">{currentPopup.title}</h3>
-                <button className="popup-close-btn" onClick={handleClose} aria-label="닫기">
+                <button
+                    className="popup-close-btn"
+                    onClick={handleClose}
+                    aria-label="닫기"
+                    disabled={isClosing}
+                >
                     <X size={20} />
                 </button>
             </div>
 
             <div className="popup-content">
-                {currentPopup.image_url && (
+                {popupImageSrc && (
                     <div className="popup-image">
                         <img 
-                            src={currentPopup.image_url} 
+                            src={popupImageSrc} 
                             alt={currentPopup.title}
                             onError={(e) => {
-                                console.error('[PopupSlider] Failed to load image:', currentPopup.image_url);
+                                console.error('[PopupSlider] Failed to load image:', popupImageSrc);
                                 // 이미지 로드 실패 시 이미지 영역 숨기기
                                 const target = e.target as HTMLImageElement;
                                 const parent = target.parentElement;
@@ -110,9 +179,9 @@ const PopupSlider: React.FC = () => {
                         />
                     </div>
                 )}
-                {currentPopup.content && (
+                {popupText && (
                     <div className="popup-text">
-                        {currentPopup.content.split('\n').map((line, idx) => (
+                        {popupText.split('\n').map((line, idx) => (
                             <p key={idx}>{line || '\u00A0'}</p>
                         ))}
                     </div>
@@ -120,16 +189,39 @@ const PopupSlider: React.FC = () => {
             </div>
 
             <div className="popup-footer">
-                <div className="popup-footer-checkbox">
-                    <label>
-                        <input 
-                            type="checkbox" 
-                            checked={hideFor3Days}
-                            onChange={(e) => setHideFor3Days(e.target.checked)}
+                {requiresCongrats && (
+                    <div className="popup-congrats-box">
+                        <label htmlFor="popup-congrats-input">축하 한 줄</label>
+                        <input
+                            id="popup-congrats-input"
+                            type="text"
+                            value={congratsLine}
+                            maxLength={120}
+                            placeholder="예: 정말 멋져요! 축하합니다!"
+                            onChange={(e) => {
+                                setCongratsLine(e.target.value);
+                                if (closeError) {
+                                    setCloseError("");
+                                }
+                            }}
                         />
-                        <span>3일 동안 보지 않기</span>
-                    </label>
-                </div>
+                        {closeError && (
+                            <p className="popup-congrats-error">{closeError}</p>
+                        )}
+                    </div>
+                )}
+                {!requiresCongrats && (
+                    <div className="popup-footer-checkbox">
+                        <label>
+                            <input 
+                                type="checkbox" 
+                                checked={hideFor3Days}
+                                onChange={(e) => setHideFor3Days(e.target.checked)}
+                            />
+                            <span>3일 동안 보지 않기</span>
+                        </label>
+                    </div>
+                )}
                 
                 {popups.length > 1 && (
                     <div className="popup-footer-nav">

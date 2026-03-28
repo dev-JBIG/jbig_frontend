@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     FileText,
     Megaphone,
@@ -77,7 +76,7 @@ export const getBoardIcon = (boardName: string): LucideIcon => {
     }
     
     // 대회/경진대회/공모전
-    if (name.includes('대회') || name.includes('경진') || name.includes('공모전')) {
+    if (name.includes('자랑') || name.includes('대회') || name.includes('경진') || name.includes('공모전')) {
         return Trophy;
     }
     
@@ -99,4 +98,3 @@ export const getBoardIcon = (boardName: string): LucideIcon => {
     // 기본값
     return FileText;
 };
-
