@@ -112,8 +112,8 @@ const PopupSlider: React.FC = () => {
             }
         }
 
-        // 일반 팝업에서만 "3일 동안 보지 않기" 적용
-        if (!requiresCongrats && hideFor3Days) {
+        // "3일 동안 보지 않기" 옵션이 체크되어 있으면
+        if (hideFor3Days) {
             // 3일 후 타임스탬프 계산 (밀리초 단위)
             const threeDaysLater = Date.now() + (3 * 24 * 60 * 60 * 1000);
             localStorage.setItem(POPUP_HIDE_UNTIL_KEY, threeDaysLater.toString());
@@ -210,18 +210,16 @@ const PopupSlider: React.FC = () => {
                         )}
                     </div>
                 )}
-                {!requiresCongrats && (
-                    <div className="popup-footer-checkbox">
-                        <label>
-                            <input 
-                                type="checkbox" 
-                                checked={hideFor3Days}
-                                onChange={(e) => setHideFor3Days(e.target.checked)}
-                            />
-                            <span>3일 동안 보지 않기</span>
-                        </label>
-                    </div>
-                )}
+                <div className="popup-footer-checkbox">
+                    <label>
+                        <input 
+                            type="checkbox" 
+                            checked={hideFor3Days}
+                            onChange={(e) => setHideFor3Days(e.target.checked)}
+                        />
+                        <span>3일 동안 보지 않기</span>
+                    </label>
+                </div>
                 
                 {popups.length > 1 && (
                     <div className="popup-footer-nav">
