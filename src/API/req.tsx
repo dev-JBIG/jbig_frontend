@@ -1376,9 +1376,6 @@ export interface PopupItem {
     created_by: number | null;
     created_by_username: string;
     order: number;
-    source_post_id?: number | null;
-    source_board_id?: number | null;
-    auto_generated?: boolean;
 }
 
 export interface PopupCreate {
