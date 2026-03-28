@@ -69,8 +69,9 @@ python manage.py migrate --run-syncdb -v 0
 
 # 초기 데이터 (최초 1회: 관리자 + 테스트유저 + 게시판 + 샘플 게시글)
 python manage.py shell -c "
-from boards.models import Board
-if not Board.objects.exists():
+from boards.models import Post
+from users.models import User
+if not User.objects.exists() and not Post.objects.exists():
     import django.core.management
     django.core.management.call_command('seed_data')
 else:
