@@ -13,12 +13,12 @@ const EducationBlockEditor: React.FC<Props> = ({ block, onChange }) => {
         <input type="text" placeholder="전공/학과" value={block.data.field} onChange={(e) => update('field', e.target.value)} />
       </div>
       <div className="block-experience-dates">
-        <input type="month" value={block.data.startDate} onChange={(e) => update('startDate', e.target.value)} />
+        <input type="text" placeholder="시작일 (예: 2022-03)" value={block.data.startDate} onChange={(e) => update('startDate', e.target.value)} />
         <span>~</span>
         {block.data.isCurrent ? (
           <span className="block-experience-current">재학 중</span>
         ) : (
-          <input type="month" value={block.data.endDate || ''} onChange={(e) => update('endDate', e.target.value)} />
+          <input type="text" placeholder="종료일 (예: 2026-02)" value={block.data.endDate || ''} onChange={(e) => update('endDate', e.target.value)} />
         )}
         <label className="block-experience-check">
           <input type="checkbox" checked={block.data.isCurrent} onChange={(e) => update('isCurrent', e.target.checked)} />

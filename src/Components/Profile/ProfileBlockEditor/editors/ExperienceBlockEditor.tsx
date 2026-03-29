@@ -16,12 +16,12 @@ const ExperienceBlockEditor: React.FC<Props> = ({ block, onChange }) => {
       <input type="text" placeholder="직책/역할" value={block.data.title} onChange={(e) => update('title', e.target.value)} />
       <input type="text" placeholder="회사/기관/학교" value={block.data.organization} onChange={(e) => update('organization', e.target.value)} />
       <div className="block-experience-dates">
-        <input type="month" placeholder="시작일" value={block.data.startDate} onChange={(e) => update('startDate', e.target.value)} />
+        <input type="text" placeholder="시작일 (예: 2024-03)" value={block.data.startDate} onChange={(e) => update('startDate', e.target.value)} />
         <span>~</span>
         {block.data.isCurrent ? (
           <span className="block-experience-current">현재</span>
         ) : (
-          <input type="month" placeholder="종료일" value={block.data.endDate || ''} onChange={(e) => update('endDate', e.target.value)} />
+          <input type="text" placeholder="종료일 (예: 2025-06)" value={block.data.endDate || ''} onChange={(e) => update('endDate', e.target.value)} />
         )}
         <label className="block-experience-check">
           <input type="checkbox" checked={block.data.isCurrent} onChange={(e) => update('isCurrent', e.target.checked)} />
