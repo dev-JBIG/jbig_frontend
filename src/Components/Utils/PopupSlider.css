@@ -1,4 +1,4 @@
-/* 팝업 컨테이너 - 레이어 팝업 (화면 중앙, 3:4 비율) */
+/* 팝업 컨테이너 - 레이어 팝업 (화면 중앙, 내용에 맞게 확장) */
 .popup-container {
     position: fixed;
     left: 50%;
@@ -8,7 +8,7 @@
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     width: 320px;
-    height: 600px;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
     z-index: 9999;
@@ -23,6 +23,7 @@
     align-items: center;
     padding: 20px 24px;
     border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
 }
 
 .popup-title {
@@ -62,6 +63,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 /* 팝업 이미지 */
@@ -86,9 +88,7 @@
 
 /* 팝업 텍스트 */
 .popup-text {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
+    padding: 20px 24px;
     line-height: 1.7;
     color: #34495e;
     font-size: 15px;
@@ -102,25 +102,56 @@
     margin-bottom: 0;
 }
 
-/* 팝업 푸터 (슬라이드 네비게이션) */
+/* 게시글 제목 */
+.popup-post-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 12px;
+    word-break: break-word;
+}
+
+/* 글 내용 로딩 */
+.popup-content-loading {
+    margin: 0;
+    font-size: 13px;
+    color: #7f8c8d;
+}
+
+/* 글 본문 */
+.popup-post-body {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #34495e;
+}
+
+.popup-post-body p {
+    margin: 0 0 8px;
+}
+
+.popup-post-body p:last-child {
+    margin-bottom: 0;
+}
+
+.popup-post-body img {
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+/* 팝업 푸터 */
 .popup-footer {
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding: 16px 24px;
     border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
 }
 
 .popup-congrats-box {
     display: flex;
     flex-direction: column;
     gap: 6px;
-}
-
-.popup-congrats-box label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #2c3e50;
 }
 
 .popup-congrats-box input {
@@ -145,30 +176,26 @@
     line-height: 1.4;
 }
 
-.popup-footer-checkbox {
-    display: flex;
-    align-items: center;
-}
-
-.popup-footer-checkbox label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
+.popup-congrats-submit-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
     font-size: 14px;
-    color: #34495e;
-    user-select: none;
-}
-
-.popup-footer-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    font-weight: 600;
     cursor: pointer;
-    margin: 0;
+    transition: background-color 0.2s ease-in-out;
 }
 
-.popup-footer-checkbox span {
-    line-height: 1;
+.popup-congrats-submit-btn:hover {
+    background-color: #2980b9;
+}
+
+.popup-congrats-submit-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .popup-footer-nav {
@@ -223,7 +250,7 @@
     .popup-container {
         width: 90%;
         max-width: 360px;
-        height: 480px; /* 3:4 비율 유지 (360 x 480) */
+        max-height: 85vh;
         border-radius: 8px;
     }
 
@@ -244,7 +271,7 @@
     }
 
     .popup-text {
-        padding: 20px;
+        padding: 16px 20px;
         font-size: 14px;
     }
 
@@ -258,8 +285,9 @@
         padding: 7px 9px;
     }
 
-    .popup-footer-checkbox label {
+    .popup-congrats-submit-btn {
         font-size: 13px;
+        padding: 9px;
     }
 
     .popup-indicator {
@@ -269,20 +297,20 @@
 }
 
 /* 스크롤바 스타일 */
-.popup-text::-webkit-scrollbar {
+.popup-content::-webkit-scrollbar {
     width: 6px;
 }
 
-.popup-text::-webkit-scrollbar-track {
+.popup-content::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
 }
 
-.popup-text::-webkit-scrollbar-thumb {
+.popup-content::-webkit-scrollbar-thumb {
     background: #bdc3c7;
     border-radius: 3px;
 }
 
-.popup-text::-webkit-scrollbar-thumb:hover {
+.popup-content::-webkit-scrollbar-thumb:hover {
     background: #95a5a6;
 }

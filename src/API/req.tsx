@@ -1391,11 +1391,22 @@ export interface PopupCreate {
     order?: number;
 }
 
-// 활성 팝업 조회 (사용자용)
-export const fetchActivePopups = async (): Promise<PopupItem[]> => {
+// 활성 팝업 조회 (사용자용 — 토큰 전달 시 dismiss 필터링 적용)
+export const fetchActivePopups = async (token?: string | null): Promise<PopupItem[]> => {
     const url = `${BASE_URL}/api/popups/`;
-    const res = await axios.get(url);
+    const headers: any = {};
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await axios.get(url, { headers });
     return res.data;
+};
+
+// 팝업 dismiss (다시 보지 않기)
+export const dismissPopup = async (popupId: number, token: string): Promise<void> => {
+    await axios.post(`${BASE_URL}/api/popups/${popupId}/dismiss/`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
 };
 
 // 모든 팝업 조회 (관리자용)
