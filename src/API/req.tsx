@@ -1536,3 +1536,11 @@ export const fetchMyApplications = async (token: string): Promise<any[]> => {
     const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
     return res.data;
 };
+
+// ========== Notion 프록시 API ==========
+
+export const fetchNotionPage = async (pageId: string, token: string): Promise<any> => {
+    const url = `${BASE_URL}/api/notion/${pageId}/`;
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+};

@@ -4,13 +4,13 @@ import { ExtendedRecordMap } from "notion-types";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { useAlert } from "../Utils/AlertContext";
-import { fetchSiteSettings } from "../../API/req";
+import { fetchSiteSettings, fetchNotionPage as fetchNotionPageAPI } from "../../API/req";
 import { Code } from 'react-notion-x/build/third-party/code'
 import { Collection } from 'react-notion-x/build/third-party/collection'
 import { Equation } from 'react-notion-x/build/third-party/equation'
 
 import "react-notion-x/src/styles.css";
-import Prism from "prismjs"; 
+import Prism from "prismjs";
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-sql";
 
@@ -28,32 +28,9 @@ function sanitizeRecordMap(recordMap: ExtendedRecordMap): ExtendedRecordMap {
     return { ...recordMap, block: cleanBlock };
 }
 
-async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
-    const timestamp = new Date().getTime();
-    const res = await fetch(`https://notion-api.splitbee.io/v1/page/${pageId}?t=${timestamp}`, {
-        cache: 'no-store',
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch page: ${res.status}`);
-    }
-    const data = await res.json();
-
-    let recordMap: ExtendedRecordMap;
-    if (data && !data.block) {
-        recordMap = {
-            block: data,
-            collection: {},
-            collection_view: {},
-            notion_user: {},
-            collection_query: {},
-            signed_urls: {},
-        } as ExtendedRecordMap;
-    } else {
-        recordMap = data;
-    }
-
-    return sanitizeRecordMap(recordMap);
+async function fetchNotionPage(pageId: string, accessToken: string): Promise<ExtendedRecordMap> {
+    const data = await fetchNotionPageAPI(pageId, accessToken);
+    return sanitizeRecordMap(data as ExtendedRecordMap);
 }
 
 const Note: React.FC = () => {
@@ -72,12 +49,17 @@ const Note: React.FC = () => {
             setLoading(false);
             return;
         }
+        if (!accessToken) {
+            setError("로그인이 필요합니다.");
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
         try {
-            const data = await fetchNotionPage(pageId);
+            const data = await fetchNotionPage(pageId, accessToken);
             setRecordMap(data);
             setCurrentPageId(pageId);
             const defaultId = defaultPageIdRef.current;
@@ -88,11 +70,11 @@ const Note: React.FC = () => {
                 window.history.pushState({ page: pageId }, "", newUrl);
             }
         } catch {
-            setError("페이지를 불러올 수 없습니다. Notion 페이지가 공개 상태인지 확인하세요.");
+            setError("페이지를 불러올 수 없습니다.");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [accessToken]);
 
     useEffect(() => {
         if (!authReady) return;
