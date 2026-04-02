@@ -128,7 +128,7 @@ const RecruitmentDetailSection: React.FC<RecruitmentDetailProps> = ({ recruitmen
         ? new Date(r.deadline).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
         : '상시모집';
 
-    const isExpired = r.deadline ? new Date(r.deadline) < new Date() : false;
+    const isClosed = r.status !== 1;
 
     return (
         <div style={{
@@ -158,8 +158,8 @@ const RecruitmentDetailSection: React.FC<RecruitmentDetailProps> = ({ recruitmen
                 <span>{r.max_members === 0 ? '제한 없음' : `${r.accepted_count} / ${r.max_members}명`}</span>
 
                 <span style={{ color: '#64748b', fontWeight: 500 }}>마감일</span>
-                <span style={{ color: isExpired ? '#dc2626' : undefined }}>
-                    {deadlineStr} {isExpired && '(마감됨)'}
+                <span style={{ color: isClosed ? '#dc2626' : undefined }}>
+                    {deadlineStr} {isClosed && r.status !== 3 && r.status !== 4 && '(마감됨)'}
                 </span>
 
                 {r.required_skills.length > 0 && (

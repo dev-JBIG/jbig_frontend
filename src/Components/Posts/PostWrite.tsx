@@ -589,7 +589,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 postPayload.recruitment = {
                     recruitment_type: recruitmentData.recruitment_type,
                     max_members: recruitmentData.max_members,
-                    deadline: recruitmentData.deadline ? new Date(recruitmentData.deadline + 'T23:59:59').toISOString() : null,
+                    deadline: recruitmentData.deadline ? recruitmentData.deadline + 'T23:59:59+09:00' : null,
                     required_skills: recruitmentData.required_skills,
                     contact_info: recruitmentData.contact_info,
                     show_applicants: recruitmentData.show_applicants,
