@@ -17,21 +17,31 @@ import "prismjs/components/prism-sql";
 
 import "./Note.css";
 
+function sanitizeRecordMap(recordMap: ExtendedRecordMap): ExtendedRecordMap {
+    if (!recordMap?.block) return recordMap;
+    const cleanBlock: typeof recordMap.block = {};
+    for (const [key, value] of Object.entries(recordMap.block)) {
+        if (key && value?.value?.id) {
+            cleanBlock[key] = value;
+        }
+    }
+    return { ...recordMap, block: cleanBlock };
+}
+
 async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
-    // [수정] URL 끝에 현재 시간(timestamp)을 붙여서 매번 새로운 요청인 것처럼 서버를 속입니다.
-    // 추가로 fetch 옵션에 'no-store'를 주어 캐시를 아예 사용하지 않도록 강제합니다.
     const timestamp = new Date().getTime();
     const res = await fetch(`https://notion-api.splitbee.io/v1/page/${pageId}?t=${timestamp}`, {
-        cache: 'no-store', // 브라우저 및 중간 프록시 캐시 방지
+        cache: 'no-store',
     });
-    
+
     if (!res.ok) {
         throw new Error(`Failed to fetch page: ${res.status}`);
     }
     const data = await res.json();
 
+    let recordMap: ExtendedRecordMap;
     if (data && !data.block) {
-        return {
+        recordMap = {
             block: data,
             collection: {},
             collection_view: {},
@@ -39,9 +49,11 @@ async function fetchNotionPage(pageId: string): Promise<ExtendedRecordMap> {
             collection_query: {},
             signed_urls: {},
         } as ExtendedRecordMap;
+    } else {
+        recordMap = data;
     }
 
-    return data;
+    return sanitizeRecordMap(recordMap);
 }
 
 const Note: React.FC = () => {
