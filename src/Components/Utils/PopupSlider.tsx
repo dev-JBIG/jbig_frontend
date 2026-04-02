@@ -131,7 +131,7 @@ const PopupSlider: React.FC = () => {
             try {
                 await createComment(
                     popup.source_post_id,
-                    { content: message, parent: null, is_anonymous: false },
+                    { content: message, parent: null, is_anonymous: true },
                     accessToken
                 );
             } catch (err) {

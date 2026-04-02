@@ -586,7 +586,6 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             const postPayload: any = { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName };
             if (hasTags && selectedTag) postPayload.tag = selectedTag;
             if (isRecruitmentTag && recruitmentData) {
-                postPayload.is_anonymous = false; // 모집글은 실명
                 postPayload.recruitment = {
                     recruitment_type: recruitmentData.recruitment_type,
                     max_members: recruitmentData.max_members,
