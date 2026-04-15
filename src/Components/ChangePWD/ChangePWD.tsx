@@ -5,6 +5,7 @@ import { requestVerificationCode, verifyCode, resetPassword } from "../../API/re
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { useAlert } from "../Utils/AlertContext";
+import { useJbnuEmail } from "../Utils/useJbnuEmail";
 
 // 이메일 도메인 유효성 검사
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -13,7 +14,7 @@ const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
 const ChangePWD: React.FC = () => {
-    const [email, setEmail] = useState("");
+    const { email, inputRef: emailRef, onChange: onEmailChange, onFocus: onEmailFocus } = useJbnuEmail();
     const [verificationCode, setVerificationCode] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -146,11 +147,13 @@ const ChangePWD: React.FC = () => {
                             아이디
                         </label>
                         <input
+                            ref={emailRef}
                             className="changepwd-input"
                             id="email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={onEmailChange}
+                            onFocus={onEmailFocus}
                             placeholder="예: jbig@jbnu.ac.kr"
                             disabled={isLoading}
                         />

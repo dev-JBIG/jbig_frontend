@@ -4,6 +4,7 @@ import { signin } from "../../API/req";
 import { useUser } from "./UserContext";
 import { useStaffAuth } from "./StaffAuthContext";
 import { useNavigate } from "react-router-dom";
+import { useJbnuEmail } from "./useJbnuEmail";
 
 interface LoginModalProps {
     onClose: () => void;
@@ -14,7 +15,7 @@ const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
 const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
-    const [userId, setUserId] = useState("");
+    const { email: userId, inputRef: userIdRef, onChange: onUserIdChange, onFocus: onUserIdFocus } = useJbnuEmail();
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -119,14 +120,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                         아이디 (이메일)
                     </label>
                     <input
+                        ref={userIdRef}
                         className={`login-modal-input ${fieldErrors.email ? "input-error" : ""}`}
                         id="modal-userid"
                         type="text"
                         value={userId}
                         onChange={(e) => {
-                            setUserId(e.target.value);
+                            onUserIdChange(e);
                             if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
                         }}
+                        onFocus={onUserIdFocus}
                         onBlur={handleEmailBlur}
                         autoFocus
                     />

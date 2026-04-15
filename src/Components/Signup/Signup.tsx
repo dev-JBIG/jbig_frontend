@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signupUser, verifyAuthEmail, resendVerifyEmail } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
+import { useJbnuEmail } from "../Utils/useJbnuEmail";
 import "./Signup.css";
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -15,7 +16,7 @@ const Signup: React.FC = () => {
     const [step, setStep] = useState<1 | 2>(1);
 
     // 1단계 입력값
-    const [email, setEmail] = useState("");
+    const { email, inputRef: emailRef, onChange: onEmailChange, onFocus: onEmailFocus } = useJbnuEmail();
     const [userId, setUserId] = useState("");
     const [semester, setSemester] = useState<number | null>(null);
     const [password, setPassword] = useState("");
@@ -144,11 +145,13 @@ const Signup: React.FC = () => {
                         <form className="signup-form" onSubmit={handleSignupRequest}>
                             <label className="signup-label" htmlFor="email">이메일</label>
                             <input
+                                ref={emailRef}
                                 className="signup-input"
                                 id="email"
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={onEmailChange}
+                                onFocus={onEmailFocus}
                                 required
                                 placeholder="예: example@jbnu.ac.kr"
                             />

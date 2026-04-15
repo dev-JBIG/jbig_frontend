@@ -4,13 +4,14 @@ import {Link, useNavigate} from "react-router-dom";
 import {signin} from "../../API/req";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
+import {useJbnuEmail} from "../Utils/useJbnuEmail";
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
 const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
 const Signin: React.FC = () => {
-    const [userId, setUserId] = useState("");
+    const { email: userId, inputRef: userIdRef, onChange: onUserIdChange, onFocus: onUserIdFocus } = useJbnuEmail();
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -93,14 +94,16 @@ const Signin: React.FC = () => {
                         아이디 (이메일)
                     </label>
                     <input
+                        ref={userIdRef}
                         className={`signin-input ${fieldErrors.email ? "input-error" : ""}`}
                         id="userid"
                         type="text"
                         value={userId}
                         onChange={(e) => {
-                            setUserId(e.target.value);
+                            onUserIdChange(e);
                             if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
                         }}
+                        onFocus={onUserIdFocus}
                         onBlur={handleEmailBlur}
                     />
                     {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
