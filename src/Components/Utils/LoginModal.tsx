@@ -15,7 +15,7 @@ const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
 const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
-    const { email: userId, inputRef: userIdRef, onChange: onUserIdChange, onFocus: onUserIdFocus } = useJbnuEmail();
+    const { email: userId, inputRef: userIdRef, onChange: onUserIdChange, onFocus: onUserIdFocus, onClick: onUserIdClick } = useJbnuEmail();
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -130,6 +130,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                             if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
                         }}
                         onFocus={onUserIdFocus}
+                        onClick={onUserIdClick}
                         onBlur={handleEmailBlur}
                         autoFocus
                     />

@@ -14,7 +14,7 @@ const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
 const ChangePWD: React.FC = () => {
-    const { email, inputRef: emailRef, onChange: onEmailChange, onFocus: onEmailFocus } = useJbnuEmail();
+    const { email, inputRef: emailRef, onChange: onEmailChange, onFocus: onEmailFocus, onClick: onEmailClick } = useJbnuEmail();
     const [verificationCode, setVerificationCode] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -150,10 +150,13 @@ const ChangePWD: React.FC = () => {
                             ref={emailRef}
                             className="changepwd-input"
                             id="email"
-                            type="email"
+                            type="text"
+                            inputMode="email"
+                            autoComplete="email"
                             value={email}
                             onChange={onEmailChange}
                             onFocus={onEmailFocus}
+                            onClick={onEmailClick}
                             placeholder="예: jbig@jbnu.ac.kr"
                             disabled={isLoading}
                         />
