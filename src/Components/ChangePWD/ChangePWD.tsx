@@ -21,6 +21,7 @@ const ChangePWD: React.FC = () => {
 
     const [isCodeSent, setIsCodeSent] = useState(false);
     const [isCodeVerified, setIsCodeVerified] = useState(false);
+    const [resetToken, setResetToken] = useState("");
     const [timer, setTimer] = useState(300); // 5분 = 300초
     const [isLoading, setIsLoading] = useState(false);
 
@@ -85,8 +86,9 @@ const ChangePWD: React.FC = () => {
         setIsLoading(true);
         try {
             const result = await verifyCode(email, verificationCode);
-            if (result.success) {
+            if (result.success && result.reset_token) {
                 showAlert({ message: "인증되었습니다. 새 비밀번호를 입력해주세요.", type: 'success' });
+                setResetToken(result.reset_token);
                 setIsCodeVerified(true);
             } else {
                 showAlert({ message: result.message || "인증에 실패했습니다.", type: 'error' });
@@ -112,7 +114,13 @@ const ChangePWD: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const result = await resetPassword(email, newPassword, confirmPassword);
+            if (!resetToken) {
+                showAlert({ message: "인증 세션이 만료되었습니다. 처음부터 다시 진행해주세요.", type: 'warning' });
+                setIsCodeSent(false);
+                setIsCodeVerified(false);
+                return;
+            }
+            const result = await resetPassword(email, resetToken, newPassword, confirmPassword);
             if (result.success) {
                 // 비밀번호 변경 성공 시 로그아웃 처리함
                 signOutLocal();

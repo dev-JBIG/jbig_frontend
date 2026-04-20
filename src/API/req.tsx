@@ -337,11 +337,16 @@ export const verifyCode = async (email: string, verification_code: string) => {
 };
 
 // 비밀번호 찾기 api - 비밀번호 재설정
-export const resetPassword = async (email: string, new_password1: string, new_password2: string) => {
+export const resetPassword = async (
+    email: string,
+    reset_token: string,
+    new_password1: string,
+    new_password2: string
+) => {
     try {
         const response = await axios.post(
             `${BASE_URL}/api/users/password/reset/`,
-            { email, new_password1, new_password2 },
+            { email, reset_token, new_password1, new_password2 },
             { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: true }
         );
         return { success: true, ...response.data };
