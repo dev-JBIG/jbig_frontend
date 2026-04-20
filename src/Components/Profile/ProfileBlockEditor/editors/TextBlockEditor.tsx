@@ -1,6 +1,7 @@
 import React from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { TextBlock } from '../../types';
+import { safeSanitizePlugin } from '../../../Utils/safeMarkdown';
 
 interface Props {
   block: TextBlock;
@@ -15,6 +16,7 @@ const TextBlockEditor: React.FC<Props> = ({ block, onChange }) => {
         onChange={(val) => onChange({ ...block, data: { markdown: val || '' } })}
         height={200}
         preview="edit"
+        previewOptions={{ rehypePlugins: [safeSanitizePlugin] }}
         textareaProps={{ placeholder: '마크다운으로 작성하세요...' }}
       />
     </div>

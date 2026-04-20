@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'; // useRef 추가
 import MDEditor from '@uiw/react-md-editor';
+import { safeSanitizePlugin } from '../Utils/safeMarkdown';
 import './PostWrite.css';
 
 interface StudyFormProps {
@@ -244,6 +245,7 @@ ${plan}
             data-color-mode="light"
             height={300}
             preview="edit"
+            previewOptions={{ rehypePlugins: [safeSanitizePlugin] }}
           />
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MDEditor from '@uiw/react-md-editor';
+import { safeSanitizePlugin } from '../Utils/safeMarkdown';
 import { RecruitmentFormData } from '../Utils/interfaces';
 import './PostWrite.css';
 
@@ -203,6 +204,7 @@ const RecruitmentForm: React.FC<RecruitmentFormProps> = ({
                         data-color-mode="light"
                         height={300}
                         preview="edit"
+                        previewOptions={{ rehypePlugins: [safeSanitizePlugin] }}
                     />
                 </div>
             </div>

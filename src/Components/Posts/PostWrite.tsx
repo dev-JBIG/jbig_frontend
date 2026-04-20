@@ -7,6 +7,7 @@ import '@uiw/react-markdown-preview/markdown.css';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import { safeSanitizePlugin } from "../Utils/safeMarkdown";
 import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft, refreshTokenAPI} from "../../API/req"
 import {Board, Section, UploadFile, RecruitmentFormData} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
@@ -789,7 +790,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                             }}
                             data-color-mode="light" height={400} preview="edit"
                             previewOptions={{
-                                remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex],
+                                remarkPlugins: [remarkMath], rehypePlugins: [safeSanitizePlugin, rehypeKatex],
                                 components: {
                                     img: ({ src, alt, ...props }) => {
                                         let imageSrc = src;
