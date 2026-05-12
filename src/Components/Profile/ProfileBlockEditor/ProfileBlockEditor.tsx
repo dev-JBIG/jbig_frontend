@@ -21,6 +21,7 @@ import ActivityBlockEditor from './editors/ActivityBlockEditor';
 import PublicationBlockEditor from './editors/PublicationBlockEditor';
 import ContactBlockEditor from './editors/ContactBlockEditor';
 import StatsBlockEditor from './editors/StatsBlockEditor';
+import IdentityBlockEditor from './editors/IdentityBlockEditor';
 import './ProfileBlockEditor.css';
 
 const EDITOR_MAP: Record<string, React.FC<{ block: any; onChange: (b: any) => void }>> = {
@@ -39,6 +40,7 @@ const EDITOR_MAP: Record<string, React.FC<{ block: any; onChange: (b: any) => vo
   publication: PublicationBlockEditor,
   contact: ContactBlockEditor,
   stats: StatsBlockEditor,
+  identity: IdentityBlockEditor,
 };
 
 interface Props {

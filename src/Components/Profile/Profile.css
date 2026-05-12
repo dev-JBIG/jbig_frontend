@@ -1,8 +1,32 @@
+/* ============================================================
+   Resume page — local design tokens
+   사이트 전역 토큰을 깨지 않기 위해 이력서 페이지 내에서만 사용
+   ============================================================ */
+.resume-page {
+    --resume-fs-name: 28px;
+    --resume-fs-headline: 16px;
+    --resume-fs-section: 15px;
+    --resume-fs-body: 14px;
+    --resume-fs-meta: 12px;
+
+    --resume-gap-section: 28px;
+    --resume-gap-item: 14px;
+
+    --resume-color-text: #0f172a;
+    --resume-color-muted: #475569;
+    --resume-color-meta: #94a3b8;
+    --resume-color-border: #e2e8f0;
+    --resume-color-bg: #ffffff;
+    --resume-color-bg-soft: #f8fafc;
+    --resume-color-accent: #2563eb;
+}
+
 .profile-container {
-    max-width: 800px;
+    max-width: 960px;
     margin: 0 auto;
-    padding: 40px 20px;
+    padding: 48px 24px 80px;
     min-height: calc(100vh - 200px);
+    color: var(--resume-color-text, #0f172a);
 }
 
 .profile-loading,
@@ -19,7 +43,7 @@
     width: 40px;
     height: 40px;
     border: 3px solid #f3f3f3;
-    border-top: 3px solid #3498db;
+    border-top: 3px solid #2563eb;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 16px;
@@ -38,7 +62,7 @@
 .profile-error button {
     margin-top: 20px;
     padding: 10px 24px;
-    background: #3498db;
+    background: #2563eb;
     color: white;
     border: none;
     border-radius: 8px;
@@ -46,172 +70,282 @@
     font-size: 14px;
 }
 
+/* ============================================================
+   Header
+   ============================================================ */
 .profile-header {
     display: flex;
     align-items: flex-start;
-    gap: 24px;
-    padding-bottom: 32px;
-    border-bottom: 1px solid #eee;
-    margin-bottom: 32px;
+    gap: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--resume-color-border);
+    margin-bottom: 24px;
 }
 
 .profile-avatar {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #93c5fd 0%, #6366f1 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: 38px;
     font-weight: 700;
     color: white;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .profile-info {
     flex: 1;
+    min-width: 0;
 }
 
 .profile-name {
-    font-size: 28px;
+    font-size: var(--resume-fs-name);
     font-weight: 700;
-    color: #222;
-    margin: 0 0 8px 0;
+    color: var(--resume-color-text);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.profile-username {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--resume-color-meta);
+}
+
+.profile-headline {
+    font-size: var(--resume-fs-headline);
+    font-weight: 500;
+    color: var(--resume-color-muted);
+    margin: 0 0 10px 0;
+    line-height: 1.4;
 }
 
 .profile-meta {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    margin: 0 0 8px 0;
+    flex-wrap: wrap;
+    margin: 0 0 6px 0;
 }
 
 .profile-semester {
-    background: #e8f4fd;
-    color: #3498db;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 13px;
+    background: #eff6ff;
+    color: var(--resume-color-accent);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
     font-weight: 600;
 }
 
+.profile-location {
+    font-size: 13px;
+    color: var(--resume-color-muted);
+}
+
+.profile-location::before {
+    content: '· ';
+    color: var(--resume-color-meta);
+    margin-right: 2px;
+}
+
 .profile-id {
-    color: #888;
-    font-size: 14px;
+    color: var(--resume-color-meta);
+    font-size: 13px;
 }
 
 .profile-joined {
-    color: #999;
-    font-size: 13px;
+    color: var(--resume-color-meta);
+    font-size: var(--resume-fs-meta);
     margin: 0;
 }
 
 .profile-last-login {
-    color: #27ae60;
+    color: #16a34a;
 }
 
 .profile-actions {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
 }
 
 .btn-edit,
+.btn-print,
 .btn-save,
 .btn-cancel,
 .btn-password,
 .btn-delete-account {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
-    border: none;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .btn-edit {
-    background: #3498db;
+    background: var(--resume-color-accent);
     color: white;
 }
 
 .btn-edit:hover {
-    background: #2980b9;
+    background: #1d4ed8;
+}
+
+.btn-print {
+    background: white;
+    color: var(--resume-color-muted);
+    border-color: var(--resume-color-border);
+}
+
+.btn-print:hover {
+    background: var(--resume-color-bg-soft);
+    color: var(--resume-color-text);
+    border-color: #cbd5e1;
 }
 
 .btn-save {
-    background: #27ae60;
+    background: #16a34a;
     color: white;
 }
 
 .btn-save:hover {
-    background: #219a52;
+    background: #15803d;
 }
 
 .btn-save:disabled {
-    background: #95a5a6;
+    background: #94a3b8;
     cursor: not-allowed;
 }
 
 .btn-cancel {
-    background: #ecf0f1;
-    color: #7f8c8d;
+    background: var(--resume-color-bg-soft);
+    color: var(--resume-color-muted);
+    border-color: var(--resume-color-border);
 }
 
 .btn-cancel:hover {
-    background: #bdc3c7;
+    background: #e2e8f0;
 }
 
 .btn-password {
-    background: #ecf0f1;
-    color: #555;
+    background: var(--resume-color-bg-soft);
+    color: var(--resume-color-muted);
+    border-color: var(--resume-color-border);
 }
 
 .btn-password:hover {
-    background: #bdc3c7;
+    background: #e2e8f0;
 }
 
 .btn-delete-account {
-    background: #fff;
-    color: #e74c3c;
-    border: 1px solid #e74c3c;
+    background: white;
+    color: #dc2626;
+    border-color: #fecaca;
     margin-top: 8px;
 }
 
 .btn-delete-account:hover {
-    background: #e74c3c;
-    color: white;
+    background: #fef2f2;
+    border-color: #dc2626;
 }
 
+/* ============================================================
+   Tabs
+   ============================================================ */
+.profile-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--resume-color-border);
+    margin-bottom: 28px;
+}
+
+.profile-tab {
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--resume-color-meta);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.profile-tab:hover {
+    color: var(--resume-color-muted);
+}
+
+.profile-tab.is-active {
+    color: var(--resume-color-text);
+    border-bottom-color: var(--resume-color-accent);
+    font-weight: 600;
+}
+
+/* ============================================================
+   Content area
+   ============================================================ */
 .profile-content {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: var(--resume-gap-section);
 }
 
 .profile-section {
-    background: #fff;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    border: 1px solid #f0f0f0;
+    background: var(--resume-color-bg);
+    border-radius: 8px;
+    padding: 20px 22px;
+    border: 1px solid var(--resume-color-border);
 }
 
 .section-title {
-    font-size: 18px;
+    font-size: var(--resume-fs-section);
     font-weight: 600;
-    color: #333;
-    margin: 0 0 16px 0;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #3498db;
+    color: var(--resume-color-text);
+    margin: 0 0 14px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--resume-color-border);
+    letter-spacing: -0.01em;
+    position: relative;
 }
 
+.section-title::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 2px;
+    bottom: 12px;
+    width: 3px;
+    background: var(--resume-color-accent);
+    border-radius: 2px;
+}
+
+/* ============================================================
+   Resume editor (legacy)
+   ============================================================ */
 .resume-editor textarea {
     width: 100%;
     min-height: 200px;
     padding: 16px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--resume-color-border);
     border-radius: 8px;
     font-size: 14px;
     line-height: 1.6;
@@ -221,19 +355,19 @@
 
 .resume-editor textarea:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    border-color: var(--resume-color-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .editor-hint {
     margin-top: 8px;
     font-size: 12px;
-    color: #999;
+    color: var(--resume-color-meta);
 }
 
 .resume-content {
-    line-height: 1.8;
-    color: #444;
+    line-height: 1.7;
+    color: var(--resume-color-muted);
 }
 
 .resume-content h1,
@@ -241,7 +375,7 @@
 .resume-content h3 {
     margin-top: 24px;
     margin-bottom: 12px;
-    color: #333;
+    color: var(--resume-color-text);
 }
 
 .resume-content h1 { font-size: 24px; }
@@ -259,33 +393,40 @@
 }
 
 .resume-content code {
-    background: #f5f5f5;
+    background: #f1f5f9;
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 13px;
 }
 
 .resume-content pre {
-    background: #f5f5f5;
+    background: #f1f5f9;
     padding: 16px;
     border-radius: 8px;
     overflow-x: auto;
 }
 
 .resume-content blockquote {
-    border-left: 4px solid #3498db;
+    border-left: 3px solid var(--resume-color-accent);
     padding-left: 16px;
     margin: 16px 0;
-    color: #666;
+    color: var(--resume-color-muted);
+}
+
+.resume-content a {
+    display: inline-block;
 }
 
 .empty-text {
-    color: #999;
+    color: var(--resume-color-meta);
     font-size: 14px;
     text-align: center;
     padding: 20px;
 }
 
+/* ============================================================
+   Activity tab — post/comment list
+   ============================================================ */
 .profile-list {
     list-style: none;
     padding: 0;
@@ -296,23 +437,23 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 16px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.15s;
 }
 
 .profile-list-item:hover {
-    background: #f8f9fa;
+    background: var(--resume-color-bg-soft);
 }
 
 .profile-list-item:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .item-title {
     font-size: 14px;
-    color: #333;
+    color: var(--resume-color-text);
     font-weight: 500;
     flex: 1;
     overflow: hidden;
@@ -323,7 +464,7 @@
 
 .item-content {
     font-size: 14px;
-    color: #333;
+    color: var(--resume-color-text);
     font-weight: 500;
     flex: 1;
     overflow: hidden;
@@ -334,12 +475,12 @@
 
 .item-meta {
     font-size: 12px;
-    color: #999;
+    color: var(--resume-color-meta);
     flex-shrink: 0;
 }
 
 .profile-settings {
-    background: #fafafa;
+    background: var(--resume-color-bg-soft);
 }
 
 .profile-settings button {
@@ -347,7 +488,51 @@
     width: 100%;
 }
 
-/* 회원 탈퇴 모달 */
+.profile-comment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.comment-post-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--resume-color-muted);
+    width: 100%;
+}
+
+.comment-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.comment-content {
+    font-size: 14px;
+    color: var(--resume-color-text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.comment-date {
+    font-size: 12px;
+    color: var(--resume-color-meta);
+    flex-shrink: 0;
+}
+
+.profile-empty-blocks {
+    text-align: center;
+    padding: 64px 20px;
+    color: var(--resume-color-meta);
+    font-size: 14px;
+}
+
+/* ============================================================
+   Modal (회원 탈퇴)
+   ============================================================ */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -373,13 +558,13 @@
 
 .modal-content h3 {
     margin: 0 0 16px 0;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
-    color: #333;
+    color: var(--resume-color-text);
 }
 
 .modal-warning {
-    color: #e74c3c;
+    color: #dc2626;
     font-size: 14px;
     line-height: 1.6;
     margin-bottom: 20px;
@@ -388,7 +573,7 @@
 .modal-input {
     width: 100%;
     padding: 12px 16px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--resume-color-border);
     border-radius: 8px;
     font-size: 14px;
     margin-bottom: 20px;
@@ -397,8 +582,8 @@
 
 .modal-input:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    border-color: var(--resume-color-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .modal-actions {
@@ -413,79 +598,46 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     border: none;
 }
 
 .modal-btn-cancel {
-    background: #ecf0f1;
-    color: #7f8c8d;
+    background: #f1f5f9;
+    color: var(--resume-color-muted);
 }
 
 .modal-btn-cancel:hover {
-    background: #bdc3c7;
+    background: #e2e8f0;
 }
 
 .modal-btn-delete {
-    background: #e74c3c;
+    background: #dc2626;
     color: white;
 }
 
 .modal-btn-delete:hover {
-    background: #c0392b;
+    background: #b91c1c;
 }
 
 .modal-btn:disabled {
-    background: #95a5a6;
+    background: #94a3b8;
     cursor: not-allowed;
     opacity: 0.6;
 }
 
-/* 댓글 목록 2줄 레이아웃 */
-.profile-comment-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.comment-post-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #666;
-    width: 100%;
-}
-
-.comment-detail {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-}
-
-.comment-content {
-    font-size: 14px;
-    color: #333;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.comment-date {
-    font-size: 12px;
-    color: #999;
-    flex-shrink: 0;
-}
-
-@media (max-width: 600px) {
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 768px) {
     .profile-container {
-        padding: 20px 16px;
+        padding: 24px 16px 64px;
     }
 
     .profile-header {
         flex-direction: column;
-        align-items: center;
-        text-align: center;
+        align-items: flex-start;
+        gap: 16px;
     }
 
     .profile-avatar {
@@ -498,15 +650,21 @@
         font-size: 24px;
     }
 
-    .profile-meta {
-        justify-content: center;
-    }
-
     .profile-actions {
+        flex-direction: row;
         width: 100%;
-        justify-content: center;
     }
 
+    .profile-actions button {
+        flex: 1;
+    }
+
+    .section-title::before {
+        left: -22px;
+    }
+}
+
+@media (max-width: 600px) {
     .profile-list-item {
         flex-direction: column;
         align-items: flex-start;
@@ -518,16 +676,114 @@
     }
 }
 
+/* ============================================================
+   Print — PDF 출력용
+   ============================================================ */
+@media print {
+    @page {
+        size: A4;
+        margin: 14mm 12mm;
+    }
 
-/* 링크(a태그) 자체에도 약간의 여백 */
-.resume-content a {
-    display: inline-block; /* 여백이 잘 먹도록 설정 */
-}
+    body {
+        background: white !important;
+    }
 
-/* 빈 블록 영역 */
-.profile-empty-blocks {
-    text-align: center;
-    padding: 48px 20px;
-    color: #94a3b8;
-    font-size: 0.95em;
+    /* 헤더/푸터/사이드네비 등 페이지 외 UI 제거 */
+    header[role="banner"],
+    nav:not(.profile-tabs),
+    footer,
+    .app-header,
+    .app-footer,
+    .app-sidebar,
+    .navbar,
+    .site-header,
+    .site-footer {
+        display: none !important;
+    }
+
+    .profile-container {
+        max-width: none;
+        padding: 0;
+        margin: 0;
+        min-height: 0;
+    }
+
+    .profile-tabs,
+    .profile-actions,
+    .profile-settings,
+    .modal-overlay {
+        display: none !important;
+    }
+
+    .profile-header {
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+        border-bottom: 2px solid #0f172a;
+    }
+
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        font-size: 28px;
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+
+    .profile-name {
+        font-size: 22pt;
+    }
+
+    .profile-headline {
+        font-size: 11pt;
+    }
+
+    .profile-meta,
+    .profile-joined {
+        font-size: 9pt;
+    }
+
+    .profile-last-login {
+        display: none;
+    }
+
+    /* 인쇄 시 항상 단일 컬럼 */
+    .profile-blocks-renderer.two-column {
+        display: block !important;
+    }
+
+    .resume-sidebar,
+    .resume-main {
+        max-width: none !important;
+        width: 100% !important;
+    }
+
+    .resume-sidebar {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .profile-section,
+    .profile-block-wrapper {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    .section-title {
+        font-size: 12pt;
+    }
+
+    /* 색상 강제 출력 (브라우저별 차이 보정) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    a {
+        color: inherit !important;
+        text-decoration: none !important;
+    }
 }

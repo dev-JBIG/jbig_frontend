@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { fetchPublicProfile, updateProfileBlocks, PublicProfile, deleteAccount } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
-import { ProfileBlock } from "./types";
+import { ProfileBlock, IdentityBlock } from "./types";
 import ProfileBlockRenderer from "./ProfileBlockRenderer/ProfileBlockRenderer";
 import "./Profile.css";
 
@@ -26,10 +26,13 @@ const formatLastLogin = (isoString: string | null): string => {
     return `${Math.floor(diffDays / 365)}년 전 접속`;
 };
 
+type TabKey = 'resume' | 'activity';
+
 const Profile: React.FC = () => {
     const { username: paramUsername } = useParams<{ username: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { accessToken, signOutLocal } = useUser();
     const { showAlert } = useAlert();
 
@@ -45,6 +48,14 @@ const Profile: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletePassword, setDeletePassword] = useState("");
     const [deleting, setDeleting] = useState(false);
+
+    const tab: TabKey = searchParams.get('tab') === 'activity' ? 'activity' : 'resume';
+    const setTab = (next: TabKey) => {
+        const params = new URLSearchParams(searchParams);
+        if (next === 'resume') params.delete('tab');
+        else params.set('tab', next);
+        setSearchParams(params, { replace: true });
+    };
 
     const loadProfile = useCallback(async () => {
         if (!username) return;
@@ -117,6 +128,21 @@ const Profile: React.FC = () => {
         }
     };
 
+    const blocks = useMemo<ProfileBlock[]>(
+        () => (profile?.profile_blocks || []) as ProfileBlock[],
+        [profile]
+    );
+
+    const identity = useMemo<IdentityBlock['data'] | null>(() => {
+        const found = blocks.find((b): b is IdentityBlock => b.type === 'identity');
+        return found ? found.data : null;
+    }, [blocks]);
+
+    const bodyBlocks = useMemo<ProfileBlock[]>(
+        () => blocks.filter(b => b.type !== 'identity'),
+        [blocks]
+    );
+
     if (loading) {
         return (
             <div className="profile-container">
@@ -140,19 +166,33 @@ const Profile: React.FC = () => {
         );
     }
 
-    const blocks = (profile.profile_blocks || []) as ProfileBlock[];
+    const displayName = identity?.realName?.trim() || profile.username;
+    const headline = identity?.headline?.trim() || "";
+    const photoUrl = identity?.photoUrl?.trim() || "";
+    const locationText = identity?.location?.trim() || "";
 
     return (
-        <div className="profile-container">
-            {/* 프로필 헤더 (고정) */}
-            <div className="profile-header">
+        <div className="profile-container resume-page">
+            {/* 헤더 */}
+            <header className="profile-header">
                 <div className="profile-avatar">
-                    {profile.username.charAt(0).toUpperCase()}
+                    {photoUrl ? (
+                        <img src={photoUrl} alt={displayName} />
+                    ) : (
+                        <span>{displayName.charAt(0).toUpperCase()}</span>
+                    )}
                 </div>
                 <div className="profile-info">
-                    <h1 className="profile-name">{profile.username}</h1>
+                    <h1 className="profile-name">
+                        {displayName}
+                        {identity?.realName && (
+                            <span className="profile-username">@{profile.username}</span>
+                        )}
+                    </h1>
+                    {headline && <p className="profile-headline">{headline}</p>}
                     <p className="profile-meta">
                         <span className="profile-semester">{profile.semester}기</span>
+                        {locationText && <span className="profile-location">{locationText}</span>}
                         <span className="profile-id">@{profile.email_id}</span>
                     </p>
                     <p className="profile-joined">
@@ -162,18 +202,45 @@ const Profile: React.FC = () => {
                         )}
                     </p>
                 </div>
-                {profile.is_self && !editMode && (
-                    <div className="profile-actions">
+                <div className="profile-actions">
+                    {profile.is_self && !editMode && (
                         <button className="btn-edit" onClick={() => setEditMode(true)}>
                             프로필 편집
                         </button>
-                    </div>
-                )}
-            </div>
+                    )}
+                    {!editMode && tab === 'resume' && (
+                        <button className="btn-print" onClick={() => window.print()} title="이력서 PDF로 저장">
+                            PDF 저장
+                        </button>
+                    )}
+                </div>
+            </header>
 
-            {/* 블록 영역 (자유 편집) */}
-            <div className="profile-content">
-                {editMode ? (
+            {/* 탭 */}
+            {!editMode && (
+                <nav className="profile-tabs" role="tablist">
+                    <button
+                        role="tab"
+                        aria-selected={tab === 'resume'}
+                        className={`profile-tab ${tab === 'resume' ? 'is-active' : ''}`}
+                        onClick={() => setTab('resume')}
+                    >
+                        이력서
+                    </button>
+                    <button
+                        role="tab"
+                        aria-selected={tab === 'activity'}
+                        className={`profile-tab ${tab === 'activity' ? 'is-active' : ''}`}
+                        onClick={() => setTab('activity')}
+                    >
+                        활동
+                    </button>
+                </nav>
+            )}
+
+            {/* 본문 */}
+            {editMode ? (
+                <div className="profile-content">
                     <Suspense fallback={<div className="profile-loading"><div className="loading-spinner" /><p>에디터 로딩 중...</p></div>}>
                         <ProfileBlockEditor
                             blocks={blocks}
@@ -182,74 +249,73 @@ const Profile: React.FC = () => {
                             saving={saving}
                         />
                     </Suspense>
-                ) : (
-                    <>
-                        {blocks.length > 0 ? (
-                            <ProfileBlockRenderer blocks={blocks} />
+                </div>
+            ) : tab === 'resume' ? (
+                <div className="profile-content resume-body">
+                    {bodyBlocks.length > 0 ? (
+                        <ProfileBlockRenderer blocks={bodyBlocks} />
+                    ) : (
+                        <div className="profile-empty-blocks">
+                            <p>{profile.is_self ? "프로필 편집을 눌러 나만의 이력서를 작성해 보세요!" : "아직 작성된 이력서가 없습니다."}</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="profile-content activity-body">
+                    <section className="profile-section">
+                        <h2 className="section-title">작성한 게시글</h2>
+                        {profile.posts.length > 0 ? (
+                            <ul className="profile-list">
+                                {profile.posts.map((post) => (
+                                    <li key={post.id} className="profile-list-item" onClick={() => navigate(`/board/${post.board_id}/${post.id}`)}>
+                                        <span className="item-title">{post.title}</span>
+                                        <span className="item-meta">
+                                            {post.created_at} · 조회 {post.views}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
                         ) : (
-                            <div className="profile-empty-blocks">
-                                <p>{profile.is_self ? "프로필 편집을 눌러 나만의 프로필을 꾸며보세요!" : "아직 작성된 프로필이 없습니다."}</p>
-                            </div>
+                            <p className="empty-text">작성한 게시글이 없습니다.</p>
                         )}
-                    </>
-                )}
-            </div>
-
-            {/* 활동 기록 (고정) */}
-            <div className="profile-content">
-                <section className="profile-section">
-                    <h2 className="section-title">작성한 게시글</h2>
-                    {profile.posts.length > 0 ? (
-                        <ul className="profile-list">
-                            {profile.posts.map((post) => (
-                                <li key={post.id} className="profile-list-item" onClick={() => navigate(`/board/${post.board_id}/${post.id}`)}>
-                                    <span className="item-title">{post.title}</span>
-                                    <span className="item-meta">
-                                        {post.created_at} · 조회 {post.views}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="empty-text">작성한 게시글이 없습니다.</p>
-                    )}
-                </section>
-
-                <section className="profile-section">
-                    <h2 className="section-title">작성한 댓글</h2>
-                    {profile.comments.length > 0 ? (
-                        <ul className="profile-list">
-                            {profile.comments.map((comment) => (
-                                <li key={comment.id} className="profile-list-item profile-comment-item" onClick={() => {
-                                    if (comment.board_id != null && comment.post_id != null) {
-                                        navigate(`/board/${comment.board_id}/${comment.post_id}`);
-                                    }
-                                }}>
-                                    <div className="comment-post-title">{comment.post_title}</div>
-                                    <div className="comment-detail">
-                                        <span className="comment-content">{comment.content}</span>
-                                        <span className="comment-date">· {comment.created_at}</span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="empty-text">작성한 댓글이 없습니다.</p>
-                    )}
-                </section>
-
-                {profile.is_self && (
-                    <section className="profile-section profile-settings">
-                        <h2 className="section-title">계정 설정</h2>
-                        <button className="btn-password" onClick={() => navigate("/changepwd")}>
-                            비밀번호 변경
-                        </button>
-                        <button className="btn-delete-account" onClick={() => setShowDeleteModal(true)}>
-                            회원 탈퇴
-                        </button>
                     </section>
-                )}
-            </div>
+
+                    <section className="profile-section">
+                        <h2 className="section-title">작성한 댓글</h2>
+                        {profile.comments.length > 0 ? (
+                            <ul className="profile-list">
+                                {profile.comments.map((comment) => (
+                                    <li key={comment.id} className="profile-list-item profile-comment-item" onClick={() => {
+                                        if (comment.board_id != null && comment.post_id != null) {
+                                            navigate(`/board/${comment.board_id}/${comment.post_id}`);
+                                        }
+                                    }}>
+                                        <div className="comment-post-title">{comment.post_title}</div>
+                                        <div className="comment-detail">
+                                            <span className="comment-content">{comment.content}</span>
+                                            <span className="comment-date">· {comment.created_at}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="empty-text">작성한 댓글이 없습니다.</p>
+                        )}
+                    </section>
+
+                    {profile.is_self && (
+                        <section className="profile-section profile-settings">
+                            <h2 className="section-title">계정 설정</h2>
+                            <button className="btn-password" onClick={() => navigate("/changepwd")}>
+                                비밀번호 변경
+                            </button>
+                            <button className="btn-delete-account" onClick={() => setShowDeleteModal(true)}>
+                                회원 탈퇴
+                            </button>
+                        </section>
+                    )}
+                </div>
+            )}
 
             {showDeleteModal && (
                 <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>

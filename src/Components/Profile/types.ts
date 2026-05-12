@@ -158,4 +158,14 @@ export interface HeaderBlock extends BlockBase {
   style: { align?: 'left' | 'center' };
 }
 
-export type ProfileBlock = TextBlock | ImageBlock | LinksBlock | DividerBlock | ProjectBlock | ExperienceBlock | SkillsBlock | AwardBlock | CertificationBlock | EducationBlock | ActivityBlock | PublicationBlock | ContactBlock | StatsBlock | HeaderBlock;
+export interface IdentityBlock extends BlockBase {
+  type: 'identity';
+  data: {
+    realName: string;
+    headline: string;
+    photoUrl: string;
+    location: string;
+  };
+}
+
+export type ProfileBlock = TextBlock | ImageBlock | LinksBlock | DividerBlock | ProjectBlock | ExperienceBlock | SkillsBlock | AwardBlock | CertificationBlock | EducationBlock | ActivityBlock | PublicationBlock | ContactBlock | StatsBlock | HeaderBlock | IdentityBlock;

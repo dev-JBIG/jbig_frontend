@@ -10,6 +10,13 @@ export interface BlockTypeInfo {
 
 export const BLOCK_TYPES: BlockTypeInfo[] = [
   {
+    type: 'identity',
+    label: '기본 정보',
+    icon: 'IdCard',
+    description: '실명·헤드라인·사진·위치 (이력서 헤더로 표시)',
+    defaultData: () => ({ type: 'identity' as const, data: { realName: '', headline: '', photoUrl: '', location: '' }, style: {} }),
+  },
+  {
     type: 'text',
     label: '텍스트',
     icon: 'Type',
