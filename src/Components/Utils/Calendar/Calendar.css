@@ -1,3 +1,145 @@
 .popover {
     white-space: nowrap;   /* 줄바꿈 금지 */
 }
+
+.calendar-shell {
+    width: 100%;
+    padding: 12px 0 0;
+}
+
+.calendar-shell #calendar {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    font-size: 0.9rem;
+}
+
+.calendar-shell .fc-toolbar {
+    margin-bottom: 10px;
+}
+
+.calendar-shell .fc-toolbar h2 {
+    font-size: 1.25rem;
+}
+
+.calendar-shell .fc-day-header,
+.calendar-shell .fc-day-number,
+.calendar-shell .fc-event {
+    font-size: 0.82rem;
+}
+
+.calendar-shell-compact {
+    height: 100%;
+    padding: 0;
+}
+
+.calendar-shell-compact #calendar {
+    max-width: 100%;
+    height: 100%;
+    font-size: 0.72rem;
+}
+
+.calendar-shell-compact .fc-toolbar {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.calendar-shell-compact .fc-left,
+.calendar-shell-compact .fc-center,
+.calendar-shell-compact .fc-right {
+    float: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-shell-compact .fc-left {
+    justify-content: flex-start;
+}
+
+.calendar-shell-compact .fc-right {
+    justify-content: flex-end;
+}
+
+.calendar-shell-compact .fc-toolbar h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 0.9rem;
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+.calendar-shell-compact .fc-button {
+    min-width: 28px;
+    height: 26px;
+    padding: 0;
+    border-color: rgba(37, 99, 235, 0.24);
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: none;
+}
+
+.calendar-shell-compact .fc-view-container {
+    background: #ffffff;
+}
+
+.calendar-shell-compact .fc-view,
+.calendar-shell-compact .fc-view > table {
+    min-height: 210px;
+}
+
+.calendar-shell-compact .fc th,
+.calendar-shell-compact .fc td {
+    border-color: rgba(37, 99, 235, 0.16);
+}
+
+.calendar-shell-compact .fc-day-header {
+    padding: 3px 0;
+    color: #1d4ed8;
+    font-size: 0.64rem;
+    font-weight: 900;
+}
+
+.calendar-shell-compact .fc-day-number {
+    padding: 2px 4px;
+    color: #334155;
+    font-size: 0.64rem;
+    font-weight: 800;
+}
+
+.calendar-shell-compact .fc-basic-view .fc-body .fc-row {
+    min-height: 30px;
+}
+
+.calendar-shell-compact .fc-event {
+    margin: 0 1px 1px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 2px;
+    font-size: 0.58rem;
+    line-height: 1.2;
+}
+
+.calendar-shell-compact .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+    .calendar-shell {
+        padding-top: 8px;
+    }
+
+    .calendar-shell #calendar {
+        max-width: 100%;
+        font-size: 0.82rem;
+    }
+
+    .calendar-shell .fc-toolbar h2 {
+        font-size: 1rem;
+    }
+}

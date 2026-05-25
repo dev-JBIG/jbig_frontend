@@ -468,9 +468,9 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </header>
-            <div className="home-banner">
-            <img src={BANNER_IMAGE_URL} alt="banner-image" className="banner-image"/>
-            </div>
+            <button type="button" className="home-banner" onClick={() => navigate('/')} aria-label="홈으로 이동">
+                <img src={BANNER_IMAGE_URL} alt="banner-image" className="banner-image"/>
+            </button>
             <div className="home-content">
                 <Routes>
                     {/* home-content 전체 차지하는 경로 */}
@@ -483,15 +483,16 @@ const Home: React.FC = () => {
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
-                            <JbigInfo />
-                            <div className="calendar-section-wrapper">
-                                <Calendar staffAuth={staffAuth}/>
-                                {staffAuth && (
-                                    <span className="add-event-text-home" onClick={handleAddEvent}>
-                                        일정 추가
-                                    </span>
-                                )}
-                            </div>
+                            <JbigInfo calendarSlot={
+                                <>
+                                    <Calendar staffAuth={staffAuth} compact />
+                                    {staffAuth && (
+                                        <span className="add-event-text-home" onClick={handleAddEvent}>
+                                            일정 추가
+                                        </span>
+                                    )}
+                                </>
+                            } />
                             <PostList boards={boards} isHome={true}/>
                             <PhotoAlbumSlider boards={boards} />
                         </MainLayout>

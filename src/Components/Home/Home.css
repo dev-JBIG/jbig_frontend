@@ -36,6 +36,11 @@
 .home-banner {
     width: 100%;
     overflow: hidden;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
 }
 
 .banner-image {
