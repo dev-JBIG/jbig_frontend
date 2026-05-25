@@ -5,6 +5,7 @@ import "fullcalendar/dist/fullcalendar.css";
 import "fullcalendar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "./Calendar.css";
 import { CalendarEvent}  from "../interfaces";
 import moment from "moment";
 import {deleteCalendarEvent, fetchCalendarEvents} from "../../../API/req";
@@ -63,6 +64,7 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                     },
                     editable: false,
                     eventLimit: true,
+                    aspectRatio: window.innerWidth < 768 ? 1.1 : 1.65,
                     events,
                     eventClick: function (calEvent: any, jsEvent: MouseEvent) {
                         jsEvent.preventDefault();
@@ -203,8 +205,8 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
     }, [staffAuth, accessToken, signOutLocal, navigate]);
 
     return (
-        <div style={{ padding: "30px 0 0 0", width: "100%" }}>
-            <div id="calendar" style={{ width: "100%", maxWidth: "900px", margin: "0 auto" }}></div>
+        <div className="calendar-shell">
+            <div id="calendar"></div>
         </div>
     );
 };

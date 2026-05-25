@@ -1,3 +1,44 @@
 .popover {
     white-space: nowrap;   /* 줄바꿈 금지 */
 }
+
+.calendar-shell {
+    width: 100%;
+    padding: 12px 0 0;
+}
+
+.calendar-shell #calendar {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    font-size: 0.9rem;
+}
+
+.calendar-shell .fc-toolbar {
+    margin-bottom: 10px;
+}
+
+.calendar-shell .fc-toolbar h2 {
+    font-size: 1.25rem;
+}
+
+.calendar-shell .fc-day-header,
+.calendar-shell .fc-day-number,
+.calendar-shell .fc-event {
+    font-size: 0.82rem;
+}
+
+@media (max-width: 767px) {
+    .calendar-shell {
+        padding-top: 8px;
+    }
+
+    .calendar-shell #calendar {
+        max-width: 100%;
+        font-size: 0.82rem;
+    }
+
+    .calendar-shell .fc-toolbar h2 {
+        font-size: 1rem;
+    }
+}
