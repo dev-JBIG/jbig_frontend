@@ -75,7 +75,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const { showAlert, showConfirm } = useAlert();
 
     const BOARD_LIST = useMemo(() => boards.flatMap((sec) => sec.boards), [boards]);
-    const isPhotoBoard = !!(selectedBoard && (selectedBoard.board_type === 4 || selectedBoard.name === "사진첩"));
+    const activeBoard = useMemo(
+        () => selectedBoard || BOARD_LIST.find((b) => b.id === Number(category)) || null,
+        [selectedBoard, BOARD_LIST, category]
+    );
+    const isPhotoBoard = !!(activeBoard && (activeBoard.board_type === 4 || activeBoard.name === "사진첩"));
 
     const filteredBoardList = useMemo(() => {
         if (staffAuth) return BOARD_LIST;
@@ -100,16 +104,17 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isImageFileName = (name: string) => isImageByName(name);
     const formatBytes = (n?: number) => n ? `${(n / 1024 / 1024).toFixed(2)} MB` : "";
 
-    const isFeedbackBoard = selectedBoard &&
-        (selectedBoard.name.includes('에러') || selectedBoard.name.includes('피드백') || selectedBoard.name.includes('제보'));
+    const isFeedbackBoard = activeBoard &&
+        (activeBoard.name.includes('에러') || activeBoard.name.includes('피드백') || activeBoard.name.includes('제보'));
+    const isAbsenceBoard = !!(activeBoard && (activeBoard.board_type === 3 || activeBoard.name.includes("사유서")));
 
-    const boardTags = selectedBoard?.available_tags ?? [];
-    const isBragBoard = selectedBoard?.name === BRAG_BOARD_NAME;
+    const boardTags = activeBoard?.available_tags ?? [];
+    const isBragBoard = activeBoard?.name === BRAG_BOARD_NAME;
     const hasTags = boardTags.length > 0 && !isBragBoard;
     const isRecruitmentTag = selectedTag === '팀원모집';
 
-    const isStudyBoard = !isRecruitmentTag && !!selectedBoard?.name &&
-        STUDY_BOARD_NAME_KEYWORDS.every((keyword) => selectedBoard.name.includes(keyword));
+    const isStudyBoard = !isRecruitmentTag && !!activeBoard?.name &&
+        STUDY_BOARD_NAME_KEYWORDS.every((keyword) => activeBoard.name.includes(keyword));
 
     useEffect(() => {
         if (isPhotoBoard && content.trim()) {
@@ -201,15 +206,15 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 게시판 접근 권한 체크
     useEffect(() => {
-        if (!staffAuth && selectedBoard &&
-            BLOCKED_BOARD_KEYWORDS.some((kw) => selectedBoard.name.toLowerCase().includes(kw.toLowerCase()))) {
+        if (!staffAuth && activeBoard &&
+            BLOCKED_BOARD_KEYWORDS.some((kw) => activeBoard.name.toLowerCase().includes(kw.toLowerCase()))) {
             showAlert({
                 message: "해당 게시판에는 글을 작성할 수 없습니다.",
                 type: 'warning',
                 onClose: () => navigate("/")
             });
         }
-    }, [selectedBoard, staffAuth, navigate, showAlert]);
+    }, [activeBoard, staffAuth, navigate, showAlert]);
 
     // URL에서 게시판 설정
     useEffect(() => {
@@ -221,11 +226,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 자랑게시판에서는 태그/모집 상태 비활성화
     useEffect(() => {
-        if (selectedBoard?.name === BRAG_BOARD_NAME && selectedTag) {
+        if (activeBoard?.name === BRAG_BOARD_NAME && selectedTag) {
             setSelectedTag('');
             setRecruitmentData(null);
         }
-    }, [selectedBoard, selectedTag]);
+    }, [activeBoard, selectedTag]);
 
     // 초안 불러오기 (DB - 단일 버퍼)
     useEffect(() => {
@@ -298,9 +303,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         await deleteDraft(accessToken).catch(() => {});
                     } else {
                         // DB에 저장 (upsert) - 현재 선택된 게시판도 함께 저장
-                        console.log('[Draft] Saving draft:', { board_id: selectedBoard?.id, title, content_length: content.length });
+                        console.log('[Draft] Saving draft:', { board_id: activeBoard?.id, title, content_length: content.length });
                         const result = await saveDraft({
-                            board_id: selectedBoard?.id || null,
+                            board_id: activeBoard?.id || null,
                             title,
                             content_md: content,
                             uploaded_paths: Array.from(uploadedPathsRef.current)
@@ -313,7 +318,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             })();
         }, 2000);
         return () => clearTimeout(handler);
-    }, [title, content, selectedBoard, canUseDraft, accessToken]);
+    }, [title, content, activeBoard, canUseDraft, accessToken]);
 
     // 주기적 토큰 갱신 (활동 감지 시 45분마다 자동 갱신)
     useEffect(() => {
@@ -514,7 +519,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             return true;
         }
 
-        if (category === '4') {
+        if (isAbsenceBoard) {
             if (/\| \*\*결석 날짜\*\* \|\s*\|/.test(content)) { showAlert({ message: "결석 날짜를 입력하세요.", type: 'warning' }); return false; }
             if (/\| \*\*결석 사유\*\* \|\s*(<br \/>)?\s*\|/.test(content)) { showAlert({ message: "결석 사유를 입력하세요.", type: 'warning' }); return false; }
         } else if (isFeedbackBoard) {
@@ -564,7 +569,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             }); 
             return; 
         }
-        if (!selectedBoard && !isEdit) { showAlert({ message: "게시판을 선택하세요.", type: 'warning' }); return; }
+        if (!activeBoard && !isEdit) { showAlert({ message: "게시판을 선택하세요.", type: 'warning' }); return; }
         if (!validateForm()) { return; }
 
         inFlightRef.current = true;
@@ -576,11 +581,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             if (isEdit && postIdNumber) {
                 await modifyPost(postIdNumber, {
                     title, content_md: content, attachment_paths: attachments,
-                    ...(selectedBoard ? { board_id: selectedBoard.id } : {}),
+                    ...(activeBoard ? { board_id: activeBoard.id } : {}),
                     is_anonymous: !showRealName,
                 }, accessToken);
                 savedRef.current = true;
-                navigate(`/board/${selectedBoard?.id ?? Number(category)}/${postIdNumber}`);
+                navigate(`/board/${activeBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
@@ -596,7 +601,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     show_applicants: recruitmentData.show_applicants,
                 };
             }
-            const res = await createPost(selectedBoard!.id, postPayload, accessToken);
+            const res = await createPost(activeBoard!.id, postPayload, accessToken);
             if (res?.unauthorized) { 
                 showAlert({
                     message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
@@ -611,7 +616,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 await deleteDraft(accessToken).catch(() => {});
             }
             savedRef.current = true;
-            navigate(`/board/${selectedBoard!.id}`);
+            navigate(`/board/${activeBoard!.id}`);
         } catch (err) {
             showAlert({ message: err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.", type: 'error' });
         } finally {
@@ -675,10 +680,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     return (
         <form className="postwrite-form" onSubmit={handleSubmit} style={{ overflow: "hidden" }}>
-            {category !== '4' && (
+            {!isAbsenceBoard && (
                 <div className="postwrite-row">
                     <label>게시판</label>
-                    <select className="board-select" value={selectedBoard?.id ?? ""}
+                    <select className="board-select" value={activeBoard?.id ?? ""}
                         onChange={(e) => setSelectedBoard(filteredBoardList.find((b) => b.id === Number(e.target.value)) || null)}>
                         <option value="" hidden>게시판 선택</option>
                         {filteredBoardList.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -715,7 +720,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     placeholder={
                         isPhotoBoard
                             ? "사진 제목을 입력하세요"
-                            : category === '4'
+                            : isAbsenceBoard
                                 ? "[X주차] 결석사유서 OOO"
                                 : isFeedbackBoard
                                     ? "에러/피드백 제보 제목을 입력하세요"
@@ -736,7 +741,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         setRecruitmentData={setRecruitmentData}
                         initialRecruitmentData={recruitmentData}
                     />
-                ) : category === '4' ? (
+                ) : isAbsenceBoard ? (
                     <AbsenceForm setContent={setContent} initialContent={content} />
                 ) : isFeedbackBoard ? (
                     <FeedbackForm setContent={setContent} initialContent={content} />

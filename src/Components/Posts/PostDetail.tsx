@@ -787,8 +787,12 @@ const PostDetail: React.FC = () => {
 
     if (!post) return <div className="postdetail-container">로딩 중...</div>;
 
-    const isFormBoard = 
-    (post.board_id && (Number(post.board_id) === 4 || Number(post.board_id) === 9));
+    const isFormBoard =
+        post.board_type === 3 ||
+        post.board.includes("사유서") ||
+        post.board.includes("에러") ||
+        post.board.includes("피드백") ||
+        post.board.includes("제보");
 
     return (
         <div className="postdetail-container has-floating-like">
