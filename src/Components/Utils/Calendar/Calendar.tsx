@@ -15,9 +15,10 @@ import {useNavigate} from "react-router-dom";
 
 interface CalendarProps {
     staffAuth: boolean;
+    compact?: boolean;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
+const Calendar: React.FC<CalendarProps> = ({ staffAuth, compact = false }) => {
     const { signOutLocal, accessToken } = useUser();
     const { showAlert } = useAlert();
     const navigate = useNavigate();
@@ -47,10 +48,22 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
 
     useEffect(() => {
         const loadEvents = async () => {
-            try {
-                const events: CalendarEvent[] = await fetchCalendarEvents();
+            let events: CalendarEvent[] = [];
 
-                ($("#calendar") as any).fullCalendar({
+            try {
+                events = await fetchCalendarEvents();
+            } catch {
+                events = [];
+            }
+
+            try {
+                const $calendar = ($("#calendar") as any);
+
+                if ($calendar.data("fullCalendar")) {
+                    $calendar.fullCalendar("destroy");
+                }
+
+                $calendar.fullCalendar({
                     locale: "ko",
                     defaultView: "month",
                     header: {
@@ -64,7 +77,7 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                     },
                     editable: false,
                     eventLimit: true,
-                    aspectRatio: window.innerWidth < 768 ? 1.1 : 1.65,
+                    aspectRatio: compact ? 1.08 : (window.innerWidth < 768 ? 1.1 : 1.65),
                     events,
                     eventClick: function (calEvent: any, jsEvent: MouseEvent) {
                         jsEvent.preventDefault();
@@ -196,16 +209,16 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth }) => {
                         `);
                     }
                 });
-            } catch {
-                // 캘린더 이벤트 로드 실패 시 무시
+            } catch (error) {
+                console.error("Failed to initialize calendar:", error);
             }
         };
 
         loadEvents();
-    }, [staffAuth, accessToken, signOutLocal, navigate]);
+    }, [staffAuth, accessToken, signOutLocal, navigate, compact]);
 
     return (
-        <div className="calendar-shell">
+        <div className={`calendar-shell${compact ? " calendar-shell-compact" : ""}`}>
             <div id="calendar"></div>
         </div>
     );

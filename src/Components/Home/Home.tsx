@@ -483,15 +483,16 @@ const Home: React.FC = () => {
                     {/* sidebar+main-area */}
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
-                            <JbigInfo />
-                            <div className="calendar-section-wrapper">
-                                <Calendar staffAuth={staffAuth}/>
-                                {staffAuth && (
-                                    <span className="add-event-text-home" onClick={handleAddEvent}>
-                                        일정 추가
-                                    </span>
-                                )}
-                            </div>
+                            <JbigInfo calendarSlot={
+                                <>
+                                    <Calendar staffAuth={staffAuth} compact />
+                                    {staffAuth && (
+                                        <span className="add-event-text-home" onClick={handleAddEvent}>
+                                            일정 추가
+                                        </span>
+                                    )}
+                                </>
+                            } />
                             <PostList boards={boards} isHome={true}/>
                             <PhotoAlbumSlider boards={boards} />
                         </MainLayout>

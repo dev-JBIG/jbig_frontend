@@ -1,8 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import "./JbigInfo.css";
 import { fetchSiteSettings, SiteSettings } from "../../API/req";
 
-const JbigInfo: React.FC = () => {
+interface JbigInfoProps {
+    calendarSlot?: ReactNode;
+}
+
+const JbigInfo: React.FC<JbigInfoProps> = ({ calendarSlot }) => {
     // 하드코딩 제거
     const [settings, setSettings] = useState<SiteSettings>({
         notion_page_id: '',
@@ -66,99 +70,91 @@ const JbigInfo: React.FC = () => {
 
     return (
         <div className="jbig-info-container">
-            <div className="jbig-info-hero">
-                <div className="jbig-info-badge" aria-hidden="true">
-                    JBIG
+            <section className="jbig-cover" aria-label="JBIG 대문">
+                <div className="jbig-cover-grid" aria-hidden="true" />
+                <div className="jbig-cover-panel" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
                 </div>
-                <div className="jbig-info-hero-text">
-                    <div className="jbig-info-kicker">JBNU Big Data & AI Group</div>
-                    <div className="jbig-info-title">
-                        <span className="jbig-info-title-strong">JBIG</span>은 데이터·AI 학술 교류 모임입니다
-                    </div>
-                </div>
-                <div className="jbig-info-hero-icon" aria-hidden="true">
-                    💡
-                </div>
-            </div>
+                <div className="jbig-cover-node node-a" aria-hidden="true" />
+                <div className="jbig-cover-node node-b" aria-hidden="true" />
+                <div className="jbig-cover-node node-c" aria-hidden="true" />
+                <div className="jbig-cover-line line-a" aria-hidden="true" />
+                <div className="jbig-cover-line line-b" aria-hidden="true" />
+                <div className="jbig-cover-line line-c" aria-hidden="true" />
 
-            <div className="jbig-info-body">
-                <p className="jbig-info-main">{highlightedDescription}</p>
-
-                <div className="jbig-acronym-section">
-                    <div className="jbig-section-title">
-                        <span className="jbig-section-title-strong">JBIG</span>가 무슨 약자인가요?
+                <div className="jbig-cover-main">
+                    <div className="jbig-cover-header">
+                        <div>
+                            <div className="jbig-cover-kicker">JBNU Big Data & AI Group</div>
+                            <h2 className="jbig-cover-title">JBIG</h2>
+                        </div>
+                        <div className="jbig-cover-badge">DATA / AI</div>
                     </div>
-                    <div className="jbig-acronym-chips" role="list">
-                        <div className="jbig-acronym-chip" role="listitem">
-                            <span className="jbig-acronym-letter">J</span>
-                            <span className="jbig-acronym-word">JBNU</span>
+
+                    <p className="jbig-cover-description">
+                        {highlightedDescription}
+                    </p>
+
+                    <div className="jbig-cover-content-grid">
+                        <div className="jbig-cover-info-stack">
+                            <div className="jbig-cover-section">
+                                <h3><span>JBIG</span>가 무슨 약자인가요?</h3>
+                                <div className="jbig-cover-acronym" role="list">
+                                    <div role="listitem"><strong>J</strong><span>JBNU</span></div>
+                                    <div role="listitem"><strong>B</strong><span>Big Data</span></div>
+                                    <div role="listitem"><strong>I</strong><span>AI</span></div>
+                                    <div role="listitem"><strong>G</strong><span>Group</span></div>
+                                </div>
+                            </div>
+
+                            <div className="jbig-cover-section">
+                                <h3>우리가 하는 활동</h3>
+                                <div className="jbig-cover-activities" role="list">
+                                    <span role="listitem">데이터 사이언스</span>
+                                    <span role="listitem">딥러닝</span>
+                                    <span role="listitem">머신러닝</span>
+                                    <span role="listitem">AI</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="jbig-acronym-chip" role="listitem">
-                            <span className="jbig-acronym-letter">B</span>
-                            <span className="jbig-acronym-word">Big Data</span>
+
+                        {calendarSlot && (
+                            <div className="jbig-cover-calendar">
+                                <div className="jbig-cover-calendar-title">Calendar</div>
+                                {calendarSlot}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="jbig-cover-bottom">
+                        <div className="jbig-cover-leaders">
+                            <div>
+                                <span>회장</span>
+                                <strong>{settings.jbig_president}</strong>
+                                <em>{settings.jbig_president_dept}</em>
+                            </div>
+                            <div>
+                                <span>부회장</span>
+                                <strong>{settings.jbig_vice_president}</strong>
+                                <em>{settings.jbig_vice_president_dept}</em>
+                            </div>
+                            <div>
+                                <span>지도 교수</span>
+                                <strong>{settings.jbig_advisor}</strong>
+                                <em>{settings.jbig_advisor_dept}</em>
+                            </div>
                         </div>
-                        <div className="jbig-acronym-chip" role="listitem">
-                            <span className="jbig-acronym-letter">I</span>
-                            <span className="jbig-acronym-word">AI</span>
-                        </div>
-                        <div className="jbig-acronym-chip" role="listitem">
-                            <span className="jbig-acronym-letter">G</span>
-                            <span className="jbig-acronym-word">Group</span>
+
+                        <div className="jbig-cover-contact">
+                            <span>Contact</span>
+                            <strong>회장 {settings.jbig_president}</strong>
+                            <em>{settings.jbig_email}</em>
                         </div>
                     </div>
                 </div>
-
-                <div className="jbig-activities-section">
-                    <div className="jbig-section-title">우리가 하는 활동</div>
-                    <div className="jbig-activity-chips" role="list">
-                        <div className="jbig-activity-chip" role="listitem">
-                            <span className="jbig-activity-dot" aria-hidden="true" />
-                            데이터 사이언스
-                        </div>
-                        <div className="jbig-activity-chip" role="listitem">
-                            <span className="jbig-activity-dot" aria-hidden="true" />
-                            딥러닝
-                        </div>
-                        <div className="jbig-activity-chip" role="listitem">
-                            <span className="jbig-activity-dot" aria-hidden="true" />
-                            머신러닝
-                        </div>
-                        <div className="jbig-activity-chip" role="listitem">
-                            <span className="jbig-activity-dot" aria-hidden="true" />
-                            AI
-                        </div>
-                    </div>
-                </div>
-
-                <div className="jbig-leaders">
-                    <div className="jbig-leader-line">
-                        <span className="jbig-leader-label">회장</span>
-                        <span className="jbig-leader-value">
-                            {settings.jbig_president} <span className="jbig-leader-meta">({settings.jbig_president_dept})</span>
-                        </span>
-                    </div>
-                    <div className="jbig-leader-line">
-                        <span className="jbig-leader-label">부회장</span>
-                        <span className="jbig-leader-value">
-                            {settings.jbig_vice_president} <span className="jbig-leader-meta">({settings.jbig_vice_president_dept})</span>
-                        </span>
-                    </div>
-                    <div className="jbig-leader-line">
-                        <span className="jbig-leader-label">지도 교수</span>
-                        <span className="jbig-leader-value">
-                            {settings.jbig_advisor} <span className="jbig-leader-meta">({settings.jbig_advisor_dept})</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="jbig-contact-section">
-                <h3 className="jbig-contact-title">📞 <strong>Contact</strong></h3>
-                <hr className="jbig-divider" />
-                <p className="jbig-contact-text">👑 <strong>회장 {settings.jbig_president}</strong></p>
-                <p className="jbig-contact-text">📧 e-mail : {settings.jbig_email}</p>
-                <p className="jbig-contact-quote">"이메일로 연락 주시면 빠른 시일 내에 연락드리겠습니다!"</p>
-            </div>
+            </section>
         </div>
     );
 };
