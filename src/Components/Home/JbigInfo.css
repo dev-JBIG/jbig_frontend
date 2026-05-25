@@ -203,7 +203,7 @@
 
 .jbig-cover {
     max-width: none;
-    min-height: clamp(520px, 58vw, 660px);
+    min-height: clamp(480px, 50vw, 620px);
     aspect-ratio: auto;
     margin: 0 auto;
     padding: clamp(18px, 3vw, 26px);
@@ -214,7 +214,7 @@
     z-index: 5;
     height: 100%;
     display: grid;
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: clamp(8px, 1.1vw, 12px);
     align-content: start;
 }
@@ -291,7 +291,7 @@
 .jbig-cover-section h3 {
     margin: 0;
     color: #0f172a;
-    font-size: clamp(0.78rem, 1.25vw, 0.96rem);
+    font-size: clamp(0.72rem, 1vw, 0.88rem);
     font-weight: 900;
 }
 
@@ -308,36 +308,38 @@
 .jbig-cover-acronym div,
 .jbig-cover-activities span {
     min-width: 0;
-    padding: 7px 8px;
+    padding: 6px 7px;
     background: #ffffff;
     border: 1px solid rgba(37, 99, 235, 0.22);
 }
 
 .jbig-cover-acronym div {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    align-items: start;
 }
 
 .jbig-cover-acronym strong {
     display: inline-flex;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     align-items: center;
     justify-content: center;
     color: #ffffff;
     background: #2563eb;
-    font-size: 0.82rem;
+    font-size: 0.74rem;
     font-weight: 900;
 }
 
 .jbig-cover-acronym span,
 .jbig-cover-activities span {
     color: #0f172a;
-    font-size: clamp(0.7rem, 1.1vw, 0.82rem);
+    font-size: clamp(0.62rem, 0.82vw, 0.74rem);
     font-weight: 900;
-    white-space: nowrap;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: keep-all;
 }
 
 .jbig-cover-activities {
@@ -348,12 +350,11 @@
 
 .jbig-cover-activities span::before {
     content: "";
-    display: inline-block;
+    display: block;
     width: 7px;
     height: 7px;
-    margin-right: 6px;
+    margin: 0 0 5px;
     background: #2563eb;
-    vertical-align: 1px;
 }
 
 .jbig-cover-calendar {
@@ -378,13 +379,6 @@
     padding: 6px 0 0;
     font-size: 0.72rem;
     font-weight: 900;
-}
-
-.jbig-cover-bottom {
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(170px, 0.8fr);
-    gap: 8px;
-    align-items: end;
 }
 
 .jbig-cover-leaders {
@@ -678,8 +672,7 @@
         max-width: 100%;
     }
 
-    .jbig-cover-content-grid,
-    .jbig-cover-bottom {
+    .jbig-cover-content-grid {
         grid-template-columns: 1fr;
     }
 
@@ -710,6 +703,31 @@
     .jbig-contact-text,
     .jbig-contact-quote {
         font-size: var(--font-size-sm);
+    }
+}
+
+@media (max-width: 1100px) {
+    .jbig-cover-content-grid {
+        grid-template-columns: minmax(0, 0.72fr) minmax(260px, 1.28fr);
+    }
+
+    .jbig-cover-acronym,
+    .jbig-cover-activities {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .jbig-cover-title {
+        font-size: clamp(2.6rem, 6vw, 4.1rem);
+    }
+}
+
+@media (max-width: 900px) {
+    .jbig-cover-content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .jbig-cover-calendar {
+        min-height: 280px;
     }
 }
 
