@@ -118,6 +118,30 @@ const JbigInfo: React.FC<JbigInfoProps> = ({ calendarSlot }) => {
                                     <span role="listitem">AI</span>
                                 </div>
                             </div>
+
+                            <div className="jbig-cover-leaders">
+                                <div>
+                                    <span>회장</span>
+                                    <strong>{settings.jbig_president}</strong>
+                                    <em>{settings.jbig_president_dept}</em>
+                                </div>
+                                <div>
+                                    <span>부회장</span>
+                                    <strong>{settings.jbig_vice_president}</strong>
+                                    <em>{settings.jbig_vice_president_dept}</em>
+                                </div>
+                                <div>
+                                    <span>지도 교수</span>
+                                    <strong>{settings.jbig_advisor}</strong>
+                                    <em>{settings.jbig_advisor_dept}</em>
+                                </div>
+                            </div>
+
+                            <div className="jbig-cover-contact">
+                                <span>Contact</span>
+                                <strong>회장 {settings.jbig_president}</strong>
+                                <em>{settings.jbig_email}</em>
+                            </div>
                         </div>
 
                         {calendarSlot && (
@@ -128,31 +152,6 @@ const JbigInfo: React.FC<JbigInfoProps> = ({ calendarSlot }) => {
                         )}
                     </div>
 
-                    <div className="jbig-cover-bottom">
-                        <div className="jbig-cover-leaders">
-                            <div>
-                                <span>회장</span>
-                                <strong>{settings.jbig_president}</strong>
-                                <em>{settings.jbig_president_dept}</em>
-                            </div>
-                            <div>
-                                <span>부회장</span>
-                                <strong>{settings.jbig_vice_president}</strong>
-                                <em>{settings.jbig_vice_president_dept}</em>
-                            </div>
-                            <div>
-                                <span>지도 교수</span>
-                                <strong>{settings.jbig_advisor}</strong>
-                                <em>{settings.jbig_advisor_dept}</em>
-                            </div>
-                        </div>
-
-                        <div className="jbig-cover-contact">
-                            <span>Contact</span>
-                            <strong>회장 {settings.jbig_president}</strong>
-                            <em>{settings.jbig_email}</em>
-                        </div>
-                    </div>
                 </div>
             </section>
         </div>
