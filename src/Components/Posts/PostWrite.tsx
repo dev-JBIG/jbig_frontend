@@ -392,8 +392,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 setContent(src.content_md || "");
 
                 const boardId = typeof src.board?.id === "number" ? src.board.id : Number(category);
-                const boardName = src.board?.name || BOARD_LIST.find(b => b.id === boardId)?.name || "";
-                setSelectedBoard({ id: boardId, name: boardName } as Board);
+                const fullBoard = BOARD_LIST.find(b => b.id === boardId);
+                const boardName = src.board?.name || fullBoard?.name || "";
+                // board_type/form_type을 함께 채워야 수정 모드에서도 폼(사유서·피드백·사진첩)이 올바르게 뜬다.
+                setSelectedBoard({
+                    id: boardId,
+                    name: boardName,
+                    board_type: src.board?.board_type ?? fullBoard?.board_type,
+                    form_type: src.board?.form_type ?? fullBoard?.form_type,
+                    available_tags: fullBoard?.available_tags,
+                } as Board);
 
                 const attachmentPaths = Array.isArray(src.attachment_paths) ? src.attachment_paths : [];
 
