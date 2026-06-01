@@ -9,7 +9,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { safeSanitizePlugin } from "../Utils/safeMarkdown";
 import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft, refreshTokenAPI} from "../../API/req"
-import {Board, Section, UploadFile, RecruitmentFormData} from "../Utils/interfaces";
+import {Board, Section, UploadFile, RecruitmentFormData, FormType} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
@@ -104,9 +104,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isImageFileName = (name: string) => isImageByName(name);
     const formatBytes = (n?: number) => n ? `${(n / 1024 / 1024).toFixed(2)} MB` : "";
 
-    const isFeedbackBoard = activeBoard &&
-        (activeBoard.name.includes('에러') || activeBoard.name.includes('피드백') || activeBoard.name.includes('제보'));
-    const isAbsenceBoard = !!(activeBoard && (activeBoard.board_type === 3 || activeBoard.name.includes("사유서")));
+    // 어떤 입력 폼을 띄울지는 board의 form_type으로 명시적으로 결정한다.
+    // (board_type은 접근 권한 전용 — 사유서/에러피드백이 board_type=3을 공유해도 폼은 form_type으로 구분된다.)
+    const isFeedbackBoard = activeBoard?.form_type === FormType.FEEDBACK;
+    const isAbsenceBoard = activeBoard?.form_type === FormType.ABSENCE;
 
     const boardTags = activeBoard?.available_tags ?? [];
     const isBragBoard = activeBoard?.name === BRAG_BOARD_NAME;

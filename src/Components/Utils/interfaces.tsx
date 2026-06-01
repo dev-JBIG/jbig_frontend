@@ -71,6 +71,7 @@ export interface PostDetailData {
     board: string;
     board_id: number;
     board_type: number;
+    form_type?: number;
     title: string;
     content_html: string;
     content_md: string;
@@ -89,10 +90,20 @@ export interface PostDetailData {
     recruitment?: RecruitmentDetail | null;
 }
 
+// 작성 화면에서 띄울 입력 폼 종류. 백엔드 Board.FormType과 1:1 대응한다.
+// board_type(접근 권한)과 직교한다 — 예: 사유서와 에러/피드백 제보는 둘 다
+// board_type=3(비공개)이지만 form_type으로 폼을 구분한다.
+export enum FormType {
+    NONE = 0,
+    ABSENCE = 1,
+    FEEDBACK = 2,
+}
+
 export interface Board {
     id: number;
     name: string;
     board_type?: number;
+    form_type?: number;
     available_tags?: string[];
 }
 

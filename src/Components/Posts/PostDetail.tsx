@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback, memo} from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PostDetailData } from "../Utils/interfaces";
+import { PostDetailData, FormType } from "../Utils/interfaces";
 import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, toggleCommentLike, updateComment} from "../../API/req";
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
@@ -239,6 +239,7 @@ const PostDetail: React.FC = () => {
                     board: src.board?.name || "",
                     board_id: src.board_id || src.board?.id,
                     board_type: src.board?.board_type ?? 1,
+                    form_type: src.board?.form_type ?? 0,
                     author_semester: src.author_semester,
                     title: src.title || "",
                     content_html: src.content_html || "",
@@ -787,12 +788,9 @@ const PostDetail: React.FC = () => {
 
     if (!post) return <div className="postdetail-container">로딩 중...</div>;
 
+    // 폼 게시판(사유서·에러/피드백 제보)은 본문을 form-style로 렌더한다.
     const isFormBoard =
-        post.board_type === 3 ||
-        post.board.includes("사유서") ||
-        post.board.includes("에러") ||
-        post.board.includes("피드백") ||
-        post.board.includes("제보");
+        post.form_type === FormType.ABSENCE || post.form_type === FormType.FEEDBACK;
 
     return (
         <div className="postdetail-container has-floating-like">
