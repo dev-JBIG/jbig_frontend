@@ -34,7 +34,7 @@ async function fetchNotionPage(pageId: string, accessToken: string): Promise<Ext
 }
 
 const Note: React.FC = () => {
-    const { user, authReady, accessToken, signOutLocal } = useUser();
+    const { user, authReady, accessToken } = useUser();
     const { showAlert } = useAlert();
     const navigate = useNavigate();
     const [recordMap, setRecordMap] = useState<ExtendedRecordMap | null>(null);
@@ -83,7 +83,6 @@ const Note: React.FC = () => {
                 message: "로그인이 필요합니다.",
                 type: 'warning',
                 onClose: () => {
-                    signOutLocal();
                     navigate("/signin");
                 }
             });
@@ -104,7 +103,7 @@ const Note: React.FC = () => {
             }
         };
         init();
-    }, [authReady, user, accessToken, navigate, signOutLocal, loadPage]);
+    }, [authReady, user, accessToken, navigate, loadPage]);
 
     useEffect(() => {
         const onPopState = (e: PopStateEvent) => {
