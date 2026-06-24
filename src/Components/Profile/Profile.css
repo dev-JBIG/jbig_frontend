@@ -22,6 +22,9 @@
 }
 
 .profile-container {
+    /* width:100% — home-wrapper(flex column) 안에서 margin:auto가 stretch를 무력화해
+       shrink-to-fit으로 좁아지는 것 방지 (명시적 폭이 있으면 960까지 채우고 중앙정렬) */
+    width: 100%;
     max-width: 960px;
     margin: 0 auto;
     padding: 48px 24px 80px;
