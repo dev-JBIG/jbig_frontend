@@ -33,7 +33,10 @@ import PopupSlider from "../Utils/PopupSlider";
 import PhotoAlbumSlider from "./PhotoAlbumSlider";
 import $ from "jquery";
 
-const BANNER_IMAGE_URL = "https://kr.object.ncloudstorage.com/jbig/static/banner.jpg";
+// 미디어(CDN) 베이스 URL. R2 + Cloudflare CDN 전환 시 REACT_APP_MEDIA_BASE_URL 만 교체.
+// 미설정 시 기존 NCP 퍼블릭 URL로 폴백 (전환 전에도 동작).
+const MEDIA_BASE_URL = (process.env.REACT_APP_MEDIA_BASE_URL || "https://kr.object.ncloudstorage.com/jbig").replace(/\/$/, "");
+const BANNER_IMAGE_URL = `${MEDIA_BASE_URL}/static/banner.jpg`;
 
 const removeWidgetBot = () => {
     const crateElement = document.querySelector('widgetbot-crate');
