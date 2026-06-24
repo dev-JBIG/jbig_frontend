@@ -336,8 +336,6 @@ const Home: React.FC = () => {
 
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
-    if (isProfilePage) return <Profile />;
-
     return (
         <div className="home-wrapper">
             <header className="home-header">
@@ -468,6 +466,10 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </header>
+            {isProfilePage ? (
+                <Profile />
+            ) : (
+            <>
             <button type="button" className="home-banner" onClick={() => navigate('/')} aria-label="홈으로 이동">
                 <img src={BANNER_IMAGE_URL} alt="banner-image" className="banner-image"/>
             </button>
@@ -525,12 +527,14 @@ const Home: React.FC = () => {
                     onSave={handleSaveEvent}
                 />
             )}
+
+            {/* 팝업 슬라이더 */}
+            <PopupSlider />
+            </>
+            )}
             {isLoginModalOpen && (
                 <LoginModal onClose={() => setLoginModalOpen(false)} />
             )}
-            
-            {/* 팝업 슬라이더 */}
-            <PopupSlider />
         </div>
     );
 };
