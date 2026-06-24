@@ -1,0 +1,132 @@
+.profile-html-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.phe-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+
+.phe-hint {
+    font-size: 12px;
+    color: #8a93a3;
+    flex: 1 1 240px;
+    line-height: 1.5;
+}
+
+.phe-hint code {
+    background: #f2f4f7;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.phe-size {
+    font-size: 12px;
+    color: #8a93a3;
+    white-space: nowrap;
+}
+
+.phe-size.is-over {
+    color: #d6453d;
+    font-weight: 700;
+}
+
+.phe-error {
+    margin: 0;
+    color: #d6453d;
+    font-size: 13px;
+}
+
+.phe-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    min-height: 480px;
+}
+
+@media (max-width: 820px) {
+    .phe-split {
+        grid-template-columns: 1fr;
+    }
+}
+
+.phe-pane {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e7eaef;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.phe-pane-label {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #46505f;
+    background: #f7f8fa;
+    border-bottom: 1px solid #e7eaef;
+}
+
+.phe-textarea {
+    flex: 1;
+    border: 0;
+    outline: none;
+    resize: none;
+    padding: 12px;
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #2b3340;
+    min-height: 440px;
+    white-space: pre;
+    overflow: auto;
+}
+
+.phe-preview {
+    flex: 1;
+    border: 0;
+    width: 100%;
+    min-height: 440px;
+    background: #fff;
+}
+
+.phe-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.phe-btn {
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.phe-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.phe-btn-upload {
+    background: #eef1f5;
+    color: #36404d;
+}
+
+.phe-btn-cancel {
+    background: #eef1f5;
+    color: #36404d;
+}
+
+.phe-btn-save {
+    background: #0e7c86;
+    color: #fff;
+}

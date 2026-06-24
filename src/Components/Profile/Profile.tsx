@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
-import { fetchPublicProfile, updateProfileBlocks, PublicProfile, deleteAccount } from "../../API/req";
+import { fetchPublicProfile, updateProfileBlocks, updateProfileHtml, PublicProfile, deleteAccount } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
 import { ProfileBlock, IdentityBlock } from "./types";
 import ProfileBlockRenderer from "./ProfileBlockRenderer/ProfileBlockRenderer";
 import "./Profile.css";
 
 const ProfileBlockEditor = lazy(() => import("./ProfileBlockEditor/ProfileBlockEditor"));
+const ProfileHtmlEditor = lazy(() => import("./ProfileHtmlEditor/ProfileHtmlEditor"));
+
+type EditMode = 'blocks' | 'html';
 
 const formatLastLogin = (isoString: string | null): string => {
     if (!isoString) return "";
@@ -43,7 +46,13 @@ const Profile: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [editMode, setEditMode] = useState(false);
+    const [editTab, setEditTab] = useState<EditMode>('blocks');
     const [saving, setSaving] = useState(false);
+
+    const startEdit = () => {
+        setEditTab((profile?.profile_type as EditMode) || 'blocks');
+        setEditMode(true);
+    };
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletePassword, setDeletePassword] = useState("");
@@ -85,11 +94,30 @@ const Profile: React.FC = () => {
         setSaving(true);
         try {
             await updateProfileBlocks(blocks, accessToken);
-            setProfile(prev => prev ? { ...prev, profile_blocks: blocks } : null);
+            // 블록 모드로 저장하면 공개 프로필도 블록 방식으로 전환
+            if (profile?.profile_type !== 'blocks') {
+                await updateProfileHtml({ profile_type: 'blocks' }, accessToken);
+            }
+            setProfile(prev => prev ? { ...prev, profile_blocks: blocks, profile_type: 'blocks' } : null);
             setEditMode(false);
             showAlert({ message: "프로필이 저장되었습니다.", type: 'success' });
         } catch {
             showAlert({ message: "저장에 실패했습니다.", type: 'error' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveHtml = async (html: string) => {
+        if (!accessToken) return;
+        setSaving(true);
+        try {
+            await updateProfileHtml({ profile_type: 'html', profile_html: html }, accessToken);
+            setProfile(prev => prev ? { ...prev, profile_html: html, profile_type: 'html' } : null);
+            setEditMode(false);
+            showAlert({ message: "프로필이 저장되었습니다.", type: 'success' });
+        } catch {
+            showAlert({ message: "저장에 실패했습니다. HTML 용량(최대 2MB)을 확인해주세요.", type: 'error' });
         } finally {
             setSaving(false);
         }
@@ -204,7 +232,7 @@ const Profile: React.FC = () => {
                 </div>
                 <div className="profile-actions">
                     {profile.is_self && !editMode && (
-                        <button className="btn-edit" onClick={() => setEditMode(true)}>
+                        <button className="btn-edit" onClick={startEdit}>
                             프로필 편집
                         </button>
                     )}
@@ -241,16 +269,63 @@ const Profile: React.FC = () => {
             {/* 본문 */}
             {editMode ? (
                 <div className="profile-content">
+                    <div className="profile-edit-modes" role="tablist" aria-label="프로필 작성 방식">
+                        <button
+                            role="tab"
+                            aria-selected={editTab === 'blocks'}
+                            className={`profile-edit-mode ${editTab === 'blocks' ? 'is-active' : ''}`}
+                            onClick={() => setEditTab('blocks')}
+                            disabled={saving}
+                        >
+                            블록으로 만들기
+                        </button>
+                        <button
+                            role="tab"
+                            aria-selected={editTab === 'html'}
+                            className={`profile-edit-mode ${editTab === 'html' ? 'is-active' : ''}`}
+                            onClick={() => setEditTab('html')}
+                            disabled={saving}
+                        >
+                            HTML 업로드
+                        </button>
+                    </div>
                     <Suspense fallback={<div className="profile-loading"><div className="loading-spinner" /><p>에디터 로딩 중...</p></div>}>
-                        <ProfileBlockEditor
-                            blocks={blocks}
-                            onSave={handleSaveBlocks}
-                            onCancel={handleCancelEdit}
-                            saving={saving}
-                        />
+                        {editTab === 'blocks' ? (
+                            <ProfileBlockEditor
+                                blocks={blocks}
+                                onSave={handleSaveBlocks}
+                                onCancel={handleCancelEdit}
+                                saving={saving}
+                            />
+                        ) : (
+                            <ProfileHtmlEditor
+                                initialHtml={profile.profile_html || ""}
+                                onSave={handleSaveHtml}
+                                onCancel={handleCancelEdit}
+                                saving={saving}
+                            />
+                        )}
                     </Suspense>
                 </div>
             ) : tab === 'resume' ? (
+                profile.profile_type === 'html' ? (
+                    profile.profile_html ? (
+                        <div className="profile-content resume-body resume-html">
+                            <iframe
+                                className="profile-html-frame"
+                                title={`${profile.username} 이력서`}
+                                sandbox=""
+                                srcDoc={profile.profile_html}
+                            />
+                        </div>
+                    ) : (
+                        <div className="profile-content resume-body">
+                            <div className="profile-empty-blocks">
+                                <p>{profile.is_self ? "프로필 편집 → HTML 업로드로 이력서를 올려보세요!" : "아직 작성된 이력서가 없습니다."}</p>
+                            </div>
+                        </div>
+                    )
+                ) : (
                 <div className="profile-content resume-body">
                     {bodyBlocks.length > 0 ? (
                         <ProfileBlockRenderer blocks={bodyBlocks} />
@@ -260,6 +335,7 @@ const Profile: React.FC = () => {
                         </div>
                     )}
                 </div>
+                )
             ) : (
                 <div className="profile-content activity-body">
                     <section className="profile-section">

@@ -1200,6 +1200,8 @@ export interface PublicProfile {
     semester: number;
     resume: string;
     profile_blocks: ProfileBlockData[];
+    profile_type: 'blocks' | 'html';
+    profile_html: string;
     date_joined: string;
     last_login: string | null;
     is_self: boolean;
@@ -1245,6 +1247,21 @@ export const updateResume = async (resume: string, token: string): Promise<{ res
 export const updateProfileBlocks = async (blocks: ProfileBlockData[], token: string): Promise<{ profile_blocks: ProfileBlockData[] }> => {
     const url = `${BASE_URL}/api/users/profile/blocks/`;
     const res = await axios.patch(url, { profile_blocks: blocks }, {
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    return res.data;
+};
+
+export const updateProfileHtml = async (
+    payload: { profile_type: 'blocks' | 'html'; profile_html?: string },
+    token: string
+): Promise<{ profile_type: 'blocks' | 'html'; profile_html: string }> => {
+    const url = `${BASE_URL}/api/users/profile/html/`;
+    const res = await axios.patch(url, payload, {
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",

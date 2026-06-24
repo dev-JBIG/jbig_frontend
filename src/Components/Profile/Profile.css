@@ -679,10 +679,60 @@
 /* ============================================================
    Print — PDF 출력용
    ============================================================ */
+/* ===== 편집 모드 토글 (블록 / HTML) ===== */
+.profile-edit-modes {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 16px;
+    background: #eef1f5;
+    border-radius: 10px;
+}
+
+.profile-edit-mode {
+    border: 0;
+    background: transparent;
+    padding: 8px 18px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #46505f;
+    cursor: pointer;
+}
+
+.profile-edit-mode.is-active {
+    background: #ffffff;
+    color: #0e7c86;
+    box-shadow: 0 1px 3px rgba(20, 30, 45, 0.12);
+}
+
+.profile-edit-mode:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== HTML 모드 공개 프로필 (sandbox iframe) ===== */
+.resume-html {
+    padding: 0;
+}
+
+.profile-html-frame {
+    width: 100%;
+    min-height: 1400px;
+    border: 0;
+    display: block;
+    background: #fff;
+}
+
 @media print {
     @page {
         size: A4;
         margin: 14mm 12mm;
+    }
+
+    .profile-html-frame {
+        min-height: 100vh;
+        height: auto;
     }
 
     body {
