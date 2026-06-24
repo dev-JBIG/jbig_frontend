@@ -351,6 +351,8 @@ const Profile: React.FC = () => {
                                     </li>
                                 ))}
                             </ul>
+                        ) : !accessToken ? (
+                            <p className="empty-text">로그인한 회원만 볼 수 있습니다.</p>
                         ) : (
                             <p className="empty-text">작성한 게시글이 없습니다.</p>
                         )}
@@ -374,6 +376,8 @@ const Profile: React.FC = () => {
                                     </li>
                                 ))}
                             </ul>
+                        ) : !accessToken ? (
+                            <p className="empty-text">로그인한 회원만 볼 수 있습니다.</p>
                         ) : (
                             <p className="empty-text">작성한 댓글이 없습니다.</p>
                         )}
