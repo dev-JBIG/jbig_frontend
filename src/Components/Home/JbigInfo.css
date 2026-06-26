@@ -261,16 +261,6 @@
     text-transform: uppercase;
 }
 
-.jbig-cover-badge {
-    flex: 0 0 auto;
-    padding: 8px 10px;
-    color: #1d4ed8;
-    background: #eff6ff;
-    border: 1px solid rgba(37, 99, 235, 0.24);
-    font-size: clamp(0.62rem, 1.1vw, 0.78rem);
-    font-weight: 900;
-}
-
 .jbig-cover-description {
     margin: 0;
     padding: 12px 14px;
@@ -383,11 +373,15 @@
 
 .jbig-cover-leaders {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
 }
 
-.jbig-cover-leaders div,
+.jbig-cover-leader-advisor {
+    grid-column: 1 / -1;
+}
+
+.jbig-cover-leader,
 .jbig-cover-contact {
     min-width: 0;
     padding: 8px;
@@ -407,25 +401,24 @@
 .jbig-cover-leaders strong,
 .jbig-cover-contact strong {
     display: block;
-    overflow: hidden;
     color: #0f172a;
     font-size: clamp(0.76rem, 1.15vw, 0.9rem);
     font-weight: 900;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .jbig-cover-leaders em,
 .jbig-cover-contact em {
     display: block;
-    overflow: hidden;
     margin-top: 3px;
     color: #64748b;
     font-size: 0.68rem;
+    line-height: 1.25;
     font-style: normal;
     font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 /* Hero */
