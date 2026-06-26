@@ -90,7 +90,6 @@ const JbigInfo: React.FC<JbigInfoProps> = ({ calendarSlot }) => {
                             <div className="jbig-cover-kicker">JBNU Big Data & AI Group</div>
                             <h2 className="jbig-cover-title">JBIG</h2>
                         </div>
-                        <div className="jbig-cover-badge">DATA / AI</div>
                     </div>
 
                     <p className="jbig-cover-description">
@@ -120,20 +119,20 @@ const JbigInfo: React.FC<JbigInfoProps> = ({ calendarSlot }) => {
                             </div>
 
                             <div className="jbig-cover-leaders">
-                                <div>
+                                <div className="jbig-cover-leader jbig-cover-leader-advisor">
+                                    <span>지도 교수</span>
+                                    <strong>{settings.jbig_advisor}</strong>
+                                    <em>{settings.jbig_advisor_dept}</em>
+                                </div>
+                                <div className="jbig-cover-leader">
                                     <span>회장</span>
                                     <strong>{settings.jbig_president}</strong>
                                     <em>{settings.jbig_president_dept}</em>
                                 </div>
-                                <div>
+                                <div className="jbig-cover-leader">
                                     <span>부회장</span>
                                     <strong>{settings.jbig_vice_president}</strong>
                                     <em>{settings.jbig_vice_president_dept}</em>
-                                </div>
-                                <div>
-                                    <span>지도 교수</span>
-                                    <strong>{settings.jbig_advisor}</strong>
-                                    <em>{settings.jbig_advisor_dept}</em>
                                 </div>
                             </div>
 
