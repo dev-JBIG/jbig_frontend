@@ -9,6 +9,7 @@ import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import RecruitmentBadge from "./RecruitmentBadge";
+import { ExternalLink } from "lucide-react";
 
 const BOARD_DESCRIPTIONS: Record<string, string> = {
     "전체 글 보기": "JBIG의 모든 소식을 한눈에 확인하세요!",
@@ -25,6 +26,28 @@ const BOARD_DESCRIPTIONS: Record<string, string> = {
 };
 
 const BRAG_BOARD_NAME = "자랑게시판";
+const LINK_SHARE_FORM_TYPE = 3;
+const LINK_SHARE_BOARD_NAME = "링크공유";
+
+const isLinkShareBoard = (board?: { name?: string; form_type?: number } | null) =>
+    !!board && (board.form_type === LINK_SHARE_FORM_TYPE || board.name === LINK_SHARE_BOARD_NAME);
+
+const getLinkHost = (url?: string | null) => {
+    if (!url) return "";
+    try {
+        return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+        return url.replace(/^https?:\/\//, "").split("/")[0];
+    }
+};
+
+const stripMarkdown = (value?: string | null) =>
+    (value || "")
+        .replace(/!\[[^\]]*]\([^)]+\)/g, "")
+        .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+        .replace(/[#>*`~_-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
 /**
  * 게시판 이름을 간단하게 표시하기 위한 포맷터
@@ -137,6 +160,14 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         : boards
             ?.flatMap(section => section.boards)
             .find(board => board.id === Number(activeBoardID));
+    const isLinkShareList = !isSearchPage && !isUserPage && !isHome && isLinkShareBoard(activeBoard);
+    const canShowWriteButton =
+        !isSearchPage &&
+        !isUserPage &&
+        !isHome &&
+        activeBoardID !== 0 &&
+        !(activeBoard?.name === "공지사항" && !staffAuth) &&
+        (postPermission || isLinkShareList);
 
     const reqSeqRef = useRef(0);
 
@@ -319,6 +350,69 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
     const handleWrite = () => {
         navigate(`/board/${boardIdRaw ?? 0}/write`);
     };
+
+    const renderLinkShareCards = () => (
+        <div className="link-share-grid">
+            {filteredPosts.map((p) => {
+                const host = getLinkHost(p.link_url);
+                const linkTitle = p.link_title || p.title || p.link_url || "링크";
+                const comment = stripMarkdown(p.link_comment);
+                return (
+                    <article
+                        key={p.id}
+                        className="link-share-card"
+                        onClick={() => navigate(`/board/${activeBoardID}/${p.id}`)}
+                    >
+                        <div className="link-share-thumb" aria-hidden="true">
+                            {p.link_image_url ? (
+                                <img src={p.link_image_url} alt="" loading="lazy" />
+                            ) : (
+                                <span>{(host || "L").slice(0, 1).toUpperCase()}</span>
+                            )}
+                        </div>
+                        <div className="link-share-body">
+                            <div className="link-share-source">
+                                <span>{p.link_site_name || host || "Link"}</span>
+                                {p.link_url && (
+                                    <a
+                                        href={p.link_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        aria-label="원문 링크 열기"
+                                        title="원문 링크 열기"
+                                    >
+                                        <ExternalLink size={15} />
+                                    </a>
+                                )}
+                            </div>
+                            <h3 className="link-share-title">{linkTitle}</h3>
+                            {p.link_description && (
+                                <p className="link-share-description">{p.link_description}</p>
+                            )}
+                            {comment && (
+                                <p className="link-share-comment">{comment}</p>
+                            )}
+                            <div className="link-share-meta">
+                                <button
+                                    type="button"
+                                    className="link-share-author"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/@${p.user_id}`);
+                                    }}
+                                >
+                                    {p.author_semester ? `${p.author_semester}기 ` : ""}{p.author}
+                                </button>
+                                <span>{p.date}</span>
+                                {p.comment_count > 0 && <span>댓글 {p.comment_count}</span>}
+                            </div>
+                        </div>
+                    </article>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className="postlist-container">
@@ -507,7 +601,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             !isHome &&
                             activeBoardID !== 0 &&
                             !(activeBoard?.name === "공지사항" && !staffAuth) &&
-                            postPermission) && (
+                            (postPermission || isLinkShareList)) && (
                             <div className="empty-posts-message-with-link">
                                 <span
                                   role="link"
@@ -521,11 +615,13 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                   }}
                                   className="write-post-link"
                                 >
-                                    게시글 작성하러가기
+                                    {isLinkShareList ? "공유하기" : "게시글 작성하러가기"}
                                 </span>
                             </div>
                         )}
                     </div>
+                ) : isLinkShareList ? (
+                    renderLinkShareCards()
                 ) : (
                     <table className="postlist-table">
                         <thead>
@@ -657,15 +753,10 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                         return (
                             <>
-                                {!isSearchPage &&
-                                    !isUserPage &&
-                                    !isHome &&
-                                    activeBoardID !== 0 &&
-                                    !(activeBoard?.name === "공지사항" && !staffAuth) &&
-                                    postPermission && (
+                                {canShowWriteButton && (
                                         <div className="write-button-row">
                                             <button className="write-button" onClick={handleWrite}>
-                                                글쓰기
+                                                {isLinkShareList ? "공유하기" : "글쓰기"}
                                             </button>
                                         </div>
                                     )}

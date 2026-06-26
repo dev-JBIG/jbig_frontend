@@ -22,6 +22,8 @@ const BLOCKED_EXTENSIONS = ["jsp", "php", "asp", "cgi"];
 const MAX_FILES = 3;
 const MAX_PHOTO_FILES = 12;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const LINK_SHARE_FORM_TYPE = 3;
+const LINK_SHARE_BOARD_NAME = "링크공유";
 const BLOCKED_BOARD_KEYWORDS = ["공지사항", "admin", "어드민", "운영진", "관리자"];
 const BRAG_BOARD_NAME = "자랑게시판";
 const STUDY_BOARD_NAME_KEYWORDS = ["스터디", "소모임"];
@@ -41,10 +43,13 @@ const extractKeyFromUrl = (url: string, fallback: string): string => {
 };
 
 const isImageByName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+const isLinkShareBoard = (board: Board | null) =>
+    !!board && (board.form_type === LINK_SHARE_FORM_TYPE || board.name === LINK_SHARE_BOARD_NAME);
 
 const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [linkUrl, setLinkUrl] = useState("");
     const [files, setFiles] = useState<UploadFile[]>([]);
     const [attachments, setAttachments] = useState<{ path: string; name: string; }[]>([]);
     const [existingAttachments, setExistingAttachments] = useState<
@@ -80,6 +85,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         [selectedBoard, BOARD_LIST, category]
     );
     const isPhotoBoard = !!(activeBoard && (activeBoard.board_type === 4 || activeBoard.name === "사진첩"));
+    const isLinkBoard = isLinkShareBoard(activeBoard);
 
     const filteredBoardList = useMemo(() => {
         if (staffAuth) return BOARD_LIST;
@@ -111,7 +117,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     const boardTags = activeBoard?.available_tags ?? [];
     const isBragBoard = activeBoard?.name === BRAG_BOARD_NAME;
-    const hasTags = boardTags.length > 0 && !isBragBoard;
+    const hasTags = boardTags.length > 0 && !isBragBoard && !isLinkBoard;
     const isRecruitmentTag = selectedTag === '팀원모집';
 
     const isStudyBoard = !isRecruitmentTag && !!activeBoard?.name &&
@@ -122,6 +128,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             setContent("");
         }
     }, [isPhotoBoard]);
+
+    useEffect(() => {
+        if (!isLinkBoard) return;
+        setTitle("");
+        setFiles([]);
+        setAttachments([]);
+        setExistingAttachments([]);
+    }, [isLinkBoard]);
 
 
     // 공통 이미지 업로드 로직
@@ -262,13 +276,16 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     cancelText: '취소',
                     onConfirm: async () => {
                         console.log('[Draft] User accepted - restoring draft');
-                        if (draft.title) setTitle(draft.title);
+                        const draftBoard = draft.board_id ? BOARD_LIST.find(b => b.id === draft.board_id) : activeBoard;
+                        if (draft.title) {
+                            if (isLinkShareBoard(draftBoard || null)) setLinkUrl(draft.title);
+                            else setTitle(draft.title);
+                        }
                         if (draft.content_md) setContent(draft.content_md);
                         draft.uploaded_paths?.forEach(p => uploadedPathsRef.current.add(p));
                         // 저장된 게시판이 있으면 복원
                         if (draft.board_id) {
-                            const board = BOARD_LIST.find(b => b.id === draft.board_id);
-                            if (board) setSelectedBoard(board);
+                            if (draftBoard) setSelectedBoard(draftBoard);
                         }
                     },
                     onCancel: async () => {
@@ -285,7 +302,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 console.error('[Draft] Draft fetch failed:', err);
             }
         })();
-    }, [canUseDraft, accessToken, isEdit, BOARD_LIST]);
+    }, [canUseDraft, accessToken, isEdit, BOARD_LIST, activeBoard]);
 
     // 초안 자동 저장 (2초 debounce, DB - 단일 버퍼)
     useEffect(() => {
@@ -304,10 +321,11 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         await deleteDraft(accessToken).catch(() => {});
                     } else {
                         // DB에 저장 (upsert) - 현재 선택된 게시판도 함께 저장
-                        console.log('[Draft] Saving draft:', { board_id: activeBoard?.id, title, content_length: content.length });
+                        const draftTitle = isLinkBoard ? linkUrl : title;
+                        console.log('[Draft] Saving draft:', { board_id: activeBoard?.id, title: draftTitle, content_length: content.length });
                         const result = await saveDraft({
                             board_id: activeBoard?.id || null,
-                            title,
+                            title: draftTitle,
                             content_md: content,
                             uploaded_paths: Array.from(uploadedPathsRef.current)
                         }, accessToken);
@@ -319,7 +337,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             })();
         }, 2000);
         return () => clearTimeout(handler);
-    }, [title, content, activeBoard, canUseDraft, accessToken]);
+    }, [title, linkUrl, content, activeBoard, canUseDraft, accessToken, isLinkBoard]);
 
     // 주기적 토큰 갱신 (활동 감지 시 45분마다 자동 갱신)
     useEffect(() => {
@@ -389,6 +407,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 const src = raw.post_data ?? raw;
 
                 setTitle(src.title || "");
+                setLinkUrl(src.link_url || "");
                 setContent(src.content_md || "");
 
                 const boardId = typeof src.board?.id === "number" ? src.board.id : Number(category);
@@ -396,6 +415,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 const boardName = src.board?.name || fullBoard?.name || "";
                 // board_type/form_type을 함께 채워야 수정 모드에서도 폼(사유서·피드백·사진첩)이 올바르게 뜬다.
                 setSelectedBoard({
+                    ...(fullBoard || {}),
                     id: boardId,
                     name: boardName,
                     board_type: src.board?.board_type ?? fullBoard?.board_type,
@@ -514,6 +534,25 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
 
     // 유효성 검사
     const validateForm = (): boolean => {
+        if (isLinkBoard) {
+            const rawUrl = linkUrl.trim();
+            if (!rawUrl) {
+                showAlert({ message: "링크 URL을 입력하세요.", type: 'warning' });
+                return false;
+            }
+            try {
+                const parsed = new URL(rawUrl);
+                if (!["http:", "https:"].includes(parsed.protocol)) {
+                    showAlert({ message: "http 또는 https 링크만 등록할 수 있습니다.", type: 'warning' });
+                    return false;
+                }
+            } catch {
+                showAlert({ message: "올바른 URL을 입력하세요.", type: 'warning' });
+                return false;
+            }
+            return true;
+        }
+
         if (!title.trim()) { showAlert({ message: "제목을 입력하세요.", type: 'warning' }); return false; }
 
         if (isPhotoBoard) {
@@ -589,17 +628,28 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
             cleanupUnusedFiles();
 
             if (isEdit && postIdNumber) {
-                await modifyPost(postIdNumber, {
-                    title, content_md: content, attachment_paths: attachments,
-                    ...(activeBoard ? { board_id: activeBoard.id } : {}),
-                    is_anonymous: !showRealName,
-                }, accessToken);
+                const editPayload: any = isLinkBoard
+                    ? {
+                        link_url: linkUrl.trim(),
+                        content_md: content,
+                        attachment_paths: [],
+                        ...(activeBoard ? { board_id: activeBoard.id } : {}),
+                        is_anonymous: !showRealName,
+                    }
+                    : {
+                        title, content_md: content, attachment_paths: attachments,
+                        ...(activeBoard ? { board_id: activeBoard.id } : {}),
+                        is_anonymous: !showRealName,
+                    };
+                await modifyPost(postIdNumber, editPayload, accessToken);
                 savedRef.current = true;
                 navigate(`/board/${activeBoard?.id ?? Number(category)}/${postIdNumber}`);
                 return;
             }
 
-            const postPayload: any = { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName };
+            const postPayload: any = isLinkBoard
+                ? { link_url: linkUrl.trim(), content_md: content, attachment_paths: [], is_anonymous: !showRealName }
+                : { title, content_md: content, attachment_paths: attachments, is_anonymous: !showRealName };
             if (hasTags && selectedTag) postPayload.tag = selectedTag;
             if (isRecruitmentTag && recruitmentData) {
                 postPayload.recruitment = {
@@ -723,24 +773,49 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 </div>
             )}
 
-            <div className="postwrite-row">
-                <label style={{ fontWeight: 'bold' }}>제목</label>
-                <input className="postwrite-title-input" type="text" value={title} onChange={e => setTitle(e.target.value)}
-                    maxLength={120} required
-                    placeholder={
-                        isPhotoBoard
-                            ? "사진 제목을 입력하세요"
-                            : isAbsenceBoard
-                                ? "[X주차] 결석사유서 OOO"
-                                : isFeedbackBoard
-                                    ? "에러/피드백 제보 제목을 입력하세요"
-                                    : "제목을 입력하세요"
-                    } />
-            </div>
+            {!isLinkBoard && (
+                <div className="postwrite-row">
+                    <label style={{ fontWeight: 'bold' }}>제목</label>
+                    <input className="postwrite-title-input" type="text" value={title} onChange={e => setTitle(e.target.value)}
+                        maxLength={120} required
+                        placeholder={
+                            isPhotoBoard
+                                ? "사진 제목을 입력하세요"
+                                : isAbsenceBoard
+                                    ? "[X주차] 결석사유서 OOO"
+                                    : isFeedbackBoard
+                                        ? "에러/피드백 제보 제목을 입력하세요"
+                                        : "제목을 입력하세요"
+                        } />
+                </div>
+            )}
+
+            {isLinkBoard && (
+                <div className="postwrite-row">
+                    <label style={{ fontWeight: 'bold' }}>링크 URL</label>
+                    <input
+                        className="postwrite-title-input"
+                        type="url"
+                        value={linkUrl}
+                        onChange={e => setLinkUrl(e.target.value)}
+                        placeholder="https://example.com/article"
+                        autoComplete="url"
+                        required
+                    />
+                </div>
+            )}
 
             <div className="postwrite-row">
-                <label style={{ fontWeight: 'bold' }}>본문</label>
-                {isPhotoBoard ? (
+                <label style={{ fontWeight: 'bold' }}>{isLinkBoard ? "코멘트" : "본문"}</label>
+                {isLinkBoard ? (
+                    <textarea
+                        className="postwrite-link-comment-input"
+                        value={content}
+                        onChange={e => setContent(e.target.value)}
+                        rows={6}
+                        placeholder="읽으며 남겨둘 메모를 가볍게 적어두세요. 비워도 됩니다."
+                    />
+                ) : isPhotoBoard ? (
                     <div className="postwrite-photo-hint">
                         사진첩은 제목과 사진만 등록됩니다. 본문은 작성되지 않습니다.
                     </div>
@@ -830,6 +905,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 )}
             </div>
 
+            {!isLinkBoard && (
             <div className="postwrite-row">
                 <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
@@ -844,8 +920,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     </span>
                 </label>
             </div>
+            )}
 
-            {isPhotoBoard ? (
+            {!isLinkBoard && (isPhotoBoard ? (
                 <div className="postwrite-row">
                     <label className="attachments-top">사진</label>
                     <div className="photo-upload-panel">
@@ -923,7 +1000,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     </div>
                     <div className="postwrite-img-hint">(최대 {maxFiles}개, 파일당 {MAX_FILE_SIZE / 1024 / 1024}MB 제한)</div>
                 </div>
-            )}
+            ))}
 
             <button className="postwrite-submit" type="submit" disabled={submitting} aria-busy={submitting}>등록하기</button>
         </form>
