@@ -16,6 +16,12 @@ export interface PostItem {
     is_anonymous?: boolean;
     tag?: string;
     recruitment_info?: RecruitmentInfo | null;
+    link_url?: string | null;
+    link_title?: string | null;
+    link_description?: string | null;
+    link_image_url?: string | null;
+    link_site_name?: string | null;
+    link_comment?: string | null;
 }
 
 export interface Attachment {
@@ -88,6 +94,11 @@ export interface PostDetailData {
     is_anonymous?: boolean;
     tag?: string;
     recruitment?: RecruitmentDetail | null;
+    link_url?: string | null;
+    link_title?: string | null;
+    link_description?: string | null;
+    link_image_url?: string | null;
+    link_site_name?: string | null;
 }
 
 // 작성 화면에서 띄울 입력 폼 종류. 백엔드 Board.FormType과 1:1 대응한다.
