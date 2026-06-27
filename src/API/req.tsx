@@ -643,7 +643,7 @@ export const fetchUserPosts = async (
 
 // 첨부파일 업로드
 
-// 첨부파일 업로드 (NCP Presigned URL 방식)
+// 첨부파일 업로드 (Presigned URL 방식)
 export const uploadAttachment = async (file: File, token: string): Promise<{ path: string; name: string; url?: string; message?: string }> => {
     let generateUrlResponse;
     try {
@@ -666,7 +666,7 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
             headers: { "Content-Type": file.type || "application/octet-stream" },
         });
     } catch {
-        return { path: "", name: file.name, message: "클라우드 스토리지(NCP) 업로드에 실패했습니다." };
+        return { path: "", name: file.name, message: "클라우드 스토리지 업로드에 실패했습니다." };
     }
 
     // 업로드 완료 후 public-read ACL 적용
@@ -687,7 +687,7 @@ export const uploadAttachment = async (file: File, token: string): Promise<{ pat
     };
 };
 
-// 업로드된 파일 삭제 (NCP)
+// 업로드된 파일 삭제 (스토리지)
 export const deleteUploadedFile = async (path: string, token: string): Promise<{ success: boolean; message?: string }> => {
     try {
         await axios.delete(`${BASE_URL}/api/boards/files/delete/`, {
@@ -1420,7 +1420,7 @@ export interface PopupItem {
 export interface PopupCreate {
     title: string;
     content: string;
-    image_path?: string;  // 생성/수정 시 NCP key 경로 전송
+    image_path?: string;  // 생성/수정 시 스토리지 key 경로 전송
     start_date: string;
     end_date: string;
     is_active?: boolean;
