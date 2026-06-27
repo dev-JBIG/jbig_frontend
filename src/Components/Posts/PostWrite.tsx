@@ -591,7 +591,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (uploadedPathsRef.current.size === 0 || !accessToken) return;
 
         const usedKeys = new Set<string>();
-        // ncp-key:// 형식과 퍼블릭/CDN URL 형식(ncloud, cdn.jbig.co.kr 등) 모두 매칭
+        // ncp-key:// 키 형식과 퍼블릭/CDN URL 형식(cdn.jbig.co.kr 등) 모두 매칭
         Array.from(
             content.matchAll(/(?:ncp-key:\/\/|https?:\/\/[^\s)]+?\/)(uploads\/[^\s)]+)/g)
         ).forEach(m => usedKeys.add(m[1]));

@@ -369,7 +369,7 @@ function PopupManagement({ accessToken }: { accessToken: string }) {
         let finalImagePath = imageUrl;
 
         try {
-            // 새로운 이미지 파일이 있으면 NCP Object Storage에 업로드
+            // 새로운 이미지 파일이 있으면 오브젝트 스토리지에 업로드
             if (imageFile) {
                 const uploadResult = await uploadAttachment(imageFile, accessToken);
                 console.log('[Popup] Upload result:', uploadResult);

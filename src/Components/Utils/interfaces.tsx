@@ -209,7 +209,7 @@ export interface UploadFile {
     file: File;
     url: string;
     id?: number;
-    path?: string;  // NCP에 업로드된 파일의 고유 키 (삭제 시 식별용)
+    path?: string;  // 스토리지에 업로드된 파일의 고유 키 (삭제 시 식별용)
 }
 
 export interface UserComment {
