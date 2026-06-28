@@ -156,7 +156,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 return false;
             }
 
-            const imageMarkdown = `![${res.name}](${res.url || `ncp-key://${res.path}`})`;
+            const imageMarkdown = `![${res.name}](${res.url || `media-key://${res.path}`})`;
             
             // 커서 위치에 이미지 삽입
             setContent(prev => {
@@ -591,9 +591,9 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         if (uploadedPathsRef.current.size === 0 || !accessToken) return;
 
         const usedKeys = new Set<string>();
-        // ncp-key:// 키 형식과 퍼블릭/CDN URL 형식(cdn.jbig.co.kr 등) 모두 매칭
+        // media-key:// 키 형식과 퍼블릭/CDN URL 형식(cdn.jbig.co.kr 등) 모두 매칭
         Array.from(
-            content.matchAll(/(?:ncp-key:\/\/|https?:\/\/[^\s)]+?\/)(uploads\/[^\s)]+)/g)
+            content.matchAll(/(?:media-key:\/\/|https?:\/\/[^\s)]+?\/)(uploads\/[^\s)]+)/g)
         ).forEach(m => usedKeys.add(m[1]));
         attachments.forEach(a => usedKeys.add(a.path));
 
@@ -884,8 +884,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                                 components: {
                                     img: ({ src, alt, ...props }) => {
                                         let imageSrc = src;
-                                        if (src?.startsWith('ncp-key://')) {
-                                            const blobUrl = imageUrlMapRef.current.get(src.replace('ncp-key://', ''));
+                                        if (src?.startsWith('media-key://')) {
+                                            const blobUrl = imageUrlMapRef.current.get(src.replace('media-key://', ''));
                                             if (blobUrl) imageSrc = blobUrl;
                                         }
                                         return <img src={imageSrc} alt={alt} {...props} style={{ maxWidth: '100%' }} />;
