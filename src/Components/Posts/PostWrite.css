@@ -28,24 +28,6 @@
     resize: vertical;
 }
 
-.postwrite-link-comment-input {
-    min-height: 140px;
-    resize: vertical;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 12px;
-    font-size: 1rem;
-    line-height: 1.55;
-    color: #1f2937;
-    background: #fff;
-}
-
-.postwrite-link-comment-input:focus {
-    outline: none;
-    border-color: #3563e9;
-    box-shadow: 0 0 0 3px rgba(53, 99, 233, 0.12);
-}
-
 .board-select {
     height: 36px;
     font-size: 14px;

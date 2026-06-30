@@ -180,12 +180,6 @@ interface RawPostItem {
     post_type?: number;
     board_id?: number;
     board_name?: string;
-    link_url?: string | null;
-    link_title?: string | null;
-    link_description?: string | null;
-    link_image_url?: string | null;
-    link_site_name?: string | null;
-    link_comment?: string | null;
 }
 
 function mapRawPostToPostItem(item: RawPostItem): PostItem {
@@ -202,12 +196,6 @@ function mapRawPostToPostItem(item: RawPostItem): PostItem {
         comment_count: item.comment_count ?? 0,
         board_id: item.board_id,
         board_name: item.board_name,
-        link_url: item.link_url,
-        link_title: item.link_title,
-        link_description: item.link_description,
-        link_image_url: item.link_image_url,
-        link_site_name: item.link_site_name,
-        link_comment: item.link_comment,
     };
 }
 
@@ -725,11 +713,10 @@ export const refreshTokenAPI = async (refresh: string) => {
 export const createPost = async (
     boardId: number,
     postData: {
-        title?: string;
+        title: string;
         content_md: string;
-        attachment_paths?: { path: string; name: string; }[];
+        attachment_paths: { path: string; name: string; }[];
         is_anonymous?: boolean;
-        link_url?: string;
     },
     token: string
 ) => {
@@ -798,12 +785,11 @@ export const deletePost = async (
 export const modifyPost = async (
     postId: number,
     payload: {
-        title?: string;
+        title: string;
         content_md: string;
-        attachment_paths?: { path: string; name: string; }[];
+        attachment_paths: { path: string; name: string; }[];
         board_id?: number;
         is_anonymous?: boolean;
-        link_url?: string;
     },
     token: string
 ) => {

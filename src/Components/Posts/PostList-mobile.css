@@ -291,37 +291,4 @@
     .board-description {
         display: none !important;
     }
-
-    .link-share-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .link-share-card {
-        grid-template-columns: 1fr;
-        min-height: 0;
-        border-radius: 8px;
-    }
-
-    .link-share-thumb {
-        aspect-ratio: 16 / 9;
-        min-height: 0;
-    }
-
-    .link-share-body {
-        padding: 14px;
-    }
-
-    .link-share-title {
-        font-size: 17px;
-    }
-
-    .link-share-description {
-        -webkit-line-clamp: 3;
-    }
-
-    .link-share-comment {
-        margin-top: 4px;
-        -webkit-line-clamp: 3;
-    }
 }

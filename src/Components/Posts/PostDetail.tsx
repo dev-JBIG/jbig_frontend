@@ -13,7 +13,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import {useUser} from "../Utils/UserContext";
-import { ExternalLink, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
 import { Turnstile, TurnstileInstance } from '@marsidev/react-turnstile';
@@ -253,11 +253,6 @@ const PostDetail: React.FC = () => {
                     isLiked: src.is_liked ?? false,
                     is_owner: !!src.is_owner,
                     post_type: src.post_type,
-                    link_url: src.link_url || null,
-                    link_title: src.link_title || null,
-                    link_description: src.link_description || null,
-                    link_image_url: src.link_image_url || null,
-                    link_site_name: src.link_site_name || null,
                     attachments: (src.attachment_paths || []).map((item: any, index: number) => {
                         // 객체 형태인지 문자열 형태인지 확인
                         if (typeof item === 'string') {
@@ -796,15 +791,6 @@ const PostDetail: React.FC = () => {
     // 폼 게시판(사유서·에러/피드백 제보)은 본문을 form-style로 렌더한다.
     const isFormBoard =
         post.form_type === FormType.ABSENCE || post.form_type === FormType.FEEDBACK;
-    const isLinkPost = Boolean(post.link_url);
-    const linkHost = (() => {
-        if (!post.link_url) return "";
-        try {
-            return new URL(post.link_url).hostname.replace(/^www\./, "");
-        } catch {
-            return post.link_url.replace(/^https?:\/\//, "").split("/")[0];
-        }
-    })();
 
     return (
         <div className="postdetail-container has-floating-like">
@@ -885,30 +871,7 @@ const PostDetail: React.FC = () => {
                 />
             )}
 
-            {isLinkPost && (
-                <section className="postdetail-link-preview">
-                    <div className="postdetail-link-image" aria-hidden="true">
-                        {post.link_image_url ? (
-                            <img src={post.link_image_url} alt="" />
-                        ) : (
-                            <span>{(linkHost || "L").slice(0, 1).toUpperCase()}</span>
-                        )}
-                    </div>
-                    <div className="postdetail-link-info">
-                        <div className="postdetail-link-source">
-                            {post.link_site_name || linkHost || "Link"}
-                        </div>
-                        <h3>{post.link_title || post.title}</h3>
-                        {post.link_description && <p>{post.link_description}</p>}
-                        <a href={post.link_url || "#"} target="_blank" rel="noreferrer">
-                            원문 보기 <ExternalLink size={15} />
-                        </a>
-                    </div>
-                </section>
-            )}
-
             {/* 본문 */}
-            {(!isLinkPost || post.content_md.trim()) && (
                 <div className="content-body">
                     <div className={`postdetail-content${isFormBoard ? " form-style" : ""}`}>
                         <ReactMarkdown
@@ -942,7 +905,6 @@ const PostDetail: React.FC = () => {
                         ))}
                     </div>
                 </div>
-            )}
 
             {/* 첨부파일 (사진첩 게시글은 이미지 제외) */}
             {post.attachments && post.attachments.length > 0 && (() => {
