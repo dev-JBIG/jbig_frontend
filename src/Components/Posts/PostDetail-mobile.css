@@ -103,23 +103,3 @@
         font-weight: var(--font-weight-semibold);
     }
 }
-
-@media (max-width: 767px) {
-    .postdetail-link-preview {
-        grid-template-columns: 1fr;
-        margin: 14px 0 18px;
-    }
-
-    .postdetail-link-image {
-        min-height: 0;
-        aspect-ratio: 16 / 9;
-    }
-
-    .postdetail-link-info {
-        padding: 16px;
-    }
-
-    .postdetail-link-info h3 {
-        font-size: 18px;
-    }
-}
