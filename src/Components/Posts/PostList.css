@@ -124,19 +124,19 @@
 
 /* 공지사항 스타일 */
 .announcement-row {
-    background-color: #fff4cc !important;
-    border-top: 1px solid #f2c94c !important;
-    border-bottom: 1px solid #f2c94c !important;
+    background-color: #fffbf0 !important;
+    border-top: 1px solid #ffd700 !important;
+    border-bottom: 1px solid #ffd700 !important;
 }
 
 .announcement-row:hover {
-    background-color: #ffedb3 !important;
+    background-color: #fff8e1 !important;
 }
 
 .announcement-badge {
     display: inline-block;
     padding: 2px 8px;
-    background-color: #b7791f;
+    background-color: #ff6b6b;
     color: white;
     font-size: 11px;
     font-weight: 600;
@@ -156,7 +156,7 @@
 .new-post-badge {
     display: inline-block;
     padding: 2px 5px;
-    background-color: #e03131;
+    background-color: #ff0000;
     color: white;
     font-size: 10px;
     font-weight: 700;
