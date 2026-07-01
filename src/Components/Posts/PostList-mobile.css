@@ -95,20 +95,20 @@
 
     /* 공지사항 스타일 (모바일) */
     .postlist-table tbody tr.announcement-row {
-        background-color: #fff4cc !important;
-        border: 2px solid #f2c94c !important;
-        box-shadow: 0 2px 8px rgba(242, 201, 76, 0.25) !important;
+        background-color: #fffbf0 !important;
+        border: 2px solid #ffd700 !important;
+        box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2) !important;
     }
 
     .postlist-table tbody tr.announcement-row:hover {
-        background-color: #ffedb3 !important;
-        border-color: #f2c94c !important;
+        background-color: #fff8e1 !important;
+        border-color: #ffd700 !important;
     }
 
     .announcement-badge {
         display: inline-block;
         padding: 4px 10px;
-        background-color: #b7791f;
+        background-color: #ff6b6b;
         color: white;
         font-size: 12px;
         font-weight: 600;
