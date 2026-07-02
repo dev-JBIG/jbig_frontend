@@ -797,7 +797,7 @@ const PostDetail: React.FC = () => {
             <div className="postdetail-header">
                 <div
                     className="postdetail-category postdetail-category-link"
-                    onClick={() => navigate(`/board/${boardId}`)}
+                    onClick={() => navigate(`/board/${post.board_id}`)}
                 >
                     {post.board}
                 </div>

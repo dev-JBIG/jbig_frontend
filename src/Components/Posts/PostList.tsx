@@ -320,6 +320,15 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         navigate(`/board/${boardIdRaw ?? 0}/write`);
     };
 
+    const fallbackRouteBoardId = useMemo(() => {
+        const parsedBoardId = Number(boardIdRaw);
+        return Number.isFinite(parsedBoardId) && parsedBoardId > 0
+            ? parsedBoardId
+            : activeBoardID;
+    }, [boardIdRaw, activeBoardID]);
+
+    const getPostRouteBoardId = (post: PostItem) => post.board_id ?? fallbackRouteBoardId;
+
     return (
         <div className="postlist-container">
             <div className="postlist-header">
@@ -442,10 +451,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             <tr
                                 key={p.id}
                                 onClick={() => {
-                                    const targetBoardId = isSearchPage
-                                        ? (boardIdRaw === "all" ? 0 : boardIdRaw)
-                                        : (boardIdRaw ?? 0);
-                                    navigate(`/board/${targetBoardId}/${p.id}`);
+                                    navigate(`/board/${getPostRouteBoardId(p)}/${p.id}`);
                                 }}
                             >
                                 {boardIdRaw === "all" && (
@@ -545,7 +551,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                                 key={`announcement-${p.id}`}
                                 className="announcement-row"
                                 onClick={() => {
-                                    navigate(`/board/${activeBoardID}/${p.id}`);
+                                    navigate(`/board/${getPostRouteBoardId(p)}/${p.id}`);
                                 }}
                             >
                                 <td className="th-category">
@@ -581,7 +587,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                             <tr
                                 key={p.id}
                                 onClick={() => {
-                                    navigate(`/board/${activeBoardID}/${p.id}`);
+                                    navigate(`/board/${getPostRouteBoardId(p)}/${p.id}`);
                                 }}
                             >
                                 {(activeBoardID === 0 || isHome) && (
