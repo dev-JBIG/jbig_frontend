@@ -1,13 +1,10 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {Suspense, lazy, useEffect, useRef, useState} from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "./Home.css"
 import "./Home-mobile.css"
 import MainLayout from "../Utils/MainLayout";
 import MobileNav from "../Utils/MobileNav";
 import PostList from "../Posts/PostList";
-import PostDetail from "../Posts/PostDetail";
-import PostWrite from "../Posts/PostWrite";
-import Search from "../Posts/Search";
 import {
     createCalendarEvent,
     fetchQuizUrl,
@@ -27,11 +24,16 @@ import EventModal from "../Utils/Calendar/EventModal";
 import LoginModal from "../Utils/LoginModal";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useAlert} from "../Utils/AlertContext";
-import Profile from "../Profile/Profile";
 import JbigInfo from "./JbigInfo";
 import PopupSlider from "../Utils/PopupSlider";
 import PhotoAlbumSlider from "./PhotoAlbumSlider";
 import $ from "jquery";
+
+const PostDetail = lazy(() => import("../Posts/PostDetail"));
+const PostWrite = lazy(() => import("../Posts/PostWrite"));
+const Search = lazy(() => import("../Posts/Search"));
+const Profile = lazy(() => import("../Profile/Profile"));
+const routeFallback = <div style={{ minHeight: 240 }} />;
 
 // 미디어(CDN) 베이스 URL. 운영은 REACT_APP_MEDIA_BASE_URL 로 주입(R2 + Cloudflare CDN).
 // 미설정 시 CDN 커스텀 도메인으로 폴백.
@@ -470,7 +472,9 @@ const Home: React.FC = () => {
                 </div>
             </header>
             {isProfilePage ? (
-                <Profile />
+                <Suspense fallback={routeFallback}>
+                    <Profile />
+                </Suspense>
             ) : (
             <>
             <button type="button" className="home-banner" onClick={() => navigate('/')} aria-label="홈으로 이동">
@@ -480,10 +484,14 @@ const Home: React.FC = () => {
                 <Routes>
                     {/* home-content 전체 차지하는 경로 */}
                     <Route path="board/:category/write" element={
-                        <PostWrite boards={boards}/>
+                        <Suspense fallback={routeFallback}>
+                            <PostWrite boards={boards}/>
+                        </Suspense>
                     }/>
                     <Route path="/board/:category/:id/modify" element={
-                        <PostWrite boards={boards}/>
+                        <Suspense fallback={routeFallback}>
+                            <PostWrite boards={boards}/>
+                        </Suspense>
                     }/>
                     {/* sidebar+main-area */}
                     <Route path="/" element={
@@ -509,14 +517,18 @@ const Home: React.FC = () => {
                     }/>
                     <Route path="board/:boardId/:id" element={
                         <MainLayout sidebarProps={sidebarProps}>
-                            <PostDetail/>
+                            <Suspense fallback={routeFallback}>
+                                <PostDetail/>
+                            </Suspense>
                         </MainLayout>
                     }/>
                     <Route
                         path="search/:boardId"
                         element={
                             <MainLayout sidebarProps={sidebarProps}>
-                                <Search boards={boards}/>
+                                <Suspense fallback={routeFallback}>
+                                    <Search boards={boards}/>
+                                </Suspense>
                             </MainLayout>
                         }
                     />

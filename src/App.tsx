@@ -1,11 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Home from "./Components/Home/Home";
 import "./App.css";
-import Note from "./Components/Note/Note";
 import Signin from "./Components/Signin/Signin";
 import Signup from "./Components/Signup/Signup";
-import Admin from "./Components/Admin/Admin";
 import { StaffAuthContext } from "./Components/Utils/StaffAuthContext";
 import Footer from "./Components/Footer/Footer";
 import {refreshTokenAPI} from "./API/req";
@@ -13,6 +11,8 @@ import {useUser} from "./Components/Utils/UserContext";
 import ChangePWD from "./Components/ChangePWD/ChangePWD";
 import { AlertProvider, useAlert } from "./Components/Utils/AlertContext";
 
+const Note = lazy(() => import("./Components/Note/Note"));
+const Admin = lazy(() => import("./Components/Admin/Admin"));
 const STAFF_AUTH_KEY = "jbig-staff-auth";
 
 function AppContent() {
@@ -101,8 +101,16 @@ function AppContent() {
                             <>
                                 <div className="app-content">
                                     <Routes>
-                                        <Route path="/note" element={<Note />} />
-                                        <Route path="/admin" element={<Admin />} />
+                                        <Route path="/note" element={
+                                            <Suspense fallback={<div className="app-loading" />}>
+                                                <Note />
+                                            </Suspense>
+                                        } />
+                                        <Route path="/admin" element={
+                                            <Suspense fallback={<div className="app-loading" />}>
+                                                <Admin />
+                                            </Suspense>
+                                        } />
                                         <Route path="/*" element={<Home />} />
                                     </Routes>
                                 </div>

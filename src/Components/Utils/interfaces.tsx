@@ -105,6 +105,7 @@ export interface Board {
     board_type?: number;
     form_type?: number;
     available_tags?: string[];
+    latest_post_created_at?: string | null;
 }
 
 // 모집 시스템 관련 인터페이스
