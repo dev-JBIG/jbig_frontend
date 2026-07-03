@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchPhotoAlbumPosts, PhotoPostItem } from "../../API/req";
 import { Section } from "../Utils/interfaces";
+import useInViewOnce from "../Utils/useInViewOnce";
 
 interface PhotoAlbumSliderProps {
     boards: Section[];
@@ -21,6 +22,7 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
     const [slides, setSlides] = useState<PhotoSlide[]>([]);
     const [index, setIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
+    const sliderRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     const photoBoard = useMemo(() => {
@@ -29,8 +31,13 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
         );
     }, [boards]);
 
+    const shouldLoad = useInViewOnce(sliderRef, {
+        enabled: Boolean(photoBoard?.id),
+        rootMargin: "200px 0px",
+    });
+
     useEffect(() => {
-        if (!photoBoard?.id) return;
+        if (!photoBoard?.id || !shouldLoad) return;
         let mounted = true;
         (async () => {
             try {
@@ -54,8 +61,10 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
                 if (mounted) setSlides([]);
             }
         })();
-        return () => { mounted = false; };
-    }, [photoBoard?.id]);
+        return () => {
+            mounted = false;
+        };
+    }, [photoBoard?.id, shouldLoad]);
 
     useEffect(() => {
         if (slides.length <= 1 || isPaused) return;
@@ -76,6 +85,7 @@ const PhotoAlbumSlider: React.FC<PhotoAlbumSliderProps> = ({ boards }) => {
 
     return (
         <div
+            ref={sliderRef}
             className="photo-album-slider"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}

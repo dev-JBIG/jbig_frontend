@@ -180,6 +180,8 @@ interface RawPostItem {
     post_type?: number;
     board_id?: number;
     board_name?: string;
+    tag?: string;
+    recruitment_info?: PostItem["recruitment_info"];
 }
 
 function mapRawPostToPostItem(item: RawPostItem): PostItem {
@@ -196,6 +198,8 @@ function mapRawPostToPostItem(item: RawPostItem): PostItem {
         comment_count: item.comment_count ?? 0,
         board_id: item.board_id,
         board_name: item.board_name,
+        tag: item.tag,
+        recruitment_info: item.recruitment_info ?? null,
     };
 }
 
@@ -272,8 +276,9 @@ export const signupUser = async (
 };
 
 // sidebar 게시판 목록 조회 함수
-export const getBoards = async () => {
-    const response = await axios.get(`${BASE_URL}/api/categories/`);
+export const getBoards = async (token?: string | null) => {
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+    const response = await axios.get(`${BASE_URL}/api/categories/`, config);
     return response.data;
 };
 
@@ -413,7 +418,7 @@ export const fetchPhotoAlbumPosts = async (
     limit: number = 20
 ): Promise<PhotoPostItem[]> => {
     const response = await axios.get(`${BASE_URL}/api/boards/${boardId}/posts/`, {
-        params: { page_size: limit, page: 1 },
+        params: { page_size: limit, page: 1, view: "photo" },
     });
     const raw = response.data?.results ?? response.data ?? [];
     if (!Array.isArray(raw)) return [];
@@ -1224,12 +1229,28 @@ export interface PublicProfile {
     }[];
 }
 
-export const fetchPublicProfile = async (username: string, token?: string): Promise<PublicProfile> => {
+export const fetchPublicProfile = async (
+    username: string,
+    token?: string,
+    includeActivity: boolean = false
+): Promise<PublicProfile> => {
     const url = `${BASE_URL}/api/users/profile/${username}/`;
     const res = await axios.get(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
+        params: includeActivity ? { include_activity: "1" } : undefined,
     });
     return res.data;
+};
+
+export const fetchPublicProfileActivity = async (
+    username: string,
+    token?: string
+): Promise<Pick<PublicProfile, "posts" | "comments">> => {
+    const data = await fetchPublicProfile(username, token, true);
+    return {
+        posts: Array.isArray(data.posts) ? data.posts : [],
+        comments: Array.isArray(data.comments) ? data.comments : [],
+    };
 };
 
 export const updateResume = async (resume: string, token: string): Promise<{ resume: string }> => {

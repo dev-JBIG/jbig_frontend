@@ -161,6 +161,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
             }
         }
 
+        let cancelled = false;
         const getAnnouncements = async () => {
             try {
                 const announcementBoard = boards
@@ -169,7 +170,7 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
 
                 if (!announcementBoard) {
                     // [중요] 보드 정보가 아직 안 왔더라도, 캐시된 게 있으면 지우지 않고 버팀
-                    if (!cachedAnno) setAnnouncementPosts([]);
+                    if (!cachedAnno && !cancelled) setAnnouncementPosts([]);
                     return;
                 }
 
@@ -181,16 +182,20 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     accessToken ?? undefined
                 );
 
+                if (cancelled) return;
                 // 3. 최신 데이터 받아오면 상태 업데이트 & 저장
                 setAnnouncementPosts(response.posts);
                 sessionStorage.setItem(annoCacheKey, JSON.stringify(response.posts));
             } catch {
                 // 에러 나도 캐시가 있으면 그거라도 계속 보여줌
-                if (!cachedAnno) setAnnouncementPosts([]);
+                if (!cachedAnno && !cancelled) setAnnouncementPosts([]);
             }
         };
 
         getAnnouncements();
+        return () => {
+            cancelled = true;
+        };
         
     }, [boards, activeBoardID, isSearchPage, isUserPage, accessToken, location.pathname]);
 

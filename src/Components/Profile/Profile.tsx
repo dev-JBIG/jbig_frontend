@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
-import { fetchPublicProfile, updateProfileBlocks, updateProfileHtml, PublicProfile, deleteAccount } from "../../API/req";
+import { fetchPublicProfile, fetchPublicProfileActivity, updateProfileBlocks, updateProfileHtml, PublicProfile, deleteAccount } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
 import { ProfileBlock, IdentityBlock } from "./types";
 import ProfileBlockRenderer from "./ProfileBlockRenderer/ProfileBlockRenderer";
@@ -43,6 +43,8 @@ const Profile: React.FC = () => {
 
     const [profile, setProfile] = useState<PublicProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [activityLoaded, setActivityLoaded] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [editMode, setEditMode] = useState(false);
@@ -73,6 +75,7 @@ const Profile: React.FC = () => {
         try {
             const data = await fetchPublicProfile(username, accessToken || undefined);
             setProfile(data);
+            setActivityLoaded(false);
         } catch (err: unknown) {
             const axiosErr = err as { response?: { status?: number } };
             if (axiosErr.response?.status === 404) {
@@ -88,6 +91,35 @@ const Profile: React.FC = () => {
     useEffect(() => {
         loadProfile();
     }, [loadProfile]);
+
+    useEffect(() => {
+        if (tab !== 'activity' || !username || !profile || activityLoaded || activityLoading) return;
+
+        let cancelled = false;
+        setActivityLoading(true);
+
+        fetchPublicProfileActivity(username, accessToken || undefined)
+            .then((activity) => {
+                if (cancelled) return;
+                setProfile(prev => prev ? {
+                    ...prev,
+                    posts: activity.posts,
+                    comments: activity.comments,
+                } : prev);
+                setActivityLoaded(true);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                showAlert({ message: "활동을 불러오는데 실패했습니다.", type: 'error' });
+            })
+            .finally(() => {
+                if (!cancelled) setActivityLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [tab, username, profile, activityLoaded, activityLoading, accessToken, showAlert]);
 
     const handleSaveBlocks = async (blocks: ProfileBlock[]) => {
         if (!accessToken) return;
@@ -340,7 +372,9 @@ const Profile: React.FC = () => {
                 <div className="profile-content activity-body">
                     <section className="profile-section">
                         <h2 className="section-title">작성한 게시글</h2>
-                        {profile.posts.length > 0 ? (
+                        {activityLoading ? (
+                            <p className="empty-text">불러오는 중...</p>
+                        ) : profile.posts.length > 0 ? (
                             <ul className="profile-list">
                                 {profile.posts.map((post) => (
                                     <li key={post.id} className="profile-list-item" onClick={() => navigate(`/board/${post.board_id}/${post.id}`)}>
@@ -360,7 +394,9 @@ const Profile: React.FC = () => {
 
                     <section className="profile-section">
                         <h2 className="section-title">작성한 댓글</h2>
-                        {profile.comments.length > 0 ? (
+                        {activityLoading ? (
+                            <p className="empty-text">불러오는 중...</p>
+                        ) : profile.comments.length > 0 ? (
                             <ul className="profile-list">
                                 {profile.comments.map((comment) => (
                                     <li key={comment.id} className="profile-list-item profile-comment-item" onClick={() => {

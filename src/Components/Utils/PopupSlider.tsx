@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { fetchActivePopups, PopupItem, fetchPostDetail, createComment, dismissPopup } from "../../API/req";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useUser } from "./UserContext";
 import "./PopupSlider.css";
+import scheduleIdleTask from "./scheduleIdleTask";
 
 const AUTO_CONGRATS_IMAGE_PATH = "/JBIG-Congratulation.png";
 const IMAGE_EXTENSIONS = /\.(jpe?g|png|gif|webp|svg|bmp)$/i;
@@ -37,40 +38,23 @@ const PopupSlider: React.FC = () => {
     const [postImageUrl, setPostImageUrl] = useState<string | null>(null);
     const [contentLoading, setContentLoading] = useState(false);
     const { accessToken, authReady } = useUser();
+    const mountedRef = useRef(false);
+    const postContentSeqRef = useRef(0);
 
     useEffect(() => {
-        if (!authReady) return;
-        loadPopups();
-    }, [authReady]);
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
-    const loadPopups = async () => {
-        try {
-            const data = await fetchActivePopups(accessToken);
-
-            // 비로그인: 축하 팝업 제외
-            const filtered = accessToken
-                ? data
-                : data.filter((popup: PopupItem) => !popup.auto_generated && !popup.source_post_id);
-
-            setPopups(filtered);
-
-            if (filtered.length > 0) {
-                setIsVisible(true);
-                const first = filtered[0];
-                if (first.source_post_id) {
-                    loadPostContent(first.source_post_id);
-                }
-            }
-        } catch (err) {
-            console.error('[PopupSlider] Failed to fetch popups:', err);
-        }
-    };
-
-    const loadPostContent = async (postId: number) => {
+    const loadPostContent = useCallback(async (postId: number) => {
+        const seq = ++postContentSeqRef.current;
         setContentLoading(true);
         setPostImageUrl(null);
         try {
             const data = await fetchPostDetail(postId, accessToken);
+            if (!mountedRef.current || seq !== postContentSeqRef.current) return;
             if (data && !data.unauthorized && !data.notFound) {
                 setPostContent(data.content_md || "");
                 const attachments = data.attachment_paths || [];
@@ -82,11 +66,49 @@ const PopupSlider: React.FC = () => {
                 setPostContent(null);
             }
         } catch {
+            if (!mountedRef.current || seq !== postContentSeqRef.current) return;
             setPostContent(null);
         } finally {
-            setContentLoading(false);
+            if (mountedRef.current && seq === postContentSeqRef.current) {
+                setContentLoading(false);
+            }
         }
-    };
+    }, [accessToken]);
+
+    useEffect(() => {
+        if (!authReady) return;
+        let cancelled = false;
+
+        const loadPopups = async () => {
+            try {
+                const data = await fetchActivePopups(accessToken);
+                if (cancelled || !mountedRef.current) return;
+
+                // 비로그인: 축하 팝업 제외
+                const filtered = accessToken
+                    ? data
+                    : data.filter((popup: PopupItem) => !popup.auto_generated && !popup.source_post_id);
+
+                setPopups(filtered);
+
+                if (filtered.length > 0) {
+                    setIsVisible(true);
+                    const first = filtered[0];
+                    if (first.source_post_id) {
+                        loadPostContent(first.source_post_id);
+                    }
+                }
+            } catch (err) {
+                console.error('[PopupSlider] Failed to fetch popups:', err);
+            }
+        };
+
+        const cancelLoad = scheduleIdleTask(loadPopups, { timeout: 2500, fallbackDelayMs: 1300 });
+        return () => {
+            cancelled = true;
+            cancelLoad();
+        };
+    }, [authReady, accessToken, loadPostContent]);
 
     const removeCurrentPopup = () => {
         const remaining = popups.filter((_, i) => i !== currentIndex);

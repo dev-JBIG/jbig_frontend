@@ -28,6 +28,7 @@ import JbigInfo from "./JbigInfo";
 import PopupSlider from "../Utils/PopupSlider";
 import PhotoAlbumSlider from "./PhotoAlbumSlider";
 import $ from "jquery";
+import scheduleIdleTask from "../Utils/scheduleIdleTask";
 
 const PostDetail = lazy(() => import("../Posts/PostDetail"));
 const PostWrite = lazy(() => import("../Posts/PostWrite"));
@@ -112,46 +113,66 @@ const Home: React.FC = () => {
 
     useEffect(() => {
         if (!authReady) return;
+        let cancelled = false;
+        let cancelQuizTask: (() => void) | undefined;
 
-        const run = async () => {
-            const userName = user?.username ?? "";
-            const semRaw = user?.semester;
-            const sem = semRaw !== undefined && semRaw !== null ? Number(semRaw) : NaN;
+        const nextUserName = user?.username ?? "";
+        const semRaw = user?.semester;
+        const sem = semRaw !== undefined && semRaw !== null ? Number(semRaw) : NaN;
+        const hasSession = Boolean(nextUserName && Number.isFinite(sem) && sem > 0 && accessToken);
 
-            if (!userName || !Number.isFinite(sem) || sem <= 0 || !accessToken) {
-                setUserName("");
-                setUserSemester(null);
-                setLogin(false);
-            } else {
-                setUserName(userName);
-                setUserSemester(sem);
-                setLogin(true);
-                const url = await fetchQuizUrl(accessToken);
-                if (!url) {
+        if (!hasSession || !accessToken) {
+            setUserName("");
+            setUserSemester(null);
+            setLogin(false);
+            setQuizURL("");
+        } else {
+            setUserName(nextUserName);
+            setUserSemester(sem);
+            setLogin(true);
+
+            cancelQuizTask = scheduleIdleTask(async () => {
+                try {
+                    const url = await fetchQuizUrl(accessToken);
+                    if (cancelled) return;
+                    if (!url) {
+                        setQuizURL("");
+                    } else if(url === "401") {
+                        // 토큰 만료 시 조용히 로그아웃 처리 (리다이렉션 없음)
+                        setQuizURL("");
+                        signOutLocal();
+                        setUserName("");
+                        setUserSemester(null);
+                        setLogin(false);
+                    } else{
+                        setQuizURL(url);
+                    }
+                } catch {
+                    if (cancelled) return;
                     setQuizURL("");
-                } else if(url === "401") {
-                    // 토큰 만료 시 조용히 로그아웃 처리 (리다이렉션 없음)
-                    setQuizURL("");
-                    signOutLocal();
-                    setUserName("");
-                    setUserSemester(null);
-                    setLogin(false);
-                } else{
-                    setQuizURL(url);
                 }
-            }
+            }, { timeout: 2000, fallbackDelayMs: 1200 });
+        }
 
+        const loadBoards = async () => {
             try {
-                const res = await getBoards();
+                const res = await getBoards(accessToken);
+                if (cancelled) return;
                 setBoards(Array.isArray(res?.categories) ? res.categories : []);
                 setTotalCount(typeof res?.total_post_count === "number" ? res.total_post_count : 0);
             } catch {
+                if (cancelled) return;
                 setBoards([]);
             }
         };
 
-        run();
-    }, [authReady, user, accessToken, navigate, signOutLocal]);
+        loadBoards();
+
+        return () => {
+            cancelled = true;
+            cancelQuizTask?.();
+        };
+    }, [authReady, user, accessToken, signOutLocal]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
@@ -174,22 +195,28 @@ const Home: React.FC = () => {
             return;
         }
 
+        let cancelled = false;
+
         const loadUnreadCount = async () => {
             try {
                 const count = await fetchUnreadNotificationCount(accessToken);
+                if (cancelled) return;
                 setUnreadCount(count);
             } catch (err) {
                 console.error('[Notification] Failed to fetch unread count:', err);
             }
         };
 
-        // 초기 로드
-        loadUnreadCount();
+        const cancelFirstLoad = scheduleIdleTask(loadUnreadCount, { timeout: 2500, fallbackDelayMs: 1500 });
 
         // 30초마다 알림 개수 갱신
         const interval = setInterval(loadUnreadCount, 30000);
 
-        return () => clearInterval(interval);
+        return () => {
+            cancelled = true;
+            cancelFirstLoad();
+            clearInterval(interval);
+        };
     }, [accessToken, isLogin]);
 
     // 알림 드롭다운 열 때 알림 목록 조회
