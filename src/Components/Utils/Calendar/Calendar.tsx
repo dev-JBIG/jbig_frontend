@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import $ from "jquery";
 import Swal, { SweetAlertResult } from "sweetalert2";
 import "fullcalendar/dist/fullcalendar.css";
@@ -12,7 +12,6 @@ import {deleteCalendarEvent, fetchCalendarEvents} from "../../../API/req";
 import {useUser} from "../UserContext";
 import {useAlert} from "../AlertContext";
 import {useNavigate} from "react-router-dom";
-import useInViewOnce from "../useInViewOnce";
 
 interface CalendarProps {
     staffAuth: boolean;
@@ -23,8 +22,6 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth, compact = false }) => {
     const { signOutLocal, accessToken } = useUser();
     const { showAlert } = useAlert();
     const navigate = useNavigate();
-    const calendarShellRef = useRef<HTMLDivElement>(null);
-    const shouldLoad = useInViewOnce(calendarShellRef, { rootMargin: "200px 0px" });
 
     useEffect(() => {
         $(document).on("show.bs.popover", "[data-toggle='popover']", function () {
@@ -50,7 +47,6 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth, compact = false }) => {
     }, []);
 
     useEffect(() => {
-        if (!shouldLoad) return;
         let cancelled = false;
 
         const loadEvents = async () => {
@@ -226,10 +222,10 @@ const Calendar: React.FC<CalendarProps> = ({ staffAuth, compact = false }) => {
         return () => {
             cancelled = true;
         };
-    }, [staffAuth, accessToken, signOutLocal, navigate, compact, shouldLoad, showAlert]);
+    }, [staffAuth, accessToken, signOutLocal, navigate, compact, showAlert]);
 
     return (
-        <div ref={calendarShellRef} className={`calendar-shell${compact ? " calendar-shell-compact" : ""}`}>
+        <div className={`calendar-shell${compact ? " calendar-shell-compact" : ""}`}>
             <div id="calendar"></div>
         </div>
     );
