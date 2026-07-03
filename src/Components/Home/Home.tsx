@@ -73,6 +73,14 @@ const Home: React.FC = () => {
     const location = useLocation();
 
     const isProfilePage = decodeURIComponent(location.pathname).startsWith('/@');
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const isPostWorkRoute = pathSegments[0] === 'search' || (
+        pathSegments[0] === 'board' && (
+            pathSegments[2] === 'write' ||
+            pathSegments[3] === 'modify' ||
+            (pathSegments.length === 3 && pathSegments[2] !== 'write')
+        )
+    );
 
     // WidgetBot 채팅 위젯 제거 (모바일/PC 공통)
     useEffect(() => {
@@ -571,7 +579,7 @@ const Home: React.FC = () => {
             )}
 
             {/* 팝업 슬라이더 */}
-            <PopupSlider />
+            {!isPostWorkRoute && <PopupSlider />}
             </>
             )}
             {isLoginModalOpen && (

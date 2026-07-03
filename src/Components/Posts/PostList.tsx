@@ -128,6 +128,12 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         [boards]
     );
 
+    const searchScopeBoardId = useMemo(() => {
+        if (!isSearchPage || !boardIdRaw || boardIdRaw === "all") return null;
+        const scopeId = Number(boardIdRaw);
+        return Number.isFinite(scopeId) && allBoardIds.has(scopeId) ? scopeId : null;
+    }, [isSearchPage, boardIdRaw, allBoardIds]);
+
     const activeBoardID = !isSearchPage
         ? (boardIdRaw ? Number(boardIdRaw) : 0)
         : 0; // 일반 게시판 페이지에서만 사용
@@ -244,9 +250,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
                     if (scope === "all") {
                         response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
                     } else {
-                        const scopeId = Number(scope);
-                        if (Number.isFinite(scopeId) && allBoardIds.has(scopeId)) {
-                            response = await fetchBoardSearchPosts(scopeId, q.trim(), effectivePerPage, page);
+                        if (searchScopeBoardId !== null) {
+                            response = await fetchBoardSearchPosts(searchScopeBoardId, q.trim(), effectivePerPage, page);
                         } else {
                             response = await fetchSearchPosts(q.trim(), effectivePerPage, page);
                         }
@@ -304,8 +309,8 @@ function PostList({ boards, isHome, userId }: { boards?: Section[], isHome?: boo
         getPosts();
 
     }, [
-        boards, boardIdRaw, location.pathname, location.search,
-        isHome, isUserPage, isSearchPage, q, page, effectivePerPage, allBoardIds, accessToken
+        boardIdRaw, location.pathname, location.search,
+        isHome, isUserPage, isSearchPage, q, page, effectivePerPage, searchScopeBoardId, accessToken
     ]);
 
     const displayPosts = posts ?? [];
