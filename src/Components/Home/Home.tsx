@@ -40,6 +40,46 @@ const routeFallback = <div style={{ minHeight: 240 }} />;
 // 미설정 시 CDN 커스텀 도메인으로 폴백.
 const MEDIA_BASE_URL = (process.env.REACT_APP_MEDIA_BASE_URL || "https://cdn.jbig.co.kr").replace(/\/$/, "");
 const BANNER_IMAGE_URL = `${MEDIA_BASE_URL}/static/banner.jpg`;
+const BOARDS_CACHE_PREFIX = "jbig_boards_cache";
+const DEFERRED_BOARDS_DELAY_MS = 1500;
+
+type BoardsPayload = {
+    categories: Section[];
+    total_post_count: number;
+};
+
+const normalizeBoardsPayload = (res: any): BoardsPayload => ({
+    categories: Array.isArray(res?.categories) ? res.categories : [],
+    total_post_count: typeof res?.total_post_count === "number" ? res.total_post_count : 0,
+});
+
+const getBoardsCacheKey = (
+    accessToken: string | null,
+    userIdentity: string,
+    isStaff?: boolean
+): string | null => {
+    if (!accessToken) return `${BOARDS_CACHE_PREFIX}_anonymous`;
+    if (!userIdentity) return null;
+    return `${BOARDS_CACHE_PREFIX}_${isStaff ? "staff" : "member"}_${encodeURIComponent(userIdentity)}`;
+};
+
+const readBoardsCache = (cacheKey: string | null): BoardsPayload | null => {
+    if (!cacheKey) return null;
+    try {
+        const raw = sessionStorage.getItem(cacheKey);
+        if (!raw) return null;
+        return normalizeBoardsPayload(JSON.parse(raw));
+    } catch {
+        return null;
+    }
+};
+
+const writeBoardsCache = (cacheKey: string | null, payload: BoardsPayload) => {
+    if (!cacheKey) return;
+    try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+    } catch {}
+};
 
 const removeWidgetBot = () => {
     const crateElement = document.querySelector('widgetbot-crate');
@@ -81,6 +121,12 @@ const Home: React.FC = () => {
             (pathSegments.length === 3 && pathSegments[2] !== 'write')
         )
     );
+    const shouldDeferBoards =
+        pathSegments[0] === 'board' &&
+        (
+            pathSegments.length === 2 ||
+            (pathSegments.length === 3 && pathSegments[2] !== 'write')
+        );
 
     // WidgetBot 채팅 위젯 제거 (모바일/PC 공통)
     useEffect(() => {
@@ -162,25 +208,62 @@ const Home: React.FC = () => {
             }, { timeout: 2000, fallbackDelayMs: 1200 });
         }
 
-        const loadBoards = async () => {
-            try {
-                const res = await getBoards(accessToken);
-                if (cancelled) return;
-                setBoards(Array.isArray(res?.categories) ? res.categories : []);
-                setTotalCount(typeof res?.total_post_count === "number" ? res.total_post_count : 0);
-            } catch {
-                if (cancelled) return;
-                setBoards([]);
-            }
-        };
-
-        loadBoards();
-
         return () => {
             cancelled = true;
             cancelQuizTask?.();
         };
     }, [authReady, user, accessToken, signOutLocal]);
+
+    useEffect(() => {
+        if (!authReady) return;
+
+        let cancelled = false;
+        let delayId: number | undefined;
+        let cancelIdleTask: (() => void) | undefined;
+
+        const userIdentity = user?.email || user?.username || "";
+        const cacheKey = getBoardsCacheKey(accessToken, userIdentity, user?.is_staff);
+        const cached = readBoardsCache(cacheKey);
+
+        if (shouldDeferBoards && cached) {
+            setBoards(cached.categories);
+            setTotalCount(cached.total_post_count);
+        }
+
+        const loadBoards = async () => {
+            try {
+                const nextBoards = normalizeBoardsPayload(await getBoards(accessToken));
+                if (cancelled) return;
+                setBoards(nextBoards.categories);
+                setTotalCount(nextBoards.total_post_count);
+                writeBoardsCache(cacheKey, nextBoards);
+            } catch {
+                if (cancelled || (shouldDeferBoards && cached)) return;
+                setBoards([]);
+            }
+        };
+
+        if (shouldDeferBoards) {
+            delayId = window.setTimeout(() => {
+                cancelIdleTask = scheduleIdleTask(loadBoards, { timeout: 2500, fallbackDelayMs: 1200 });
+            }, DEFERRED_BOARDS_DELAY_MS);
+        } else {
+            loadBoards();
+        }
+
+        return () => {
+            cancelled = true;
+            if (delayId) window.clearTimeout(delayId);
+            cancelIdleTask?.();
+        };
+    }, [
+        authReady,
+        accessToken,
+        user?.email,
+        user?.username,
+        user?.is_staff,
+        shouldDeferBoards,
+    ]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
