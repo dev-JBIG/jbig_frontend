@@ -118,6 +118,10 @@ const Home: React.FC = () => {
             const semRaw = user?.semester;
             const sem = semRaw !== undefined && semRaw !== null ? Number(semRaw) : NaN;
 
+            // 게시판 목록은 로그인/퀴즈와 무관하므로 먼저 요청을 시작해 병렬로 진행한다.
+            // (기존에는 퀴즈 URL 응답을 기다린 뒤에야 게시판을 불러 워터폴이 발생했다.)
+            const boardsPromise = getBoards();
+
             if (!userName || !Number.isFinite(sem) || sem <= 0 || !accessToken) {
                 setUserName("");
                 setUserSemester(null);
@@ -142,7 +146,7 @@ const Home: React.FC = () => {
             }
 
             try {
-                const res = await getBoards();
+                const res = await boardsPromise;
                 setBoards(Array.isArray(res?.categories) ? res.categories : []);
                 setTotalCount(typeof res?.total_post_count === "number" ? res.total_post_count : 0);
             } catch {

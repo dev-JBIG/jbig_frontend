@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback, memo} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, FormType } from "../Utils/interfaces";
-import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, toggleCommentLike, updateComment} from "../../API/req";
+import {createComment, deleteComment, deletePost, fetchPostDetail, fetchRecruitmentDetail, togglePostLike, toggleCommentLike, updateComment} from "../../API/req";
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
@@ -859,12 +859,12 @@ const PostDetail: React.FC = () => {
                     recruitment={post.recruitment}
                     postId={post.id}
                     onUpdate={() => {
-                        // 게시글 다시 로드
-                        fetchPostDetail(post.id, accessToken ?? undefined).then(raw => {
-                            const src = raw.post_data ?? raw;
+                        // 모집 정보만 갱신하면 되므로 본문+댓글 전체를 다시 받는
+                        // fetchPostDetail 대신 모집 상세만 가볍게 다시 불러온다.
+                        fetchRecruitmentDetail(post.id, accessToken ?? undefined).then(recruitment => {
                             setPost(prev => {
                                 if (!prev || typeof prev === "string") return prev;
-                                return { ...prev, recruitment: src.recruitment };
+                                return { ...prev, recruitment };
                             });
                         }).catch(() => {});
                     }}
