@@ -57,11 +57,25 @@
 }
 
 .calendar-shell-compact .fc-left {
+    grid-column: 1;
+    grid-row: 1;
     justify-content: flex-start;
 }
 
+.calendar-shell-compact .fc-center {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+}
+
 .calendar-shell-compact .fc-right {
+    grid-column: 3;
+    grid-row: 1;
     justify-content: flex-end;
+}
+
+.calendar-shell-compact .fc-clear {
+    display: none;
 }
 
 .calendar-shell-compact .fc-toolbar h2 {
