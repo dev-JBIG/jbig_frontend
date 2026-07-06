@@ -120,7 +120,9 @@ const Home: React.FC = () => {
 
             // 게시판 목록은 로그인/퀴즈와 무관하므로 먼저 요청을 시작해 병렬로 진행한다.
             // (기존에는 퀴즈 URL 응답을 기다린 뒤에야 게시판을 불러 워터폴이 발생했다.)
-            const boardsPromise = getBoards();
+            // 아래 await(퀴즈) 동안 이 프로미스가 거부되어도 unhandledrejection 이
+            // 뜨지 않도록 생성 시점에 catch 를 붙여 실패를 null 로 흡수한다.
+            const boardsPromise = getBoards().catch(() => null);
 
             if (!userName || !Number.isFinite(sem) || sem <= 0 || !accessToken) {
                 setUserName("");
