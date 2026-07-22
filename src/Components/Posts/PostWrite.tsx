@@ -42,8 +42,27 @@ const extractKeyFromUrl = (url: string, fallback: string): string => {
 
 const isImageByName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
 
-// 선택한 게시판의 공개범위(read_permission)에 따른 안내 문구
-const getBoardVisibilityNotice = (perm?: 'all' | 'member' | 'staff'): string | null => {
+// 게시판이 사용하는 본문 입력 폼 종류. (모집 태그 차원은 무시 — 태그는 게시판 변경 시 별도로 초기화됨)
+type FormKind = 'photo' | 'absence' | 'feedback' | 'study' | 'generic';
+const formKindOf = (board?: Board | null): FormKind => {
+    if (!board) return 'generic';
+    if (board.board_type === 4 || board.name === "사진첩") return 'photo';
+    if (board.form_type === FormType.ABSENCE) return 'absence';
+    if (board.form_type === FormType.FEEDBACK) return 'feedback';
+    if (!!board.name && STUDY_BOARD_NAME_KEYWORDS.every((kw) => board.name.includes(kw))) return 'study';
+    return 'generic';
+};
+
+// 선택한 게시판의 공개범위 안내 문구
+// board_type===3(JUSTIFICATION_LETTER: 사유서·에러/피드백 제보)은 read_permission이
+// 'all'로 저장돼 있어도 각 글은 본인+스태프로 제한되므로 board_type을 먼저 분기한다.
+const getBoardVisibilityNotice = (
+    perm?: 'all' | 'member' | 'staff',
+    boardType?: number
+): string | null => {
+    if (boardType === 3) {
+        return "🔒 제출한 글은 본인과 스태프만 볼 수 있어요";
+    }
     switch (perm) {
         case 'all':
             return "🌐 전체공개 게시판 — 로그인하지 않은 방문자도 글과 첨부파일을 볼 수 있어요";
@@ -98,9 +117,10 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     // 공개범위 안내: 수정 모드에서 activeBoard에 read_permission이 없을 수 있어 BOARD_LIST로 보완
     const boardVisibilityNotice = useMemo(() => {
         if (!activeBoard) return null;
-        const perm = activeBoard.read_permission
-            ?? BOARD_LIST.find((b) => b.id === activeBoard.id)?.read_permission;
-        return getBoardVisibilityNotice(perm);
+        const fallbackBoard = BOARD_LIST.find((b) => b.id === activeBoard.id);
+        const perm = activeBoard.read_permission ?? fallbackBoard?.read_permission;
+        const boardType = activeBoard.board_type ?? fallbackBoard?.board_type;
+        return getBoardVisibilityNotice(perm, boardType);
     }, [activeBoard, BOARD_LIST]);
 
     const filteredBoardList = useMemo(() => {
@@ -716,7 +736,22 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 <div className="postwrite-row">
                     <label>게시판</label>
                     <select className="board-select" value={activeBoard?.id ?? ""}
-                        onChange={(e) => setSelectedBoard(filteredBoardList.find((b) => b.id === Number(e.target.value)) || null)}>
+                        onChange={(e) => {
+                            const nextBoard = filteredBoardList.find((b) => b.id === Number(e.target.value)) || null;
+                            const currentKind = formKindOf(activeBoard);
+                            const nextKind = formKindOf(nextBoard);
+                            if (currentKind === nextKind || !content.trim()) {
+                                setSelectedBoard(nextBoard);
+                                return;
+                            }
+                            showConfirm({
+                                message: "게시판 작성 양식이 달라 작성 중인 본문이 초기화됩니다. 게시판을 변경할까요?",
+                                onConfirm: () => {
+                                    setContent("");
+                                    setSelectedBoard(nextBoard);
+                                },
+                            });
+                        }}>
                         <option value="" hidden>게시판 선택</option>
                         {filteredBoardList.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
