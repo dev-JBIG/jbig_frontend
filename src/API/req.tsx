@@ -700,6 +700,71 @@ export const deleteUploadedFile = async (path: string, token: string): Promise<{
     }
 };
 
+// 관리자: 게시판 목록(공개범위 포함) 조회
+export interface AdminBoard {
+    id: number;
+    name: string;
+    category: number;
+    category_name: string;
+    board_type: number;
+    form_type: number;
+    read_permission: "all" | "member" | "staff";
+    post_permission: string;
+    comment_permission: string;
+}
+
+export const getAdminBoards = async (token: string): Promise<AdminBoard[]> => {
+    const response = await axios.get(`${BASE_URL}/api/admin/boards/`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data as AdminBoard[];
+};
+
+// 관리자: 게시판 공개범위(read_permission) 변경
+export const updateBoardReadPermission = async (
+    token: string,
+    boardId: number,
+    readPermission: "all" | "member" | "staff"
+): Promise<{ success: boolean; message?: string }> => {
+    try {
+        await axios.patch(
+            `${BASE_URL}/api/admin/boards/${boardId}/`,
+            { read_permission: readPermission },
+            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+        );
+        return { success: true };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "게시판 공개범위 변경에 실패했습니다.") };
+    }
+};
+
+// 권한 게이트된 첨부파일 다운로드
+// 회원전용/스태프 게시판의 첨부는 공개 URL이 아니라 인증이 필요한 백엔드 엔드포인트로
+// 내려오므로, Authorization 헤더를 실은 요청으로 blob을 받아 브라우저 저장을 트리거한다.
+export const downloadGatedAttachment = async (
+    url: string,
+    fileName: string,
+    token: string
+): Promise<{ success: boolean; message?: string }> => {
+    try {
+        const response = await axios.get(url, {
+            headers: { Authorization: `Bearer ${token}` },
+            responseType: "blob",
+        });
+        const blobUrl = window.URL.createObjectURL(response.data);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName || "download";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(blobUrl);
+        return { success: true };
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "파일 다운로드에 실패했습니다.") };
+    }
+};
+
 // 토큰 갱신
 export const refreshTokenAPI = async (refresh: string) => {
     try {

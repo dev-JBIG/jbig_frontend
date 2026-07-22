@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback, memo} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PostDetailData, FormType } from "../Utils/interfaces";
-import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, toggleCommentLike, updateComment} from "../../API/req";
+import {createComment, deleteComment, deletePost, fetchPostDetail, togglePostLike, toggleCommentLike, updateComment, downloadGatedAttachment} from "../../API/req";
 import "./PostDetail.css";
 import "./PostDetail-mobile.css";
 import "./PostDetail-comments.css";
@@ -99,6 +99,20 @@ const PostDetail: React.FC = () => {
     const { accessToken, authReady, signOutLocal } = useUser();
     const { staffAuth } = useStaffAuth();
     const { showAlert, showConfirm } = useAlert();
+
+    // 권한 게이트된 첨부(회원전용/스태프 게시판)는 공개 URL이 아니라 인증이 필요한
+    // 백엔드 엔드포인트로만 받을 수 있어, Authorization 헤더를 실은 요청으로 다운로드한다.
+    const handleGatedDownload = useCallback(async (e: React.MouseEvent, fileUrl: string, fileName: string) => {
+        e.preventDefault();
+        if (!accessToken) {
+            showAlert({ message: "로그인이 필요합니다.", type: 'warning' });
+            return;
+        }
+        const res = await downloadGatedAttachment(fileUrl, fileName, accessToken);
+        if (!res.success) {
+            showAlert({ message: res.message || "파일 다운로드에 실패했습니다.", type: 'error' });
+        }
+    }, [accessToken, showAlert]);
 
     
 
@@ -271,6 +285,7 @@ const PostDetail: React.FC = () => {
                                 fileUrl: item.url,
                                 fileName: item.name,
                                 fileType: ext(item.name),
+                                gated: !!item.gated,
                             };
                         }
                     }),
@@ -917,7 +932,12 @@ const PostDetail: React.FC = () => {
                         <ul>
                             {filtered.map(att => (
                                 <li key={att.id}>
-                                    <a href={att.fileUrl} target="_blank" rel="noopener noreferrer">
+                                    <a
+                                        href={att.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={att.gated ? (e) => handleGatedDownload(e, att.fileUrl, att.fileName) : undefined}
+                                    >
                                         {att.fileName}
                                         {att.fileType && (
                                             <span className="file-type"> ({att.fileType})</span>

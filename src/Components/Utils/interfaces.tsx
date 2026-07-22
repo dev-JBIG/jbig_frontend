@@ -24,12 +24,17 @@ export interface Attachment {
     fileUrl: string;
     fileType?: string;
     fileSize?: number;
+    // 회원전용/스태프 게시판의 첨부는 권한 게이트된 백엔드 엔드포인트를 통해서만
+    // 받을 수 있다(공개 URL 아님). true면 인증 요청으로 다운로드해야 한다.
+    gated?: boolean;
 }
 
 // API에서 받는 첨부파일 객체 타입
 export interface AttachmentData {
     url: string;
     name: string;
+    size?: number;
+    gated?: boolean;
 }
 
 export interface Comment {
@@ -106,6 +111,8 @@ export interface Board {
     form_type?: number;
     available_tags?: string[];
     latest_post_created_at?: string | null;
+    // 공개범위: 'all'(전체공개) | 'member'(회원전용) | 'staff'(스태프전용)
+    read_permission?: 'all' | 'member' | 'staff';
 }
 
 // 모집 시스템 관련 인터페이스
