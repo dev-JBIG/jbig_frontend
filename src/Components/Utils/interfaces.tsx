@@ -77,6 +77,8 @@ export interface PostDetailData {
     board_id: number;
     board_type: number;
     form_type?: number;
+    // 게시판 공개범위(BoardSerializer.read_scope): 'all'(전체공개) | 'member'(회원전용) | 'staff'(스태프전용)
+    board_read_scope?: 'all' | 'member' | 'staff';
     title: string;
     content_html: string;
     content_md: string;
