@@ -1,11 +1,13 @@
 import React from "react";
 import "../Home/Home.css"
-import { SidebarProps } from "./interfaces";
-import {FileText, SquareCheckBig } from "lucide-react";
+import { SidebarProps, Board } from "./interfaces";
+import {FileText, SquareCheckBig, Lock } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { getBoardIcon } from "./boardIcons";
+import { useUser } from "./UserContext";
+import { useAlert } from "./AlertContext";
 
 /**
  * 게시글이 24시간 이내에 작성되었는지 확인하는 함수
@@ -29,6 +31,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                                              totalCount,
                                              navigate
                                          }) => {
+    const { accessToken, user } = useUser();
+    const { showAlert } = useAlert();
+
+    // read_permission 미지정은 'all'(전체공개)로 취급해 하위호환 유지
+    const isBoardLocked = (board: Board): boolean =>
+        (board.read_permission === 'member' && !accessToken) ||
+        (board.read_permission === 'staff' && !(user?.is_staff));
+
+    const handleBoardClick = (board: Board) => {
+        if (board.read_permission === 'member' && !accessToken) {
+            showAlert({ message: '회원 전용 게시판입니다. 로그인 후 이용해주세요.', type: 'warning' });
+            navigate("/signin");
+            return;
+        }
+        if (board.read_permission === 'staff' && !(user?.is_staff)) {
+            showAlert({ message: '스태프 전용 게시판입니다.', type: 'warning' });
+            return;
+        }
+        navigate(`/board/${board.id}`);
+    };
+
     return (
         <aside className="sidebar">
             <div className="sidebar-top-divider" />
@@ -69,14 +92,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {section.boards.map((board) => {
                             const IconComponent = getBoardIcon(board.name);
                             const hasNewPost = isNewPost(board.latest_post_created_at);
+                            const locked = isBoardLocked(board);
                             return (
                                 <li
                                     key={board.id}
-                                    onClick={() => navigate(`/board/${board.id}`)}
+                                    onClick={() => handleBoardClick(board)}
                                 >
                                     <div className="board-item-content">
                                         <IconComponent className="board-icon" size={18} />
                                         {board.name}
+                                        {locked && (
+                                            <Lock
+                                                size={14}
+                                                color="#999"
+                                                style={{ marginLeft: 4, verticalAlign: "middle", flexShrink: 0 }}
+                                            />
+                                        )}
                                     </div>
                                     {hasNewPost && <span className="sidebar-new-badge">N</span>}
                                 </li>

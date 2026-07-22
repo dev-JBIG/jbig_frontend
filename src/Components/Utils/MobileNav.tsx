@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Menu, X, FileText, SquareCheckBig } from "lucide-react";
+import { Menu, X, FileText, SquareCheckBig, Lock } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
-import { Section } from "./interfaces";
+import { Section, Board } from "./interfaces";
 import { getBoardIcon } from "./boardIcons";
+import { useUser } from "./UserContext";
+import { useAlert } from "./AlertContext";
 import "./MobileNav.css";
 
 interface MobileNavProps {
@@ -26,10 +28,31 @@ const MobileNav: React.FC<MobileNavProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { accessToken, user } = useUser();
+  const { showAlert } = useAlert();
 
   const handleNavigate = (path: string) => {
     navigate(path);
     setIsOpen(false);
+  };
+
+  // read_permission 미지정은 'all'(전체공개)로 취급해 하위호환 유지
+  const isBoardLocked = (board: Board): boolean =>
+    (board.read_permission === 'member' && !accessToken) ||
+    (board.read_permission === 'staff' && !(user?.is_staff));
+
+  const handleBoardClick = (board: Board) => {
+    if (board.read_permission === 'member' && !accessToken) {
+      showAlert({ message: '회원 전용 게시판입니다. 로그인 후 이용해주세요.', type: 'warning' });
+      handleNavigate("/signin");
+      return;
+    }
+    if (board.read_permission === 'staff' && !(user?.is_staff)) {
+      showAlert({ message: '스태프 전용 게시판입니다.', type: 'warning' });
+      setIsOpen(false);
+      return;
+    }
+    handleNavigate(`/board/${board.id}`);
   };
 
   const handleSearch = () => {
@@ -143,15 +166,23 @@ const MobileNav: React.FC<MobileNavProps> = ({
                   <div className="mobile-nav-section">
                     {section.boards.map((board) => {
                       const IconComponent = getBoardIcon(board.name);
+                      const locked = isBoardLocked(board);
                       return (
                         <div
                           key={board.id}
                           className="mobile-nav-item"
-                          onClick={() => handleNavigate(`/board/${board.id}`)}
+                          onClick={() => handleBoardClick(board)}
                         >
                           <div className="mobile-nav-item-content">
                             <IconComponent size={18} />
                             <span>{board.name}</span>
+                            {locked && (
+                              <Lock
+                                size={14}
+                                color="#999"
+                                style={{ marginLeft: 4, verticalAlign: "middle", flexShrink: 0 }}
+                              />
+                            )}
                           </div>
                         </div>
                       );
