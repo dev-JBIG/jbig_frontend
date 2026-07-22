@@ -42,6 +42,20 @@ const extractKeyFromUrl = (url: string, fallback: string): string => {
 
 const isImageByName = (name: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
 
+// 선택한 게시판의 공개범위(read_permission)에 따른 안내 문구
+const getBoardVisibilityNotice = (perm?: 'all' | 'member' | 'staff'): string | null => {
+    switch (perm) {
+        case 'all':
+            return "🌐 전체공개 게시판 — 로그인하지 않은 방문자도 글과 첨부파일을 볼 수 있어요";
+        case 'member':
+            return "🔒 회원전용 게시판 — 로그인한 회원만 글과 첨부파일을 볼 수 있어요";
+        case 'staff':
+            return "🔒 스태프전용 게시판 — 스태프만 글을 볼 수 있어요";
+        default:
+            return null;
+    }
+};
+
 const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
@@ -80,6 +94,14 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         [selectedBoard, BOARD_LIST, category]
     );
     const isPhotoBoard = !!(activeBoard && (activeBoard.board_type === 4 || activeBoard.name === "사진첩"));
+
+    // 공개범위 안내: 수정 모드에서 activeBoard에 read_permission이 없을 수 있어 BOARD_LIST로 보완
+    const boardVisibilityNotice = useMemo(() => {
+        if (!activeBoard) return null;
+        const perm = activeBoard.read_permission
+            ?? BOARD_LIST.find((b) => b.id === activeBoard.id)?.read_permission;
+        return getBoardVisibilityNotice(perm);
+    }, [activeBoard, BOARD_LIST]);
 
     const filteredBoardList = useMemo(() => {
         if (staffAuth) return BOARD_LIST;
@@ -698,6 +720,23 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                         <option value="" hidden>게시판 선택</option>
                         {filteredBoardList.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
+                </div>
+            )}
+
+            {boardVisibilityNotice && (
+                <div
+                    className="postwrite-visibility-notice"
+                    style={{
+                        fontSize: '12.5px',
+                        color: '#64748b',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        padding: '7px 10px',
+                        marginTop: '-8px',
+                    }}
+                >
+                    {boardVisibilityNotice}
                 </div>
             )}
 

@@ -79,6 +79,20 @@ const LikePlusOne = memo(({ triggerKey, count, isLiked }: { triggerKey: number; 
     );
 });
 
+// 댓글 작성 위치에 표시할 공개범위 안내 문구 (board.read_scope 기준)
+const getCommentVisibilityHint = (scope?: 'all' | 'member' | 'staff'): string | null => {
+    switch (scope) {
+        case 'all':
+            return "이 게시판의 댓글은 비회원에게도 공개됩니다";
+        case 'member':
+            return "회원전용 게시판 — 댓글은 로그인한 회원에게만 보입니다";
+        case 'staff':
+            return "스태프전용 게시판입니다";
+        default:
+            return null;
+    }
+};
+
 const PostDetail: React.FC = () => {
     const { boardId, id: postId } = useParams();
     const navigate = useNavigate();
@@ -254,6 +268,7 @@ const PostDetail: React.FC = () => {
                     board_id: src.board_id || src.board?.id,
                     board_type: src.board?.board_type ?? 1,
                     form_type: src.board?.form_type ?? 0,
+                    board_read_scope: src.board?.read_scope,
                     author_semester: src.author_semester,
                     title: src.title || "",
                     content_html: src.content_html || "",
@@ -1217,6 +1232,11 @@ const PostDetail: React.FC = () => {
 
                 <div className="postdetail-comment-input-row">
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px' }}>
+                        {getCommentVisibilityHint(post.board_read_scope) && (
+                            <span style={{ fontSize: '0.8em', color: '#888' }}>
+                                {getCommentVisibilityHint(post.board_read_scope)}
+                            </span>
+                        )}
                         <textarea
                             className="postdetail-comment-input"
                             rows={1}
