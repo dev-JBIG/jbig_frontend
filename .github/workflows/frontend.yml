@@ -43,6 +43,9 @@ jobs:
   deploy:
     name: Deploy to Server
     needs: ci
+    # PR 이벤트에서는 빌드 검증(ci)만 수행하고, 실제 서버 배포는 main 푸시(머지)에서만 실행한다.
+    # 가드가 없으면 main으로 향하는 PR을 여는 것만으로 프로덕션에 배포된다.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
