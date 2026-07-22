@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { useAlert } from "../Utils/AlertContext";
-import { 
-    fetchSiteSettings, 
+import {
+    fetchSiteSettings,
     updateSiteSettings,
     fetchAllPopups,
     createPopup,
@@ -12,7 +12,10 @@ import {
     deletePopup,
     PopupItem,
     PopupCreate,
-    uploadAttachment
+    uploadAttachment,
+    getAdminBoards,
+    updateBoardReadPermission,
+    AdminBoard
 } from "../../API/req";
 import { Menu, X, Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import "./Admin.css";
@@ -235,6 +238,112 @@ function Dashboard() {
                 <p style={{ color: '#666', marginTop: 12 }}>
                     왼쪽 메뉴에서 관리할 항목을 선택하세요.
                 </p>
+            </div>
+        </>
+    );
+}
+
+const READ_PERMISSION_OPTIONS: { value: "all" | "member" | "staff"; label: string }[] = [
+    { value: "all", label: "전체공개 (비회원 포함)" },
+    { value: "member", label: "회원전용 (로그인 회원)" },
+    { value: "staff", label: "스태프전용" },
+];
+
+function BoardManagement({ accessToken }: { accessToken: string }) {
+    const [boards, setBoards] = useState<AdminBoard[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [savingId, setSavingId] = useState<number | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const data = await getAdminBoards(accessToken);
+                setBoards(data);
+            } catch {
+                setMessage({ type: 'error', text: '게시판 목록을 불러오는데 실패했습니다.' });
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [accessToken]);
+
+    const handleChange = async (board: AdminBoard, value: "all" | "member" | "staff") => {
+        const prev = board.read_permission;
+        if (prev === value) return;
+        setSavingId(board.id);
+        setMessage(null);
+        // 낙관적 업데이트
+        setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, read_permission: value } : b)));
+        const res = await updateBoardReadPermission(accessToken, board.id, value);
+        if (res.success) {
+            setMessage({ type: 'success', text: `'${board.name}' 공개범위를 변경했습니다.` });
+        } else {
+            // 실패 시 롤백
+            setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, read_permission: prev } : b)));
+            setMessage({ type: 'error', text: res.message || '공개범위 변경에 실패했습니다.' });
+        }
+        setSavingId(null);
+    };
+
+    // 카테고리별 그룹핑 (서버가 category__id, name 순으로 정렬해 내려준다)
+    const grouped: { category: string; list: AdminBoard[] }[] = [];
+    boards.forEach((b) => {
+        const key = b.category_name || '기타';
+        const bucket = grouped.find((g) => g.category === key);
+        if (bucket) bucket.list.push(b);
+        else grouped.push({ category: key, list: [b] });
+    });
+
+    if (loading) {
+        return (
+            <>
+                <h2 className="admin-content-header">게시판 관리</h2>
+                <div className="admin-card"><p>로딩 중...</p></div>
+            </>
+        );
+    }
+
+    return (
+        <>
+            <h2 className="admin-content-header">게시판 관리</h2>
+            <div className="admin-card">
+                <h3 className="card-title">게시판 공개범위</h3>
+                <p className="form-hint" style={{ marginBottom: 16 }}>
+                    게시판별로 열람 범위를 지정합니다. 회원전용·스태프전용 게시판의 글과 첨부파일은
+                    비회원에게 노출되지 않으며, 첨부파일은 권한 확인 후에만 다운로드됩니다.
+                </p>
+                {message && (
+                    <div className={`admin-message ${message.type}`}>{message.text}</div>
+                )}
+                {grouped.map(({ category, list }) => (
+                    <div key={category} style={{ marginBottom: 20 }}>
+                        <h4 style={{ margin: '12px 0 8px', color: '#444' }}>{category}</h4>
+                        {list.map((board) => (
+                            <div
+                                key={board.id}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    gap: 12, padding: '10px 0', borderBottom: '1px solid #eee',
+                                }}
+                            >
+                                <span style={{ fontWeight: 500 }}>{board.name}</span>
+                                <select
+                                    className="admin-input"
+                                    style={{ maxWidth: 220 }}
+                                    value={board.read_permission}
+                                    disabled={savingId === board.id}
+                                    onChange={(e) => handleChange(board, e.target.value as "all" | "member" | "staff")}
+                                >
+                                    {READ_PERMISSION_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ))}
+                    </div>
+                ))}
             </div>
         </>
     );
@@ -734,6 +843,7 @@ function Admin() {
 
     const adminMenus = [
         { id: "dashboard", name: "대시보드" },
+        { id: "boards", name: "게시판 관리" },
         { id: "settings", name: "사이트 설정" },
         { id: "popups", name: "팝업 관리" },
     ];
@@ -750,6 +860,8 @@ function Admin() {
     const renderContent = () => {
         if (!accessToken) return null;
         switch (currentPage) {
+            case "boards":
+                return <BoardManagement accessToken={accessToken} />;
             case "settings":
                 return <SettingsManagement accessToken={accessToken} />;
             case "popups":
