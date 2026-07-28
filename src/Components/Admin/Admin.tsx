@@ -14,8 +14,10 @@ import {
     PopupCreate,
     uploadAttachment,
     getAdminBoards,
-    updateBoardReadPermission,
-    AdminBoard
+    updateBoardPermissions,
+    AdminBoard,
+    BoardReadPermission,
+    BoardTwoLevelPermission
 } from "../../API/req";
 import { Menu, X, Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import "./Admin.css";
@@ -243,11 +245,44 @@ function Dashboard() {
     );
 }
 
-const READ_PERMISSION_OPTIONS: { value: "all" | "member" | "staff"; label: string }[] = [
+const READ_PERMISSION_OPTIONS: { value: BoardReadPermission; label: string }[] = [
     { value: "all", label: "전체공개 (비회원 포함)" },
     { value: "member", label: "회원전용 (로그인 회원)" },
+    { value: "author", label: "본인+스태프" },
     { value: "staff", label: "스태프전용" },
 ];
+
+const TWO_LEVEL_OPTIONS: { value: BoardTwoLevelPermission; label: string }[] = [
+    { value: "all", label: "회원" },
+    { value: "staff", label: "스태프만" },
+];
+
+// 게시판 유형별로 선택 가능한 조회 범위와 안내 문구. 백엔드 BoardAdminSerializer의
+// validate_read_permission과 같은 규칙 — 사진첩(4)은 이미지 렌더링 특성상 전체공개만,
+// 사유서형(3)은 글 단위 잠금(본인+스태프)이 전제라 'author'로 고정된다.
+const getBoardPolicy = (board: AdminBoard) => {
+    if (board.board_type === 4) {
+        return {
+            readOptions: READ_PERMISSION_OPTIONS.filter((o) => o.value === "all"),
+            hint: "이미지 렌더링 특성상 전체공개만 지원해요",
+        };
+    }
+    if (board.board_type === 3) {
+        return {
+            readOptions: READ_PERMISSION_OPTIONS.filter((o) => o.value === "author"),
+            hint: "제출형 게시판 — 글은 작성자 본인과 스태프만 볼 수 있어요",
+        };
+    }
+    return { readOptions: READ_PERMISSION_OPTIONS, hint: null };
+};
+
+type PermissionField = "read_permission" | "post_permission" | "comment_permission";
+
+const PERMISSION_FIELD_LABELS: Record<PermissionField, string> = {
+    read_permission: "조회",
+    post_permission: "작성",
+    comment_permission: "댓글",
+};
 
 function BoardManagement({ accessToken }: { accessToken: string }) {
     const [boards, setBoards] = useState<AdminBoard[]>([]);
@@ -269,20 +304,20 @@ function BoardManagement({ accessToken }: { accessToken: string }) {
         load();
     }, [accessToken]);
 
-    const handleChange = async (board: AdminBoard, value: "all" | "member" | "staff") => {
-        const prev = board.read_permission;
+    const handleChange = async (board: AdminBoard, field: PermissionField, value: string) => {
+        const prev = board[field];
         if (prev === value) return;
         setSavingId(board.id);
         setMessage(null);
         // 낙관적 업데이트
-        setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, read_permission: value } : b)));
-        const res = await updateBoardReadPermission(accessToken, board.id, value);
+        setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, [field]: value } : b)));
+        const res = await updateBoardPermissions(accessToken, board.id, { [field]: value });
         if (res.success) {
-            setMessage({ type: 'success', text: `'${board.name}' 공개범위를 변경했습니다.` });
+            setMessage({ type: 'success', text: `'${board.name}' ${PERMISSION_FIELD_LABELS[field]} 권한을 변경했습니다.` });
         } else {
             // 실패 시 롤백
-            setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, read_permission: prev } : b)));
-            setMessage({ type: 'error', text: res.message || '공개범위 변경에 실패했습니다.' });
+            setBoards((bs) => bs.map((b) => (b.id === board.id ? { ...b, [field]: prev } : b)));
+            setMessage({ type: 'error', text: res.message || '권한 변경에 실패했습니다.' });
         }
         setSavingId(null);
     };
@@ -305,14 +340,18 @@ function BoardManagement({ accessToken }: { accessToken: string }) {
         );
     }
 
+    const selectStyle = { minWidth: 0 } as const;
+    const cellLabelStyle = { fontSize: 11, color: '#999', marginBottom: 2 } as const;
+
     return (
         <>
             <h2 className="admin-content-header">게시판 관리</h2>
             <div className="admin-card">
-                <h3 className="card-title">게시판 공개범위</h3>
+                <h3 className="card-title">게시판 권한</h3>
                 <p className="form-hint" style={{ marginBottom: 16 }}>
-                    게시판별로 열람 범위를 지정합니다. 회원전용·스태프전용 게시판의 글과 첨부파일은
-                    비회원에게 노출되지 않으며, 첨부파일은 권한 확인 후에만 다운로드됩니다.
+                    게시판별로 조회·작성·댓글 권한을 지정합니다. 조회의 '본인+스태프'는 회원이
+                    제출은 할 수 있지만 글은 작성자 본인과 스태프만 볼 수 있는 범위입니다.
+                    비공개 범위 게시판의 글과 첨부파일은 권한 확인 후에만 내려갑니다.
                 </p>
                 {message && (
                     <div className={`admin-message ${message.type}`}>{message.text}</div>
@@ -320,28 +359,70 @@ function BoardManagement({ accessToken }: { accessToken: string }) {
                 {grouped.map(({ category, list }) => (
                     <div key={category} style={{ marginBottom: 20 }}>
                         <h4 style={{ margin: '12px 0 8px', color: '#444' }}>{category}</h4>
-                        {list.map((board) => (
-                            <div
-                                key={board.id}
-                                style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    gap: 12, padding: '10px 0', borderBottom: '1px solid #eee',
-                                }}
-                            >
-                                <span style={{ fontWeight: 500 }}>{board.name}</span>
-                                <select
-                                    className="admin-input"
-                                    style={{ maxWidth: 220 }}
-                                    value={board.read_permission}
-                                    disabled={savingId === board.id}
-                                    onChange={(e) => handleChange(board, e.target.value as "all" | "member" | "staff")}
+                        {list.map((board) => {
+                            const policy = getBoardPolicy(board);
+                            const saving = savingId === board.id;
+                            return (
+                                <div
+                                    key={board.id}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        flexWrap: 'wrap', gap: 12, padding: '10px 0', borderBottom: '1px solid #eee',
+                                    }}
                                 >
-                                    {READ_PERMISSION_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        ))}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 140 }}>
+                                        <span style={{ fontWeight: 500 }}>{board.name}</span>
+                                        {policy.hint && (
+                                            <span style={{ fontSize: 12, color: '#888' }}>🔒 {policy.hint}</span>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', width: 180 }}>
+                                            <span style={cellLabelStyle}>조회</span>
+                                            <select
+                                                className="admin-input"
+                                                style={selectStyle}
+                                                value={board.read_permission}
+                                                disabled={saving || policy.readOptions.length <= 1}
+                                                onChange={(e) => handleChange(board, 'read_permission', e.target.value)}
+                                            >
+                                                {policy.readOptions.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', width: 110 }}>
+                                            <span style={cellLabelStyle}>작성</span>
+                                            <select
+                                                className="admin-input"
+                                                style={selectStyle}
+                                                value={board.post_permission}
+                                                disabled={saving}
+                                                onChange={(e) => handleChange(board, 'post_permission', e.target.value)}
+                                            >
+                                                {TWO_LEVEL_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', width: 110 }}>
+                                            <span style={cellLabelStyle}>댓글</span>
+                                            <select
+                                                className="admin-input"
+                                                style={selectStyle}
+                                                value={board.comment_permission}
+                                                disabled={saving}
+                                                onChange={(e) => handleChange(board, 'comment_permission', e.target.value)}
+                                            >
+                                                {TWO_LEVEL_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 ))}
             </div>

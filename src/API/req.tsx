@@ -700,7 +700,10 @@ export const deleteUploadedFile = async (path: string, token: string): Promise<{
     }
 };
 
-// 관리자: 게시판 목록(공개범위 포함) 조회
+// 관리자: 게시판 목록(권한 매트릭스 포함) 조회
+export type BoardReadPermission = "all" | "member" | "author" | "staff";
+export type BoardTwoLevelPermission = "all" | "staff";
+
 export interface AdminBoard {
     id: number;
     name: string;
@@ -708,9 +711,9 @@ export interface AdminBoard {
     category_name: string;
     board_type: number;
     form_type: number;
-    read_permission: "all" | "member" | "staff";
-    post_permission: string;
-    comment_permission: string;
+    read_permission: BoardReadPermission;
+    post_permission: BoardTwoLevelPermission;
+    comment_permission: BoardTwoLevelPermission;
 }
 
 export const getAdminBoards = async (token: string): Promise<AdminBoard[]> => {
@@ -720,21 +723,21 @@ export const getAdminBoards = async (token: string): Promise<AdminBoard[]> => {
     return response.data as AdminBoard[];
 };
 
-// 관리자: 게시판 공개범위(read_permission) 변경
-export const updateBoardReadPermission = async (
+// 관리자: 게시판 권한(조회/작성/댓글) 변경 — 바꿀 필드만 부분 PATCH
+export const updateBoardPermissions = async (
     token: string,
     boardId: number,
-    readPermission: "all" | "member" | "staff"
+    patch: Partial<Pick<AdminBoard, "read_permission" | "post_permission" | "comment_permission">>
 ): Promise<{ success: boolean; message?: string }> => {
     try {
         await axios.patch(
             `${BASE_URL}/api/admin/boards/${boardId}/`,
-            { read_permission: readPermission },
+            patch,
             { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
         );
         return { success: true };
     } catch (error: unknown) {
-        return { success: false, message: getErrorMessage(error, "게시판 공개범위 변경에 실패했습니다.") };
+        return { success: false, message: getErrorMessage(error, "게시판 권한 변경에 실패했습니다.") };
     }
 };
 
