@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useUser } from "../Utils/UserContext";
 import { fetchPublicProfile, fetchPublicProfileActivity, updateProfileBlocks, updateProfileHtml, PublicProfile, deleteAccount } from "../../API/req";
@@ -45,6 +45,7 @@ const Profile: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activityLoading, setActivityLoading] = useState(false);
     const [activityLoaded, setActivityLoaded] = useState(false);
+    const activityFetchingRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
 
     const [editMode, setEditMode] = useState(false);
@@ -93,7 +94,12 @@ const Profile: React.FC = () => {
     }, [loadProfile]);
 
     useEffect(() => {
-        if (tab !== 'activity' || !username || !profile || activityLoaded || activityLoading) return;
+        if (tab !== 'activity' || !username || !profile || activityLoaded) return;
+        // 인플라이트 가드는 state가 아니라 ref로 관리한다. activityLoading을 의존성에
+        // 넣으면 setActivityLoading(true)가 이펙트를 재실행시켜 cleanup이 첫 요청을
+        // cancelled 처리하고, finally의 로딩 해제까지 건너뛰어 영구 로딩에 빠진다.
+        if (activityFetchingRef.current) return;
+        activityFetchingRef.current = true;
 
         let cancelled = false;
         setActivityLoading(true);
@@ -113,13 +119,14 @@ const Profile: React.FC = () => {
                 showAlert({ message: "활동을 불러오는데 실패했습니다.", type: 'error' });
             })
             .finally(() => {
-                if (!cancelled) setActivityLoading(false);
+                activityFetchingRef.current = false;
+                setActivityLoading(false);
             });
 
         return () => {
             cancelled = true;
         };
-    }, [tab, username, profile, activityLoaded, activityLoading, accessToken, showAlert]);
+    }, [tab, username, profile, activityLoaded, accessToken, showAlert]);
 
     const handleSaveBlocks = async (blocks: ProfileBlock[]) => {
         if (!accessToken) return;
