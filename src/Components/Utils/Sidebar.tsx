@@ -35,12 +35,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     const { showAlert } = useAlert();
 
     // read_permission 미지정은 'all'(전체공개)로 취급해 하위호환 유지
+    // 'author'(본인+스태프) 게시판은 진입 자체는 회원 전체에게 열린다(제출·본인 글 확인용).
+    const requiresLogin = (board: Board): boolean =>
+        board.read_permission === 'member' || board.read_permission === 'author';
+
     const isBoardLocked = (board: Board): boolean =>
-        (board.read_permission === 'member' && !accessToken) ||
+        (requiresLogin(board) && !accessToken) ||
         (board.read_permission === 'staff' && !(user?.is_staff));
 
     const handleBoardClick = (board: Board) => {
-        if (board.read_permission === 'member' && !accessToken) {
+        if (requiresLogin(board) && !accessToken) {
             showAlert({ message: '회원 전용 게시판입니다. 로그인 후 이용해주세요.', type: 'warning' });
             navigate("/signin");
             return;

@@ -83,7 +83,7 @@ const LikePlusOne = memo(({ triggerKey, count, isLiked }: { triggerKey: number; 
 // post_type(1=DEFAULT, 2=STAFF_ONLY, 3=JUSTIFICATION_LETTER)이 글 단위 접근 제한을
 // 결정하므로 board.read_scope보다 먼저 분기한다.
 const getCommentVisibilityHint = (
-    scope?: 'all' | 'member' | 'staff',
+    scope?: 'all' | 'member' | 'author' | 'staff',
     postType?: number
 ): string | null => {
     if (postType === 3) {
@@ -97,6 +97,8 @@ const getCommentVisibilityHint = (
             return "이 게시판의 댓글은 비회원에게도 공개됩니다";
         case 'member':
             return "회원전용 게시판 — 댓글은 로그인한 회원에게만 보입니다";
+        case 'author':
+            return "이 글과 댓글은 본인과 스태프만 볼 수 있습니다";
         case 'staff':
             return "스태프전용 게시판입니다";
         default:

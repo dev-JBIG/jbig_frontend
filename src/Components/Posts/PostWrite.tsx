@@ -54,13 +54,13 @@ const formKindOf = (board?: Board | null): FormKind => {
 };
 
 // 선택한 게시판의 공개범위 안내 문구
-// board_type===3(JUSTIFICATION_LETTER: 사유서·에러/피드백 제보)은 read_permission이
-// 'all'로 저장돼 있어도 각 글은 본인+스태프로 제한되므로 board_type을 먼저 분기한다.
+// board_type===3(사유서·에러/피드백 제보)은 서버가 read_permission='author'로 관리하지만,
+// 구버전 캐시 데이터에 read_permission이 없을 수 있어 board_type도 함께 분기한다.
 const getBoardVisibilityNotice = (
-    perm?: 'all' | 'member' | 'staff',
+    perm?: 'all' | 'member' | 'author' | 'staff',
     boardType?: number
 ): string | null => {
-    if (boardType === 3) {
+    if (perm === 'author' || boardType === 3) {
         return "🔒 제출한 글은 본인과 스태프만 볼 수 있어요";
     }
     switch (perm) {
