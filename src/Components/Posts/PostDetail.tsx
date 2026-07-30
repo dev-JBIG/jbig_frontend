@@ -155,6 +155,7 @@ const PostDetail: React.FC = () => {
     const [editShowRealName, setEditShowRealName] = useState(false);
     const [heartBurstKey, setHeartBurstKey] = useState(0);
     const [likePlusOneKey, setLikePlusOneKey] = useState(0);
+    const [isLikePending, setIsLikePending] = useState(false);
     const [isScrolling, setIsScrolling] = useState(false);
     const scrollTimeoutRef = useRef<number | null>(null);
 
@@ -434,9 +435,9 @@ const PostDetail: React.FC = () => {
         setLikePlusOneKey(prev => prev + 1);
     }, []);
 
-    // 좋아요 버튼 핸들러
-    const handleToggleLike = async () => {
-        if (!post || typeof post === "string") return;
+    // 게시글 추천(좋아요) 버튼 공통 핸들러
+    const handleToggleLike = async (extendFloatingVisibility: boolean = false) => {
+        if (!post || typeof post === "string" || isLikePending) return;
 
         if (!accessToken) {
             showAlert({
@@ -447,24 +448,47 @@ const PostDetail: React.FC = () => {
             return;
         }
 
-        const nextLiked = !post.isLiked;
-        const nextLikes = post.likes + (nextLiked ? 1 : -1);
-        setPost({ ...post, isLiked: nextLiked, likes: Math.max(0, nextLikes) });
+        const previousLiked = !!post.isLiked;
+        const previousLikes = post.likes;
+        const nextLiked = !previousLiked;
+        const nextLikes = Math.max(0, previousLikes + (nextLiked ? 1 : -1));
+        const toggledPostId = post.id;
+
+        setIsLikePending(true);
+        setPost(prev => {
+            if (!prev || typeof prev === "string" || prev.id !== toggledPostId) return prev;
+            return { ...prev, isLiked: nextLiked, likes: nextLikes };
+        });
 
         // 애니메이션 트리거
         if (nextLiked) triggerHeartBurst();
         triggerLikePlusOne();
 
-        // 모바일에서 버튼 클릭 시 floating 유지
-        setIsScrolling(true);
-        if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
-        scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 1500);
+        // 플로팅 버튼을 직접 클릭했을 때만 기존 노출 타이머를 연장한다.
+        if (extendFloatingVisibility) {
+            setIsScrolling(true);
+            if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 1500);
+        }
 
         try {
-            await togglePostLike(post.id, accessToken);
+            const response = await togglePostLike(toggledPostId, accessToken);
+            setPost(prev => {
+                if (!prev || typeof prev === "string" || prev.id !== toggledPostId) return prev;
+                return {
+                    ...prev,
+                    isLiked: response.is_liked,
+                    likes: response.likes_count,
+                };
+            });
         } catch (e) {
-            setPost(post);
+            setPost(prev => {
+                if (!prev || typeof prev === "string" || prev.id !== toggledPostId) return prev;
+                return { ...prev, isLiked: previousLiked, likes: previousLikes };
+            });
             showAlert({ message: "좋아요 처리 중 오류가 발생했습니다.", type: 'error' });
+        } finally {
+            setIsLikePending(false);
         }
     };
 
@@ -978,6 +1002,30 @@ const PostDetail: React.FC = () => {
                 ) : null;
             })()}
 
+            <div className="postdetail-inline-like">
+                <button
+                    type="button"
+                    className={`postdetail-inline-like-btn${post.isLiked ? " liked" : ""}`}
+                    onClick={() => handleToggleLike(false)}
+                    aria-label={post.isLiked
+                        ? `게시글 추천 취소, 현재 ${post.likes}개`
+                        : `게시글 추천, 현재 ${post.likes}개`}
+                    aria-pressed={!!post.isLiked}
+                    disabled={isLikePending}
+                >
+                    <Heart
+                        size={20}
+                        aria-hidden="true"
+                        style={{
+                            fill: post.isLiked ? "#e0245e" : "transparent",
+                            stroke: post.isLiked ? "#e0245e" : "currentColor",
+                        }}
+                    />
+                    <span>{post.isLiked ? "추천했어요" : "추천"}</span>
+                    <span className="postdetail-inline-like-count">{post.likes}</span>
+                </button>
+            </div>
+
             {/* 댓글 영역 */}
             <div className="postdetail-comment-section">
                 <div className="postdetail-comment-header">
@@ -1301,9 +1349,13 @@ const PostDetail: React.FC = () => {
                       <button
                           type="button"
                           className="postdetail-like-btn"
-                          onClick={handleToggleLike}
-                          aria-label={post.isLiked ? "좋아요 취소" : "좋아요"}
+                          onClick={() => handleToggleLike(true)}
+                          aria-label={post.isLiked
+                              ? `게시글 추천 취소, 현재 ${post.likes}개`
+                              : `게시글 추천, 현재 ${post.likes}개`}
+                          aria-pressed={!!post.isLiked}
                           title={post.isLiked ? "좋아요 취소" : "좋아요"}
+                          disabled={isLikePending}
                       >
                           <Heart
                               size={18}

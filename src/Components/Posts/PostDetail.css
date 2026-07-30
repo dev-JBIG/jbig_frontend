@@ -112,6 +112,18 @@
     background-color: var(--color-bg-secondary);
 }
 
+.postdetail-like-btn:focus-visible,
+.postdetail-inline-like-btn:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+.postdetail-like-btn:disabled,
+.postdetail-inline-like-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .postdetail-like-btn-wrapper {
     position: relative;
     display: inline-flex;
@@ -239,6 +251,48 @@
 
 .postdetail-like-plusone.minus {
     color: #999;
+}
+
+.postdetail-inline-like {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-xl) 0;
+    padding: var(--space-xl) var(--space-md);
+    border-top: 1px solid var(--color-border-light);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.postdetail-inline-like-btn {
+    min-height: 48px;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-xl);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-radius: 999px;
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.postdetail-inline-like-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.postdetail-inline-like-btn.liked {
+    color: #e0245e;
+    background: #fff5f8;
+    border-color: #f3b8c9;
+}
+
+.postdetail-inline-like-count {
+    font-variant-numeric: tabular-nums;
 }
 
 @keyframes likePlusOneAnim {
