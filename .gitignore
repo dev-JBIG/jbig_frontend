@@ -23,3 +23,6 @@ jbig_backend.env
 build/
 node_modules/
 .idea/
+
+# macOS
+.DS_Store
