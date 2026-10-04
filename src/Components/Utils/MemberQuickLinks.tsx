@@ -18,7 +18,7 @@ const MemberQuickLinks: React.FC<MemberQuickLinksProps> = ({ isLogin, onOpen }) 
                 rel="noopener noreferrer"
                 onClick={onOpen}
             >
-                <span>내 소식 전하기</span>
+                <span>좋은 소식 나누기</span>
             </a>
             <a
                 className="member-quick-link member-quick-link-study"
