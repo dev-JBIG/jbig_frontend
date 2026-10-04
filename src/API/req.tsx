@@ -78,8 +78,8 @@ axios.interceptors.response.use(
 
         // 401 에러이고, 재시도가 아닌 경우
         if (error.response?.status === 401 && !originalRequest._retry) {
-            // 토큰 갱신 API 자체가 실패한 경우는 재시도 안 함
-            if (originalRequest.url?.includes('/token/refresh/')) {
+            // 로그인 실패 응답은 그대로 전달하고, 토큰 갱신 API도 재시도하지 않는다.
+            if (originalRequest.url === `${BASE_URL}/api/users/signin/` || originalRequest.url?.includes('/token/refresh/')) {
                 return Promise.reject(error);
             }
 
@@ -292,7 +292,12 @@ export const signin = async (email: string, password: string) => {
         );
         return response.data;
     } catch (error: unknown) {
-        return { message: getErrorMessage(error, "로그인 요청 중 오류가 발생했습니다.") };
+        const axiosErr = error as AxiosError<ApiErrorResponse>;
+        return {
+            status: axiosErr.response?.status,
+            errorCode: axiosErr.response?.data?.errorCode,
+            message: getErrorMessage(error, "로그인 요청 중 오류가 발생했습니다."),
+        };
     }
 };
 

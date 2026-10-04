@@ -8,6 +8,7 @@ import { faDiscord, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { getBoardIcon } from "./boardIcons";
 import { useUser } from "./UserContext";
 import { useAlert } from "./AlertContext";
+import MemberQuickLinks from "./MemberQuickLinks";
 
 /**
  * 게시글이 24시간 이내에 작성되었는지 확인하는 함수
@@ -63,11 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {!isLogin && (
                     <button className="sidebar-button" onClick={() => navigate("/signup")}>회원가입</button>
                 )}
-                {isLogin && (
-                    <button className="sidebar-button open-notion-btn" onClick={() => window.open("/note", "_blank")}>
-                        교안 탭 열기
-                    </button>
-                )}
+                <MemberQuickLinks isLogin={isLogin} />
                 <ul className="menu">
                 <li className="menu-item-viewall" onClick={() => navigate("/board/0")}>
                     <div className="board-item-content">

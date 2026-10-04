@@ -131,12 +131,6 @@
   background-color: var(--color-secondary);
 }
 
-.mobile-nav-note {
-  padding: var(--space-lg);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-}
-
 .mobile-nav-discord {
   background-color: #5865F2;
   text-decoration: none;

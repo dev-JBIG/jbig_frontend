@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signupUser, verifyAuthEmail, resendVerifyEmail } from "../../API/req";
+import { signupUser } from "../../API/req";
 import { useAlert } from "../Utils/AlertContext";
 import { useJbnuEmail } from "../Utils/useJbnuEmail";
 import "./Signup.css";
+import EmailVerification from "./EmailVerification";
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
 const isValidSemester = (n: number) => Number.isInteger(n) && n >= 1 && n < 100;
@@ -25,27 +26,10 @@ const Signup: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // 2단계 입력값
-    const [emailCode, setEmailCode] = useState("");
-    const [secondsLeft, setSecondsLeft] = useState(0); // ← 5분 타이머(초)
+    const [expiresAt, setExpiresAt] = useState<number | null>(null);
 
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-
-    // 타이머 진행
-    useEffect(() => {
-        if (step !== 2) return;
-
-        const expireAt = Date.now() + 300 * 1000; // 현재 시각 + 5분
-
-        const t = setInterval(() => {
-            const remaining = Math.max(0, Math.floor((expireAt - Date.now()) / 1000));
-            setSecondsLeft(remaining);
-            if (remaining === 0) clearInterval(t);
-        }, 1000);
-
-        return () => clearInterval(t);
-    }, [step]);
 
     // 1단계: 회원가입 요청 -> 서버가 인증코드 이메일 발송
     const handleSignupRequest = async (e: React.FormEvent) => {
@@ -83,50 +67,14 @@ const Signup: React.FC = () => {
             const result = await signupUser(trimmedEmail, trimmedUserId, semester, password);
             if (result.success) {
                 setStep(2);
-                setSecondsLeft(300);
+                setExpiresAt(Date.now() + 300000);
+                setPassword("");
+                setConfirmPassword("");
             } else {
                 showAlert({ message: result?.message || "회원가입 요청에 실패했습니다.", type: 'error' });
             }
         } catch {
             showAlert({ message: "회원가입 요청 중 오류가 발생했습니다.", type: 'error' });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 2단계: 이메일 인증 코드 검증 -> 성공 시 가입 완료로 간주
-    const handleVerifyCode = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const result = await verifyAuthEmail(email.trim(), emailCode.trim());
-            if (result.success || result.status === 200) {
-                showAlert({
-                    message: "회원가입이 완료되었습니다.",
-                    type: 'success',
-                    onClose: () => navigate("/")
-                });
-            } else {
-                showAlert({ message: result.message || "인증 코드가 올바르지 않습니다.", type: 'error' });
-            }
-        } catch {
-            showAlert({ message: "인증 요청 중 오류가 발생했습니다.", type: 'error' });
-        }
-    };
-
-    // 인증코드 재전송
-    const handleResendCode = async () => {
-        if (loading) return;
-        try {
-            setLoading(true);
-            const res = await resendVerifyEmail(email.trim());
-            if (res.success) {
-                showAlert({ message: "인증 메일이 재전송되었습니다.", type: 'success' });
-                setSecondsLeft(300);
-            } else {
-                showAlert({ message: res.message || "재전송에 실패했습니다.", type: 'error' });
-            }
-        } catch {
-            showAlert({ message: "인증 메일 재전송 중 오류가 발생했습니다.", type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -234,56 +182,21 @@ const Signup: React.FC = () => {
                         </form>
 
                         <div className="signin-links">
-                            <a href="/signin" className="signin-link">로그인하기</a>
+                            <Link to="/signin" className="signin-link">이미 가입을 시도하셨나요? 로그인하여 이메일 인증을 이어가세요.</Link>
                         </div>
                     </>
                 )}
 
                 {step === 2 && (
-                    <form className="signup-form" onSubmit={handleVerifyCode}>
-                        <div className="signup-desc">
-                            이메일(<strong>{email}</strong>)로 발송된 인증코드를 입력하세요.
-                        </div>
-
-                        {/* 타이머 표시 & 재전송 버튼 */}
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                marginBottom: 10,
-                            }}
-                        >
-                            <span style={{color: secondsLeft <= 60 ? "red" : "black"}}>
-                                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={handleResendCode}
-                                disabled={loading}
-                                style={{
-                                    background: "none",
-                                    border: "none",
-                                    color: "#3563e9",
-                                    cursor: loading ? "not-allowed" : "pointer",
-                                    textDecoration: "underline",
-                                }}
-                            >
-                                재전송
-                            </button>
-                        </div>
-
-
-                        <input
-                            className="signup-input"
-                            type="text"
-                            placeholder="인증코드"
-                            value={emailCode}
-                            onChange={e => setEmailCode(e.target.value)}
-                            required
-                        />
-                        <button className="signup-button" type="submit">이메일 인증하기</button>
-                    </form>
+                    <EmailVerification
+                        email={email.trim()}
+                        initialExpiresAt={expiresAt}
+                        onVerified={() => showAlert({
+                            message: "회원가입이 완료되었습니다. 로그인해주세요.",
+                            type: 'success',
+                            onClose: () => navigate("/signin")
+                        })}
+                    />
                 )}
             </div>
             {loading && (

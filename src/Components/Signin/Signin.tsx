@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Signin.css";
+import EmailVerification from "../Signup/EmailVerification";
 import {Link, useNavigate} from "react-router-dom";
 import {signin} from "../../API/req";
 import {useUser} from "../Utils/UserContext";
@@ -17,6 +18,8 @@ const Signin: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
     const [loading, setLoading] = useState(false);
+    const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+    const [notice, setNotice] = useState("");
 
     const navigate = useNavigate();
     const { setAuth } = useUser();
@@ -46,7 +49,9 @@ const Signin: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return;
         setError(null);
+        setNotice("");
 
         const emailErr = validateEmail(userId);
         const pwdErr = validatePassword(password);
@@ -72,6 +77,11 @@ const Signin: React.FC = () => {
                 );
                 setStaffAuth(!!result.is_staff);
                 navigate("/");
+            } else if (result.status === 401 && result.errorCode === "ACCOUNT_NOT_VERIFIED") {
+                setPassword("");
+                setShowPassword(false);
+                setFieldErrors({});
+                setVerificationEmail(userId.trim());
             } else {
                 setError(result.message || "로그인에 실패했습니다.");
             }
@@ -89,6 +99,21 @@ const Signin: React.FC = () => {
                     <Link to="/" className="signin-logo">JBIG</Link>
                     <h2 className="signin-title">로그인</h2>
                 </div>
+                {verificationEmail !== null ? (
+                    <>
+                        <p>이메일 인증을 마저 완료해주세요</p>
+                        <EmailVerification
+                            email={verificationEmail}
+                            onVerified={() => {
+                                setVerificationEmail(null);
+                                setNotice("이메일 인증이 완료되었습니다. 비밀번호를 입력하여 로그인해주세요.");
+                            }}
+                            onBack={() => setVerificationEmail(null)}
+                        />
+                    </>
+                ) : (
+                    <>
+                {notice && <p role="status">{notice}</p>}
                 <form className="signin-form" onSubmit={handleSubmit}>
                     <label className="signin-label" htmlFor="userid">
                         아이디 (이메일)
@@ -143,6 +168,8 @@ const Signin: React.FC = () => {
                     <a href="/signup" className="signin-link">가입하기</a>
                     <a href="/changepwd" className="signin-link">비밀번호를 잊어버리셨나요?</a>
                 </div>
+                    </>
+                )}
             </div>
         </div>
     );

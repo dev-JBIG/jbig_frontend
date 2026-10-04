@@ -1,0 +1,28 @@
+.email-verification {
+    overflow-wrap: anywhere;
+}
+
+.verification-timer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.verification-expiring {
+    color: #c62828;
+}
+
+.verification-resend {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.email-verification button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

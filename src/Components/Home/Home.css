@@ -552,12 +552,6 @@
     background-color: var(--color-primary-hover);
 }
 
-.sidebar-button.open-notion-btn {
-    padding: var(--space-lg);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-}
-
 .menu {
     list-style: none;
     padding: 0;

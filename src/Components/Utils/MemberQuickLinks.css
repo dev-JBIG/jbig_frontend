@@ -1,0 +1,95 @@
+.member-quick-links {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.member-quick-link {
+    position: relative;
+    isolation: isolate;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 68px;
+    padding: 16px 12px;
+    overflow: hidden;
+    border: 1px solid #608efa;
+    border-radius: 14px;
+    background: radial-gradient(ellipse at 50% 115%, #4ea9ff 0%, #267bff80 43%, transparent 72%), linear-gradient(180deg, #1458ee 0%, #1959e8 60%, #246ff5 100%);
+    box-shadow: inset 0 1px 2px #ffffff7a, inset 0 -1px 2px #163aac55, 0 3px 7px #1551b924;
+    color: #fff;
+    font: 650 17px/1.3 Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    letter-spacing: -0.2px;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 1px 2px #153e914d;
+    transition: transform 160ms, filter 160ms;
+}
+
+.member-quick-link-news {
+    border-color: #cbc9d8;
+    background: radial-gradient(ellipse at 5% 100%, #d9eaff 0%, transparent 55%), radial-gradient(ellipse at 95% 100%, #f7dce9 0%, transparent 55%), radial-gradient(ellipse at 50% 105%, #fff8d9 0%, transparent 62%), linear-gradient(180deg, #f7f6fa 0%, #ebeaf0 56%, #f4eff4 100%);
+    box-shadow: inset 0 1px 2px #fff, inset 0 -1px 2px #aaa8be55, 0 3px 7px #5559701c;
+    color: #454a60;
+    text-shadow: 0 1px 0 #ffffffc9;
+}
+
+.member-quick-link::before,
+.member-quick-link::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+}
+
+.member-quick-link::before {
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(130deg, #ffffff24, transparent 35%, transparent 75%, #ffffff1a);
+}
+
+.member-quick-link::after {
+    inset: auto 12% -18px;
+    height: 35px;
+    border-radius: 50%;
+    background: #7ccaff;
+    filter: blur(14px);
+    opacity: 0.8;
+}
+
+.member-quick-link-news::after {
+    background: linear-gradient(90deg, #cbe9ff, #fff9da, #f8d8f0);
+}
+
+.member-quick-link span {
+    position: relative;
+    z-index: 1;
+}
+
+.member-quick-link:hover {
+    color: #fff;
+    text-decoration: none;
+    filter: brightness(1.055);
+    transform: translateY(-1px);
+}
+
+.member-quick-link-news:hover {
+    color: #454a60;
+}
+
+.member-quick-link:active {
+    transform: translateY(1px);
+    filter: brightness(0.98);
+}
+
+.member-quick-link:focus-visible {
+    outline: 3px solid #316dd9;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .member-quick-link {
+        transition: none;
+    }
+}

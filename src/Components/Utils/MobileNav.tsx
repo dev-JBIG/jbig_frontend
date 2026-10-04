@@ -8,6 +8,7 @@ import { getBoardIcon } from "./boardIcons";
 import { useUser } from "./UserContext";
 import { useAlert } from "./AlertContext";
 import "./MobileNav.css";
+import MemberQuickLinks from "./MemberQuickLinks";
 
 interface MobileNavProps {
   boards: Section[];
@@ -102,17 +103,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
                 </button>
               )}
 
-              {isLogin && (
-                <button
-                  className="mobile-nav-button mobile-nav-note"
-                  onClick={() => {
-                    window.open("/note", "_blank");
-                    setIsOpen(false);
-                  }}
-                >
-                  교안 탭 열기
-                </button>
-              )}
+              <MemberQuickLinks isLogin={isLogin} onOpen={() => setIsOpen(false)} />
 
               <div className="mobile-search-group">
                 <input
