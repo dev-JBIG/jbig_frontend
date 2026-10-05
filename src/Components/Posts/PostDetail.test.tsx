@@ -273,3 +273,35 @@ describe("PostDetail 게시글 추천", () => {
         expect(floatingArea).not.toHaveClass("scrolling");
     });
 });
+
+describe('PostDetail 인증 오류 구분', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        window.scrollTo = jest.fn();
+        mockedUseUser.mockReturnValue({ accessToken: 'old-access', authReady: true });
+        mockedUseStaffAuth.mockReturnValue({ staffAuth: false });
+        mockedUseAlert.mockReturnValue({ showAlert, showConfirm });
+    });
+
+    test.each([
+        [{ loginRequired: true }, '로그인이 필요합니다. 다시 로그인해주세요.'],
+        [{ unauthorized: true }, '접근 권한이 없습니다.'],
+    ])('인증 결과 %j에 맞는 안내를 표시한다', async (response, message) => {
+        mockedFetchPostDetail.mockResolvedValue(response);
+        render(<PostDetail />);
+        await waitFor(() => expect(showAlert).toHaveBeenCalledWith(expect.objectContaining({ message })));
+    });
+
+    test('갱신 전 요청의 늦은 권한 오류는 갱신 후 본문을 덮어쓰지 않는다', async () => {
+        let finishOld!: (response: any) => void;
+        mockedFetchPostDetail.mockReturnValueOnce(new Promise(resolve => { finishOld = resolve; }));
+        const view = render(<PostDetail />);
+        mockedUseUser.mockReturnValue({ accessToken: 'new-access', authReady: true });
+        mockedFetchPostDetail.mockResolvedValueOnce(makePostResponse());
+        view.rerender(<PostDetail />);
+        await screen.findByText('본문 내용');
+        await act(async () => { finishOld({ unauthorized: true }); });
+        expect(showAlert).not.toHaveBeenCalled();
+        expect(screen.getByText('본문 내용')).toBeInTheDocument();
+    });
+});

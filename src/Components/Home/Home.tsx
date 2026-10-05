@@ -189,18 +189,7 @@ const Home: React.FC = () => {
                 try {
                     const url = await fetchQuizUrl(accessToken);
                     if (cancelled) return;
-                    if (!url) {
-                        setQuizURL("");
-                    } else if(url === "401") {
-                        // 토큰 만료 시 조용히 로그아웃 처리 (리다이렉션 없음)
-                        setQuizURL("");
-                        signOutLocal();
-                        setUserName("");
-                        setUserSemester(null);
-                        setLogin(false);
-                    } else{
-                        setQuizURL(url);
-                    }
+                    setQuizURL(url || "");
                 } catch {
                     if (cancelled) return;
                     setQuizURL("");
@@ -212,7 +201,7 @@ const Home: React.FC = () => {
             cancelled = true;
             cancelQuizTask?.();
         };
-    }, [authReady, user, accessToken, signOutLocal]);
+    }, [authReady, user, accessToken]);
 
     useEffect(() => {
         if (!authReady) return;
@@ -397,7 +386,7 @@ const Home: React.FC = () => {
     const handleLogout = async () => {
         navigate("/");
         if (accessToken && refreshToken) {
-            await signout(accessToken, refreshToken);
+            await signout();
         }
         signOutLocal();
         window.location.reload();

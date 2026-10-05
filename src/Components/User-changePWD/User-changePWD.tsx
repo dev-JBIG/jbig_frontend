@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { changePassword, signout } from "../../API/req";
 import { useUser } from "../Utils/UserContext";
-import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { useAlert } from "../Utils/AlertContext";
 import "./User-changePWD.css";
 
@@ -14,7 +13,6 @@ const UserChangePWD: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false); // 토글 상태
 
     const { accessToken, signOutLocal, refreshToken } = useUser();
-    const { setStaffAuth } = useStaffAuth();
     const { showAlert } = useAlert();
     const navigate = useNavigate();
 
@@ -51,10 +49,9 @@ const UserChangePWD: React.FC = () => {
         if (result.success) {
             // 백엔드에서 토큰 블랙리스트 처리됨, 프론트엔드도 로그아웃 처리함
             if (accessToken && refreshToken) {
-                await signout(accessToken, refreshToken);
+                await signout();
             }
             signOutLocal();
-            setStaffAuth(false);
             showAlert({
                 message: "비밀번호가 변경되었습니다. 다시 로그인해주세요.",
                 type: 'success',

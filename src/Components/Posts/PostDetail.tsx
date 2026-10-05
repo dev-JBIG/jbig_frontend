@@ -123,7 +123,7 @@ const PostDetail: React.FC = () => {
     const turnstileRef = useRef<TurnstileInstance | null>(null);
     // 본문
 
-    const { accessToken, authReady, signOutLocal } = useUser();
+    const { accessToken, authReady } = useUser();
     const { staffAuth } = useStaffAuth();
     const { showAlert, showConfirm } = useAlert();
 
@@ -233,28 +233,25 @@ const PostDetail: React.FC = () => {
     useEffect(() => {
         if (!authReady || !postId) return;
 
-        // 비로그인 사용자도 접근 가능하도록 수정
-        // if (!accessToken) {
-        //     showAlert({
-        //         message: "로그인이 필요합니다.",
-        //         type: 'info',
-        //         onClose: () => {
-        //             signOutLocal();
-        //             navigate("/signin");
-        //         }
-        //     });
-        //     return;
-        // }
-
         const key = `${postId}:${accessToken || 'anonymous'}`;
         if (fetchedKeyRef.current === key) return;
         fetchedKeyRef.current = key;
+        let cancelled = false;
 
         const loadPost = async () => {
             try {
 
                 const raw = await fetchPostDetail(Number(postId), accessToken || null);
+                if (cancelled) return;
 
+                if (raw.loginRequired) {
+                    showAlert({
+                        message: "로그인이 필요합니다. 다시 로그인해주세요.",
+                        type: 'warning',
+                        onClose: () => navigate("/signin"),
+                    });
+                    return;
+                }
                 if (raw.unauthorized === true) {
                     safeAuthRedirect();
                     return;
@@ -370,11 +367,13 @@ const PostDetail: React.FC = () => {
 
                 setPost(mapped);
             } catch {
-                setPost("not-found");
+                if (cancelled) return;
+                showAlert({ message: "게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", type: 'error' });
             }
         };
 
         loadPost();
+        return () => { cancelled = true; };
     }, [authReady, accessToken, postId]);
 
    

@@ -55,7 +55,7 @@ const PopupSlider: React.FC = () => {
         try {
             const data = await fetchPostDetail(postId, accessToken);
             if (!mountedRef.current || seq !== postContentSeqRef.current) return;
-            if (data && !data.unauthorized && !data.notFound) {
+            if (data && !data.unauthorized && !data.loginRequired && !data.notFound) {
                 setPostContent(data.content_md || "");
                 const attachments = data.attachment_paths || [];
                 const firstImage = attachments.find((a: { url: string; name: string }) =>

@@ -8,7 +8,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { safeSanitizePlugin } from "../Utils/safeMarkdown";
-import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft, refreshTokenAPI} from "../../API/req"
+import {createPost, fetchPostDetail, modifyPost, uploadAttachment, deleteUploadedFile, fetchDraft, saveDraft, deleteDraft} from "../../API/req"
 import {Board, Section, UploadFile, RecruitmentFormData, FormType} from "../Utils/interfaces";
 import {useUser} from "../Utils/UserContext";
 import {useStaffAuth} from "../Utils/StaffAuthContext";
@@ -94,6 +94,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const uploadedPathsRef = useRef<Set<string>>(new Set());
     const savedRef = useRef(false);
     const draftLoadedRef = useRef(false);
+    const loadedEditRef = useRef<string | null>(null);
     const inFlightRef = useRef(false);
     const imageUrlMapRef = useRef<Map<string, string>>(new Map());
     const editorRef = useRef<any>(null);
@@ -103,7 +104,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
     const isEdit = !!postId;
     const postIdNumber = postId ? Number(postId) : null;
     const navigate = useNavigate();
-    const { signOutLocal, accessToken, refreshToken, user, setAuth } = useUser();
+    const { signOutLocal, accessToken, user } = useUser();
     const { staffAuth } = useStaffAuth();
     const { showAlert, showConfirm } = useAlert();
 
@@ -363,72 +364,20 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
         return () => clearTimeout(handler);
     }, [title, content, activeBoard, canUseDraft, accessToken]);
 
-    // 주기적 토큰 갱신 (활동 감지 시 45분마다 자동 갱신)
-    useEffect(() => {
-        if (!accessToken || !refreshToken || !user) return;
-
-        let lastActivity = Date.now();
-        let tokenRefreshTimer: NodeJS.Timeout | null = null;
-
-        // 토큰 갱신 함수
-        const refreshTokenIfNeeded = async () => {
-            const now = Date.now();
-            const timeSinceActivity = now - lastActivity;
-
-            // 최근 5분 이내에 활동이 있었다면 토큰 갱신
-            if (timeSinceActivity < 5 * 60 * 1000) {
-                try {
-                    console.log('[Token] Refreshing token due to user activity');
-                    const result = await refreshTokenAPI(refreshToken);
-
-                    if (result.access && result.refresh) {
-                        // 새 토큰으로 업데이트
-                        setAuth(user, result.access, result.refresh);
-                        console.log('[Token] Token refreshed successfully');
-                    }
-                } catch (err) {
-                    console.error('[Token] Token refresh failed:', err);
-                }
-            }
-        };
-
-        // 활동 감지 핸들러
-        const handleActivity = () => {
-            lastActivity = Date.now();
-        };
-
-        // 활동 이벤트 리스너 등록
-        const activityEvents = ['keydown', 'click', 'mousemove', 'scroll'];
-        activityEvents.forEach(event => {
-            window.addEventListener(event, handleActivity);
-        });
-
-        // 45분마다 토큰 갱신 체크
-        tokenRefreshTimer = setInterval(refreshTokenIfNeeded, 45 * 60 * 1000);
-
-        // 초기 활동 기록
-        handleActivity();
-
-        return () => {
-            // 이벤트 리스너 제거
-            activityEvents.forEach(event => {
-                window.removeEventListener(event, handleActivity);
-            });
-            // 타이머 정리
-            if (tokenRefreshTimer) {
-                clearInterval(tokenRefreshTimer);
-            }
-        };
-    }, [accessToken, refreshToken, user, setAuth]);
-
     // 수정 모드: 기존 게시글 로드
     useEffect(() => {
         if (!isEdit || !accessToken) return;
+        const editKey = `${postId}:${user?.email}`;
+        if (loadedEditRef.current === editKey) return;
+        let cancelled = false;
 
         (async () => {
             try {
                 const raw = await fetchPostDetail(Number(postId), accessToken);
+                if (cancelled) return;
+                if (raw.loginRequired || raw.unauthorized || raw.notFound) throw new Error("게시글을 열 수 없습니다.");
                 const src = raw.post_data ?? raw;
+                loadedEditRef.current = editKey;
 
                 setTitle(src.title || "");
                 setContent(src.content_md || "");
@@ -459,6 +408,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     path: extractKeyFromUrl(att.url, `error_${idx}`)
                 })));
             } catch {
+                if (cancelled) return;
                 showAlert({
                     message: "게시글 정보를 불러오지 못했습니다.",
                     type: 'error',
@@ -466,7 +416,8 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                 });
             }
         })();
-    }, [isEdit, postId, accessToken, navigate, category, BOARD_LIST]);
+        return () => { cancelled = true; };
+    }, [isEdit, postId, accessToken, user?.email, navigate, category, BOARD_LIST]);
 
     // 첨부파일 업로드
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -653,16 +604,7 @@ const PostWrite: React.FC<PostWriteProps> = ({ boards = [] }) => {
                     show_applicants: recruitmentData.show_applicants,
                 };
             }
-            const res = await createPost(activeBoard!.id, postPayload, accessToken);
-            if (res?.unauthorized) { 
-                showAlert({
-                    message: "인증에 문제가 있습니다. 다시 로그인해주세요.",
-                    type: 'error',
-                    onClose: () => navigate("/signin")
-                }); 
-                return; 
-            }
-
+            await createPost(activeBoard!.id, postPayload, accessToken);
             // 게시글 등록 성공 시 DB 임시저장 삭제
             if (canUseDraft) {
                 await deleteDraft(accessToken).catch(() => {});

@@ -4,7 +4,6 @@ import EmailVerification from "../Signup/EmailVerification";
 import {Link, useNavigate} from "react-router-dom";
 import {signin} from "../../API/req";
 import {useUser} from "../Utils/UserContext";
-import {useStaffAuth} from "../Utils/StaffAuthContext";
 import {useJbnuEmail} from "../Utils/useJbnuEmail";
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
@@ -23,7 +22,6 @@ const Signin: React.FC = () => {
 
     const navigate = useNavigate();
     const { setAuth } = useUser();
-    const { setStaffAuth } = useStaffAuth();
 
     const validateEmail = (value: string) => {
         if (!value.trim()) return "이메일을 입력해주세요.";
@@ -75,7 +73,6 @@ const Signin: React.FC = () => {
                     result.access,
                     result.refresh
                 );
-                setStaffAuth(!!result.is_staff);
                 navigate("/");
             } else if (result.status === 401 && result.errorCode === "ACCOUNT_NOT_VERIFIED") {
                 setPassword("");

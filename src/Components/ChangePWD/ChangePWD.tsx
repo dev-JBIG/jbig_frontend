@@ -3,7 +3,6 @@ import "./ChangePWD.css";
 import { Link, useNavigate } from "react-router-dom";
 import { requestVerificationCode, verifyCode, resetPassword } from "../../API/req";
 import { useUser } from "../Utils/UserContext";
-import { useStaffAuth } from "../Utils/StaffAuthContext";
 import { useAlert } from "../Utils/AlertContext";
 import { useJbnuEmail } from "../Utils/useJbnuEmail";
 
@@ -27,7 +26,6 @@ const ChangePWD: React.FC = () => {
 
     const navigate = useNavigate();
     const { signOutLocal } = useUser();
-    const { setStaffAuth } = useStaffAuth();
     const { showAlert } = useAlert();
 
     // 타이머 로직
@@ -124,7 +122,6 @@ const ChangePWD: React.FC = () => {
             if (result.success) {
                 // 비밀번호 변경 성공 시 로그아웃 처리함
                 signOutLocal();
-                setStaffAuth(false);
                 showAlert({
                     message: "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.",
                     type: 'success',

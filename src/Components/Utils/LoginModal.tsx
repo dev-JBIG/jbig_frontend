@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./LoginModal.css";
 import { signin } from "../../API/req";
 import { useUser } from "./UserContext";
-import { useStaffAuth } from "./StaffAuthContext";
 import { useNavigate } from "react-router-dom";
 import { useJbnuEmail } from "./useJbnuEmail";
 
@@ -24,7 +23,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
 
     const navigate = useNavigate();
     const { setAuth } = useUser();
-    const { setStaffAuth } = useStaffAuth();
 
     const validateEmail = (value: string) => {
         if (!value.trim()) return "이메일을 입력해주세요.";
@@ -74,7 +72,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                     result.access,
                     result.refresh
                 );
-                setStaffAuth(!!result.is_staff);
                 onClose();
                 // 새로고침 대신 홈으로 이동 (이미 홈이면 그대로)
                 if (window.location.pathname !== '/') {

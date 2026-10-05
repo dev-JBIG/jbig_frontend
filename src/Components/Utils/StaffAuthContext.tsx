@@ -2,7 +2,6 @@ import { createContext, useContext } from "react";
 
 interface StaffAuthContextType {
     staffAuth: boolean;
-    setStaffAuth: (value: boolean) => void;
 }
 
 export const StaffAuthContext = createContext<StaffAuthContextType | null>(null);

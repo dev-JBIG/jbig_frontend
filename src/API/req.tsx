@@ -1,4 +1,6 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError, isAxiosError } from "axios";
+import axios from "./client";
+import { BASE_URL } from "./auth";
 import {
     PostItem,
     Reply,
@@ -10,6 +12,8 @@ import {
     AttachmentData
 } from "../Components/Utils/interfaces";
 
+export { signout } from "./auth";
+
 // API 에러 응답 타입
 interface ApiErrorResponse {
     detail?: string;
@@ -20,7 +24,7 @@ interface ApiErrorResponse {
 
 // Axios 에러에서 메시지 추출
 function getErrorMessage(error: unknown, defaultMsg: string): string {
-    if (!axios.isAxiosError(error)) return defaultMsg;
+    if (!isAxiosError(error)) return defaultMsg;
     const data = error.response?.data as ApiErrorResponse | undefined;
     if (!data) return defaultMsg;
     if (typeof data.detail === "string") return data.detail;
@@ -33,118 +37,6 @@ function getErrorMessage(error: unknown, defaultMsg: string): string {
     }
     return defaultMsg;
 }
-
-const BASE_URL = ((): string => {
-    // 1. 환경변수에 API_BASE_URL이 있으면 사용
-    if (process.env.REACT_APP_API_BASE_URL) {
-        return process.env.REACT_APP_API_BASE_URL;
-    }
-    // 2. 로컬 개발용 (SERVER_HOST, SERVER_PORT)
-    const serverHost = process.env.REACT_APP_SERVER_HOST;
-    const serverPort = process.env.REACT_APP_SERVER_PORT;
-    if (serverHost && serverPort) {
-        return `http://${serverHost}:${serverPort}`;
-    }
-    // 3. Same-origin fallback (프로덕션)
-    if (typeof window !== 'undefined' && window.location?.origin) {
-        return window.location.origin;
-    }
-    return "";
-})();
-
-// 토큰 갱신 중복 방지를 위한 플래그
-let isRefreshing = false;
-let failedQueue: Array<{ resolve: (token: string) => void; reject: (error: any) => void }> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-    failedQueue.forEach(prom => {
-        if (error) {
-            prom.reject(error);
-        } else if (token) {
-            prom.resolve(token);
-        }
-    });
-    failedQueue = [];
-};
-
-// BroadcastChannel for logout
-const authChannel = new BroadcastChannel("jbig-auth");
-
-// Axios Response 인터셉터 설정 (401 에러 시 자동 토큰 갱신)
-axios.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
-
-        // 401 에러이고, 재시도가 아닌 경우
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            // 로그인 실패 응답은 그대로 전달하고, 토큰 갱신 API도 재시도하지 않는다.
-            if (originalRequest.url === `${BASE_URL}/api/users/signin/` || originalRequest.url?.includes('/token/refresh/')) {
-                return Promise.reject(error);
-            }
-
-            originalRequest._retry = true;
-
-            // 이미 토큰 갱신 중이면 큐에 대기
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                }).then(token => {
-                    originalRequest.headers.Authorization = `Bearer ${token}`;
-                    return axios(originalRequest);
-                }).catch(err => {
-                    return Promise.reject(err);
-                });
-            }
-
-            isRefreshing = true;
-
-            const refreshToken = localStorage.getItem('jbig-refresh');
-            if (!refreshToken) {
-                isRefreshing = false;
-                processQueue(error, null);
-                return Promise.reject(error);
-            }
-
-            try {
-                const result = await refreshTokenAPI(refreshToken);
-
-                if (result.access && result.refresh) {
-                    // 새 토큰 저장
-                    localStorage.setItem('jbig-access', result.access);
-                    localStorage.setItem('jbig-refresh', result.refresh);
-
-                    // 원래 요청 헤더 업데이트
-                    originalRequest.headers.Authorization = `Bearer ${result.access}`;
-
-                    // 대기 중인 요청들 처리
-                    processQueue(null, result.access);
-                    isRefreshing = false;
-
-                    // 원래 요청 재시도
-                    return axios(originalRequest);
-                } else {
-                    throw new Error('Token refresh failed');
-                }
-            } catch (err) {
-                processQueue(err, null);
-                isRefreshing = false;
-
-                // 토큰 갱신 실패 시 로그아웃 처리
-                localStorage.removeItem('jbig-access');
-                localStorage.removeItem('jbig-refresh');
-                localStorage.removeItem('jbig-profile');
-
-                // BroadcastChannel을 통해 모든 탭에 로그아웃 알림
-                authChannel.postMessage({ type: "SIGN_OUT" });
-
-                return Promise.reject(err);
-            }
-        }
-
-        return Promise.reject(error);
-    }
-);
 
 // API 응답에서 results 배열 추출
 interface PaginatedResponse<T> {
@@ -301,23 +193,6 @@ export const signin = async (email: string, password: string) => {
     }
 };
 
-// 로그아웃
-export const signout = async (accessToken: string, refreshToken: string) => {
-    try {
-        await axios.post(
-            `${BASE_URL}/api/token/logout/`,
-            { refresh: refreshToken },
-            {
-                headers: { Accept: "*/*", "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-                withCredentials: true,
-            }
-        );
-        return { success: true };
-    } catch {
-        return { success: false };
-    }
-};
-
 // 비밀번호 찾기 api - 인증 코드 요청
 export const requestVerificationCode = async (email: string) => {
     try {
@@ -397,7 +272,7 @@ export const fetchBoardPosts = async (
         res = await makeRequest(!!token);
     } catch (err) {
         // 토큰이 만료/무효한 경우 토큰 없이 재시도 (공개 엔드포인트)
-        if (axios.isAxiosError(err) && err.response?.status === 401 && token) {
+        if (isAxiosError(err) && err.response?.status === 401 && token) {
             res = await makeRequest(false);
         } else {
             throw err;
@@ -437,25 +312,11 @@ export const fetchPhotoAlbumPosts = async (
 
 // 퀴즈 url 반환
 export const fetchQuizUrl = async (token: string): Promise<string | null> => {
-    const url = `${BASE_URL}/api/quiz-url/`;
-
-    try {
-        const res = await axios.get(url, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        const quizUrl =
-            typeof res.data?.quiz_url === "string" ? res.data.quiz_url.trim() : "";
-
-        return quizUrl || null;
-    } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-            return "401";
-        }
-        throw err;
-    }
+    const res = await axios.get(`${BASE_URL}/api/quiz-url/`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const quizUrl = typeof res.data?.quiz_url === "string" ? res.data.quiz_url.trim() : "";
+    return quizUrl || null;
 };
 
 // 사이트 설정 인터페이스
@@ -548,32 +409,19 @@ export const fetchBoardSearchPosts = async (
 
 // 게시글 세부 정보 조회
 export const fetchPostDetail = async (postId: number, token?: string | null) => {
-    const response = await fetch(`${BASE_URL}/api/posts/${postId}/`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-
-    if (response.status === 401 || response.status === 403) {
-        return { unauthorized: true };
+    try {
+        const response = await axios.get(`${BASE_URL}/api/posts/${postId}/`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            if (error.response?.status === 401) return { loginRequired: true };
+            if (error.response?.status === 403) return { unauthorized: true };
+            if (error.response?.status === 404) return { notFound: true };
+        }
+        throw error;
     }
-
-    if (response.status === 404) {
-        return { notFound: true };
-    }
-
-    if (!response.ok) {
-        let message = "게시글 불러오기에 실패했습니다.";
-        try {
-            const err = await response.json();
-            if (err?.message) message = err.message;
-        } catch {}
-        throw new Error(message);
-    }
-
-    return response.json();
 };
 
 // 게시글 좋아요 토글
@@ -698,7 +546,7 @@ export const deleteUploadedFile = async (path: string, token: string): Promise<{
         return { success: true };
     } catch (error: unknown) {
         // 404는 이미 삭제된 것으로 간주하여 성공 처리
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
+        if (isAxiosError(error) && error.response?.status === 404) {
             return { success: true };
         }
         return { success: false, message: getErrorMessage(error, "파일 삭제에 실패했습니다.") };
@@ -773,20 +621,6 @@ export const downloadGatedAttachment = async (
     }
 };
 
-// 토큰 갱신
-export const refreshTokenAPI = async (refresh: string) => {
-    try {
-        const response = await axios.post(
-            `${BASE_URL}/api/users/token/refresh/`,
-            { refresh },
-            { headers: { Accept: "*/*", "Content-Type": "application/json" }, withCredentials: false }
-        );
-        return response.data;
-    } catch (error: unknown) {
-        return { message: getErrorMessage(error, "토큰 갱신 실패") };
-    }
-};
-
 // 게시글 생성 api
 export const createPost = async (
     boardId: number,
@@ -798,34 +632,10 @@ export const createPost = async (
     },
     token: string
 ) => {
-    try {
-        const response = await fetch(`${BASE_URL}/api/boards/${boardId}/posts/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(postData),
-        });
-
-        if (response.status === 401 || response.status === 403) {
-            return { unauthorized: true };
-        }
-
-        if (!response.ok) {
-            let message = "게시글 생성에 실패했습니다.";
-            try {
-                const err = await response.json() as { message?: string };
-                if (err?.message) message = err.message;
-            } catch { /* ignore */ }
-            throw new Error(message);
-        }
-
-        return response.json();
-    } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : "네트워크 오류 또는 서버 응답 없음";
-        return { message: msg };
-    }
+    const response = await axios.post(`${BASE_URL}/api/boards/${boardId}/posts/`, postData, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
 };
 
 // 게시글 삭제
@@ -850,7 +660,7 @@ export const deletePost = async (
         }
         return { deleted: true, status: res.status };
     } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
+        if (isAxiosError(err)) {
             const status = err.response?.status;
             if (status === 401) return { status: 401, message: "권한이 없습니다." };
             if (status === 404) return { status: 404, notFound: true, message: "게시글을 찾을 수 없습니다." };
@@ -1429,7 +1239,7 @@ export const fetchDraft = async (token: string): Promise<DraftData | null> => {
         });
         return res.data;
     } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 404) {
+        if (isAxiosError(err) && err.response?.status === 404) {
             return null; // 임시저장 없음
         }
         throw err;

@@ -31,10 +31,31 @@
 }
 
 .app-loading {
-    min-height: 100vh;
+    min-height: 50vh;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.auth-header, .auth-notice {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.auth-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.auth-notice {
+    background: #fff8e7;
+    color: #493c20;
+}
+
+.auth-notice button {
+    margin-right: 16px;
+    padding: 8px 16px;
+    cursor: pointer;
 }
 
 /* 모바일 스타일 (기본) */
