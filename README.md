@@ -7,8 +7,10 @@
 `.env` 없이 로컬에서 프론트엔드 + 백엔드를 한번에 실행할 수 있습니다.
 
 ### 사전 요구사항
-- **Python 3.10+** (`brew install python@3.12`)
-- **Node.js / npm**
+- **Python 3.11+** (`brew install python@3.12`; Pillow 13 보안 업데이트에 필요)
+- **Node.js 22.23.4 / npm** (`.nvmrc` 기준 보안 릴리스)
+
+기존 백엔드 `.venv`가 Python 3.10으로 만들어졌다면 Python 3.11 이상으로 다시 생성해야 합니다.
 
 ### 디렉토리 구조
 ```
