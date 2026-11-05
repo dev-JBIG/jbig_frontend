@@ -34,6 +34,7 @@ const PostDetail = lazy(() => import("../Posts/PostDetail"));
 const PostWrite = lazy(() => import("../Posts/PostWrite"));
 const Search = lazy(() => import("../Posts/Search"));
 const Profile = lazy(() => import("../Profile/Profile"));
+const Arena = lazy(() => import("../Competitions/Arena"));
 const routeFallback = <div style={{ minHeight: 240 }} />;
 
 // 미디어(CDN) 베이스 URL. 운영은 REACT_APP_MEDIA_BASE_URL 로 주입(R2 + Cloudflare CDN).
@@ -113,6 +114,7 @@ const Home: React.FC = () => {
     const location = useLocation();
 
     const isProfilePage = decodeURIComponent(location.pathname).startsWith('/@');
+    const isArenaPage = location.pathname === '/arena' || location.pathname.startsWith('/arena/');
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const isPostWorkRoute = pathSegments[0] === 'search' || (
         pathSegments[0] === 'board' && (
@@ -449,7 +451,7 @@ const Home: React.FC = () => {
     const sidebarProps = { boards, isLogin, quizURL, totalCount, navigate };
 
     return (
-        <div className="home-wrapper">
+        <div className={`home-wrapper${isArenaPage ? ' arena-home' : ''}`}>
             <header className="home-header">
                 <MobileNav
                     boards={boards}
@@ -584,9 +586,9 @@ const Home: React.FC = () => {
                 </Suspense>
             ) : (
             <>
-            <button type="button" className="home-banner" onClick={() => navigate('/')} aria-label="홈으로 이동">
+            {!isArenaPage && <button type="button" className="home-banner" onClick={() => navigate('/')} aria-label="홈으로 이동">
                 <img src={BANNER_IMAGE_URL} alt="banner-image" className="banner-image"/>
-            </button>
+            </button>}
             <div className="home-content">
                 <Routes>
                     {/* home-content 전체 차지하는 경로 */}
@@ -601,6 +603,13 @@ const Home: React.FC = () => {
                         </Suspense>
                     }/>
                     {/* sidebar+main-area */}
+                    <Route path="arena/*" element={
+                        <MainLayout sidebarProps={sidebarProps}>
+                            <Suspense fallback={routeFallback}>
+                                <Arena onLogin={() => setLoginModalOpen(true)} />
+                            </Suspense>
+                        </MainLayout>
+                    }/>
                     <Route path="/" element={
                         <MainLayout sidebarProps={sidebarProps}>
                             <JbigInfo calendarSlot={
@@ -651,11 +660,11 @@ const Home: React.FC = () => {
             )}
 
             {/* 팝업 슬라이더 */}
-            {!isPostWorkRoute && <PopupSlider />}
+            {!isPostWorkRoute && !isArenaPage && <PopupSlider />}
             </>
             )}
             {isLoginModalOpen && (
-                <LoginModal onClose={() => setLoginModalOpen(false)} />
+                <LoginModal onClose={() => setLoginModalOpen(false)} redirectTo={isArenaPage ? location.pathname : '/'} />
             )}
         </div>
     );

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./MemberQuickLinks.css";
 
 interface MemberQuickLinksProps {
@@ -11,6 +12,9 @@ const MemberQuickLinks: React.FC<MemberQuickLinksProps> = ({ isLogin, onOpen }) 
 
     return (
         <div className="member-quick-links">
+            <Link className="member-quick-link" to="/arena" onClick={onOpen}>
+                <span>JBIG Big Data Arena</span>
+            </Link>
             <a
                 className="member-quick-link member-quick-link-news"
                 href="https://docs.google.com/forms/d/e/1FAIpQLSeayAi-rqN96kMX2sZb9pI_5pKvbC4XTijO5fM5RW6NeXCGew/viewform"
