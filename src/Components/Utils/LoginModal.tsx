@@ -7,13 +7,14 @@ import { useJbnuEmail } from "./useJbnuEmail";
 
 interface LoginModalProps {
     onClose: () => void;
+    redirectTo?: string;
 }
 
 const isValidEmailDomain = (email: string) => /@jbnu\.ac\.kr$/i.test(email.trim());
 const isValidPassword = (pwd: string) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@])[A-Za-z\d!@]{8,16}$/.test(pwd);
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, redirectTo = '/' }) => {
     const { email: userId, inputRef: userIdRef, onChange: onUserIdChange, onFocus: onUserIdFocus, onClick: onUserIdClick } = useJbnuEmail();
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -73,9 +74,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                     result.refresh
                 );
                 onClose();
-                // 새로고침 대신 홈으로 이동 (이미 홈이면 그대로)
-                if (window.location.pathname !== '/') {
-                    navigate('/');
+                // 로그인한 뒤 호출한 화면으로 돌아간다. 기본 진입점은 홈이다.
+                if (window.location.pathname !== redirectTo) {
+                    navigate(redirectTo);
                 }
             } else {
                 setError(result.message || "로그인에 실패했습니다.");
